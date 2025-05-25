@@ -57,3 +57,10 @@ Packages
 No packages published
 Publish your first package
 Footer
+
+## 🛰️ Deployed Nodes
+
+- [Node VANTA-1](nodes/vanta1):  
+  Tier: Public Engagement & Protocol Enforcement  
+  Status: 🔓 Operational  
+  Location: CLASSIFIED  
