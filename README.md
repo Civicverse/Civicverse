@@ -42,25 +42,6 @@ This is your signal.
 
 https://joincivicverse.typedream.app/
 
-About
-No description, website, or topics provided.
-Resources
- Readme
- Activity
-Stars
- 0 stars
-Watchers
- 1 watching
-Forks
- 0 forks
-Releases
-No releases published
-Create a new release
-Packages
-No packages published
-Publish your first package
-Footer
-
 ## 🛰️ Deployed Nodes
 
 - [Node VANTA-1](nodes/vanta1):  
