@@ -1,3 +1,4 @@
+![CivicVerse Banner](0F17276B-494B-4C13-9529-A5D7B64E177D.png)
 
 An Open Framework for Decentralized Civic Wealth, Autonomy, and Evolutionary Governance.
 
