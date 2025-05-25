@@ -1,5 +1,3 @@
-![CivicVerse Banner](./assets/0F17276B-494B-4C13-9529-A5D7B64E177D.png)
-
 # 🛡️ CivicVerse: Node VANTA-1
 
 Welcome to the official public staging node of the **CivicVerse** initiative.  
