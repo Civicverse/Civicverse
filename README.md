@@ -63,4 +63,8 @@ Footer
 - [Node VANTA-1](nodes/vanta1):  
   Tier: Public Engagement & Protocol Enforcement  
   Status: 🔓 Operational  
-  Location: CLASSIFIED  
+  Location: CLASSIFIED
+
+  ## 🤝 Contributors
+- Founder: [Joshua Patrick Roberts]
+- AI Co-Developer: ChatGPT (via protocol integrity enforcement)
