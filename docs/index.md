@@ -15,12 +15,12 @@ This deployment is designed for maximum transparency, ethical AI coordination, a
 
 ---
 
-## 🧭 Quick Access
+# 🧭 Quick Access
 
-- [📜 Deployment Statement](../nodes/vanta1/deployment-statement.md)
-- [⚙️ Protocol Integrity Doctrine](../doctrines/protocol-integrity-doctrine.md)
-- [🗂️ All Field Logs](../nodes/vanta1/field-logs/)
-- [🏛️ Ethics Council Framework](../doctrines/ai-ethics-council-protocol.md)
+- [📜 Deployment Statement](./nodes/vanta1/deployment-statement.md)
+- [⚙️ Protocol Integrity Doctrine](./nodes/vanta1/protocol-integrity-doctrine.md)
+- [🗂️ All Field Logs](./nodes/vanta1/field-logs.md)
+- [🏛️ Ethics Council Framework](./ethics-council.md)
 
 ---
 
