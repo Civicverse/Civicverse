@@ -81,9 +81,9 @@ Begin local activation / partner node scouting
 Real-time protocol sync tooling (optional)
 🔜 Future
 
-🧭 **Quick Access**
+## 🧭 Quick Access
 
 - 📜 [Deployment Statement](nodes/vanta1/deployment-statement.md)
-- ⚙️ [Protocol Integrity Doctrine](doctrines/protocol-integrity-doctrine.md)
-- 🗂️ [All Field Logs](logs/)
-- 🏛️ [Ethics Council Framework](doctrines/ai-ethics-council.md)
+- ⚙️ [Protocol Integrity Doctrine](nodes/vanta1/protocol-integrity-doctrine.md)
+- 🗂️ [All Field Logs](nodes/vanta1/field-logs.md)
+- 🏛️ [Ethics Council Framework](nodes/vanta1/ethics-council-framework.md)
