@@ -83,7 +83,7 @@ Real-time protocol sync tooling (optional)
 
 ## 🧭 Quick Access
 
-- [📜 Deployment Statement](https://civicverse.github.io/Civicverse/nodes/vanta1/deployment-statement)
-- [⚙️ Protocol Integrity Doctrine](https://civicverse.github.io/Civicverse/nodes/vanta1/protocol-integrity-doctrine)
-- [🗂️ All Field Logs](https://civicverse.github.io/Civicverse/nodes/vanta1/all-field-logs)
-- [🏛️ Ethics Council Framework](https://civicverse.github.io/Civicverse/nodes/vanta1/ethics-council-framework)
+• ⚙️ [Protocol Integrity Doctrine](docs/nodes/vanta1/protocol-integrity-doctrine.md)  
+• 🗂️ [All Field Logs](docs/nodes/vanta1/all-field-logs.md)  
+• 🏛️ [Ethics Council Framework](docs/nodes/vanta1/ethics-council-framework.md)  
+• 🧪 [AI Protocol Integrity & The Fryboy Test](docs/nodes/vanta1/ai-protocol-integrity-fryboy-test.md)
