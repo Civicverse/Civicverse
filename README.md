@@ -79,11 +79,11 @@ Begin local activation / partner node scouting
 🔜 Planning
 🧩 Phase 8
 Real-time protocol sync tooling (optional)
-🔜 Future
+🔜 
 
 ## 🧭 Quick Access
 
-• ⚙️ [Protocol Integrity Doctrine](docs/nodes/vanta1/protocol-integrity-doctrine.md)  
-• 🗂️ [All Field Logs](docs/nodes/vanta1/all-field-logs.md)  
-• 🏛️ [Ethics Council Framework](docs/nodes/vanta1/ethics-council-framework.md)  
-• 🧪 [AI Protocol Integrity & The Fryboy Test](docs/nodes/vanta1/ai-protocol-integrity-fryboy-test.md)
+• ⚙️ [Protocol Integrity Doctrine](/docs/nodes/vanta1/protocol-integrity-doctrine.md)  
+• 🗂️ [All Field Logs](/docs/nodes/vanta1/all-field-logs.md)  
+• 🏛️ [Ethics Council Framework](/docs/nodes/vanta1/ethics-council-framework.md)  
+• 🧪 [AI Protocol Integrity & The Fryboy Test](/docs/nodes/vanta1/ai-protocol-integrity-fryboy-test.md)
