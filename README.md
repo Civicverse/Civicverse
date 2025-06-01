@@ -46,45 +46,18 @@ https://joincivicverse.typedream.app/
 ## 🛰️ Deployed Nodes
 
 - [Node VANTA-1](nodes/vanta1):  
+  Tier: Public Engagement  
+  Status: 🔓 Operational  
+  Location: CLASSIFIED
+
+- [Node Alpha-2](nodes/Alpha2):  
   Tier: Public Engagement & Protocol Enforcement  
   Status: 🔓 Operational  
   Location: CLASSIFIED
 
-  ## 🤝 Contributors
-- Founder: [Joshua Patrick Roberts]
-- AI Co-Developer: ChatGPT (via protocol integrity enforcement)
-
-ase
-Milestone
-Status
-🧱 Phase 1
-Node initialized, deployment live on GitHub
-✅ Complete
-🧭 Phase 2
-Protocol map, doctrines, and registry synced
-✅ Complete
-🛰️ Phase 3
-Public node badge + status verification
-✅ Live
-🌐 Phase 4
-GitHub Pages launched (docs site)
-✅ Active
-🛡️ Phase 5
-Add AI Ethics enforcement schema
-🔄 Active
-📢 Phase 6
-First public node announcement
-🔜 Live
-🌱 Phase 7
-Begin local activation / partner node scouting
-🔜 Planning
-🧩 Phase 8
-Real-time protocol sync tooling 
-🔜 
-
 ## 🧭 Quick Access
 
-• ⚙️ [Protocol Integrity Doctrine](/docs/nodes/vanta1/protocol-integrity-doctrine.md)  
-• 🗂️ [All Field Logs](/docs/nodes/vanta1/all-field-logs.md)  
-• 🏛️ [Ethics Council Framework](/docs/nodes/vanta1/ethics-council-framework.md)  
-• 🧪 [AI Protocol Integrity & The Fryboy Test](/docs/nodes/vanta1/ai-protocol-integrity-fryboy-test.md)
+• ⚙️ [Protocol Integrity Doctrine](/whitpaper/protocol-integrity-doctrine.md)  
+• 🗂️ [All Field Logs](/nodes/vanta1/all-field-logs.md)  
+• 🏛️ [Ethics Council Framework](/nodes/vanta1/ethics-council-framework.md)  
+• 🧪 [AI Protocol Integrity & The Fryboy Test](/whitepaper/ai-protocol-integrity-fryboy-test.md)
