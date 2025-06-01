@@ -55,9 +55,4 @@ https://joincivicverse.typedream.app/
   Status: 🔓 Operational  
   Location: CLASSIFIED
 
-## 🧭 Quick Access
 
-• ⚙️ [Protocol Integrity Doctrine](/whitpaper/protocol-integrity-doctrine.md)  
-• 🗂️ [All Field Logs](/nodes/vanta1/all-field-logs.md)  
-• 🏛️ [Ethics Council Framework](/nodes/vanta1/ethics-council-framework.md)  
-• 🧪 [AI Protocol Integrity & The Fryboy Test](/whitepaper/ai-protocol-integrity-fryboy-test.md)
