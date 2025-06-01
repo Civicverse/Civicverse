@@ -1,4 +1,4 @@
-![CivicVerse Banner] (images/CivicverseLogo.png)
+![CivicVerse Banner](images/CivicverseLogo.png)
 
 ![VANTA-1 Node Status](https://img.shields.io/badge/VANTA--1--Node-✅%20Live-brightgreen?style=flat-square)
 
