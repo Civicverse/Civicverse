@@ -70,15 +70,15 @@ GitHub Pages launched (docs site)
 ✅ Active
 🛡️ Phase 5
 Add AI Ethics enforcement schema
-🔄 In Progress
+🔄 Active
 📢 Phase 6
 First public node announcement
-🔜 Pending
+🔜 Live
 🌱 Phase 7
 Begin local activation / partner node scouting
 🔜 Planning
 🧩 Phase 8
-Real-time protocol sync tooling (optional)
+Real-time protocol sync tooling 
 🔜 
 
 ## 🧭 Quick Access
