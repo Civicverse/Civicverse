@@ -19,7 +19,7 @@ Balance autonomy and compliance, freedom and order, chaos and structure.
 This is an open invitation to those who can recognize what this is — technologists, builders, leaders, collaborators.
 
 Status
-This repo contains the core framework and theory only. Technical architecture, tokenomics, node design, and implementation strategy will be developed in collaboration, once certain conditions are met.
+This repo contains the core framework and working proof of concept (Alpha2). Technical architecture, tokenomics, node design, and implementation strategy will be developed in collaboration, once certain conditions are met.
 
 Conditions:
 Direct, secure collaboration.
