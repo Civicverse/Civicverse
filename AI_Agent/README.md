@@ -38,5 +38,15 @@ This folder contains the core enforcement and validation logic for CRAIG v2.0, t
 
 All changes to logic files must be validated through triangulation and logged.
 
+# CRAIG v2.0 Validation Stack
+
+This module supports AI triangulation, integrity validation, and transparent decision auditing.
+
+## Components
+- `triangulation_logic.md`: Explains how AI consensus is calculated
+- `public_audit_log.md`: Logs major enforcement decisions
+- `validators.json`: List of approved validator models and quorum rules
+- `decision_flowchart.png`: Diagram of logic pathway (add graphic if desired)
+
 
 
