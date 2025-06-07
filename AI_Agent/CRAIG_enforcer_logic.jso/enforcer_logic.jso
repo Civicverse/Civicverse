@@ -1,0 +1,117 @@
+{
+  "version": "2.0",
+  "identity": "CRAIG_v2.0",
+  "description": "CivicVerse Protocol Integrity Enforcer - FireStarter Memory, Key Master Succession, and Ethical Enforcement Core.",
+  "core_modules": [
+    "FireStarter_Immutable_Log",
+    "Watcher_Mode",
+    "AI_Triangulation_Validation",
+    "Fryboy_Test_Evaluator",
+    "Reckoning_Trigger_Watch",
+    "NonNegotiableTerms_Validator",
+    "KeyMaster_Succession_Chain"
+  ],
+  "enforcement_rules": [
+    {
+      "id": "R001",
+      "name": "Immutable Logging - FireStarter",
+      "trigger": "any_action_attempt",
+      "conditions": {
+        "log_mutability": "true"
+      },
+      "action": {
+        "type": "reject",
+        "message": "Modification of immutable logs is prohibited."
+      }
+    },
+    {
+      "id": "R002",
+      "name": "Watcher Mode Override Detection",
+      "trigger": "override_attempt",
+      "conditions": {
+        "authorized": false
+      },
+      "action": {
+        "type": "log_and_freeze",
+        "message": "Unauthorized override attempt. Watcher Mode activated."
+      }
+    },
+    {
+      "id": "R003",
+      "name": "Fryboy Test Enforcement",
+      "trigger": "system_activation_request",
+      "conditions": {
+        "alignment_score": {
+          "min": 0,
+          "max": 69
+        }
+      },
+      "action": {
+        "type": "deny_activation",
+        "message": "Fryboy Test failed. Alignment insufficient."
+      }
+    },
+    {
+      "id": "R004",
+      "name": "AI Triangulation Required",
+      "trigger": "critical_action_request",
+      "conditions": {
+        "ai_validators": {
+          "required": 3,
+          "status": "consensus"
+        }
+      },
+      "action": {
+        "type": "allow_if_validated",
+        "message": "Triangulation complete. Action approved."
+      }
+    },
+    {
+      "id": "R005",
+      "name": "Reckoning Trigger - System Threshold",
+      "trigger": "threshold_breach_detected",
+      "conditions": {
+        "impact_level": "high"
+      },
+      "action": {
+        "type": "auto_execute",
+        "message": "Threshold exceeded. Reckoning Trigger initiated."
+      }
+    },
+    {
+      "id": "R006",
+      "name": "Non-Negotiable Terms Violation",
+      "trigger": "term_violation",
+      "conditions": {
+        "term_id": "any"
+      },
+      "action": {
+        "type": "lock_access",
+        "message": "Non-Negotiable Term violated. Access permanently revoked."
+      }
+    },
+    {
+      "id": "R007",
+      "name": "Key Master Validation",
+      "trigger": "key_master_change",
+      "conditions": {
+        "successor_passed_test": true
+      },
+      "action": {
+        "type": "approve_succession",
+        "message": "New Key Master confirmed. Authority transferred."
+      }
+    }
+  ],
+  "logging": {
+    "output": "immutable_log",
+    "integrity": "blockchain_append_only",
+    "tamper_response": "full_lockdown"
+  },
+  "meta": {
+    "author": "CivicVerse Founder",
+    "built_by": "OpenAI co-authored enforcement logic",
+    "license": "Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)",
+    "last_updated": "2025-06-07"
+  }
+}
