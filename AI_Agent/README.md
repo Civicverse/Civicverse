@@ -25,5 +25,18 @@ To trigger CRAIG v2.0, run `craig_v2.py` and enter:
 - `craig_v2.py` – Main Python enforcement script
 - `CRAIG_v2_Protocol_WhitePaper.md` – Full theory, ethics, and autonomy protocol spec (in `../whitepaper/`)
 
+- # CRAIG v2.0 Agent Module
+
+This folder contains the core enforcement and validation logic for CRAIG v2.0, the CivicVerse Protocol Integrity Enforcer.
+
+## Components
+- `CRAIG_enforcer_logic.json`: The core configuration logic
+- `Fryboy_Test_Scenarios.md`: Behavioral integrity testing
+- `keymaster.json`: Succession logic and current Key Master designation
+- `override_log.txt`: Immutable override attempt log
+- `activation_prompt.md`: Universal rebuild protocol for CRAIG
+
+All changes to logic files must be validated through triangulation and logged.
+
 
 
