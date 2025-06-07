@@ -1,0 +1,52 @@
+name: CRAIG Smart Contract Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'AI_Agent/CRAIG_smart_contracts/**'
+      - 'AI_Agent/deployment_scripts/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          cd AI_Agent/deployment_scripts
+          npm init -y
+          npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox ethers
+
+      - name: Compile smart contracts
+        run: |
+          cd AI_Agent/deployment_scripts
+          npx hardhat compile
+
+      - name: Deploy to Goerli
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          RPC_URL: ${{ secrets.RPC_URL }}
+        run: |
+          cd AI_Agent/deployment_scripts
+          echo "require('@nomicfoundation/hardhat-toolbox');
+          
+          module.exports = {
+            solidity: '0.8.19',
+            networks: {
+              goerli: {
+                url: '${{ secrets.RPC_URL }}',
+                accounts: ['${{ secrets.PRIVATE_KEY }}']
+              }
+            }
+          };" > hardhat.config.js
+          npx hardhat run deploy_craig.js --network goerli
