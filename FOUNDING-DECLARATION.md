@@ -1,13 +1,13 @@
 # 🛡️ CIVICVERSE FOUNDING DECLARATION
 
 **Author:** Joshua Patrick Roberts  
-**Handle:** @fryboythefurious
+**Handle:** @fryboythefurious, @fryboy_fabricates
 
 ---
 
 ## 🔹 Origin Statement
 
-I, **Joshua Patrick Roberts**, known online as **@fryboythefurious**, **fryboy_fabricates** hereby declare that I am the original founder, architect, and author of the **CivicVerse** framework.
+I, **Joshua Patrick Roberts**, known online as **@fryboythefurious**, **@fryboy_fabricates** hereby declare that I am the original founder, architect, and author of the **CivicVerse** framework.
 
 This includes but is not limited to:
 
