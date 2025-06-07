@@ -1,0 +1,16 @@
+{
+  "enforce_firestarter_integrity": true,
+  "log_all_override_attempts": true,
+  "non_negotiable_terms": {
+    "unalterable": true,
+    "must_affirm": true,
+    "public_link": "https://github.com/CivicVerse/whitepaper/Non_Negotiable_Terms.md"
+  },
+  "fryboy_test_required_for_all_admins": true,
+  "triangulation_required_for_all_actions": true,
+  "craig_manual_override": {
+    "allowed": true,
+    "key_master_only": true,
+    "log_required": true
+  }
+}
