@@ -3,7 +3,7 @@
 ![VANTA-1 Node Status](https://img.shields.io/badge/VANTA--1--Node-✅%20Live-brightgreen?style=flat-square)
 ![Alpha-2 Node Status](https://img.shields.io/badge/Alpha--2--Node-✅%20Live-brightgreen?style=flat-square)
 
-An Open Framework for Decentralized Civic Wealth, Autonomy, and Evolutionary Governance.
+A Web5 Open Framework for Decentralized Civic Wealth, Autonomy, and Evolutionary Governance.
 
 Civicverse is not just a concept — it’s a call to action. A blueprint for a digital civic ecosystem where people co-own their futures, powered by trustless systems, transparency, and collective prosperity.
 
