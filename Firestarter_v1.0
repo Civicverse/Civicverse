@@ -56,3 +56,274 @@ python3 governance/init_governance.py &
 python3 init/main.py &
 
 echo "✅ CIVICVERSE NODE ALPHA 3 IS LIVE."
+
+import asyncio
+import websockets
+import json
+import uuid
+import requests
+import pygame
+import sys
+import os
+from datetime import datetime
+from threading import Thread
+import random
+
+# Constants
+NODE_ID = str(uuid.uuid4())[:8]
+PORT = 8765
+PEERS = set()
+
+# Wallet and daemon RPC URLs (assumes local monero wallet and daemon)
+WALLET_RPC = os.getenv("WALLET_RPC_URL", "http://127.0.0.1:18082/json_rpc")
+DAEMON_RPC = os.getenv("DAEMON_RPC_URL", "http://127.0.0.1:18081/json_rpc")
+
+# Pygame init
+pygame.init()
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("CivicVerse Live Node")
+font = pygame.font.SysFont("Arial", 18)
+clock = pygame.time.Clock()
+
+# Colors
+BG_COLOR = (20, 20, 30)
+NODE_COLOR = (100, 255, 100)
+TEXT_COLOR = (220, 220, 220)
+
+# Node display positions (peer address -> position)
+node_positions = {}
+
+# Chat history: list of (sender, message)
+chat_history = []
+
+# Votes: proposal_id -> {peer_id: vote}
+VOTES = {}
+
+def wallet_rpc(method, params={}):
+    data = {"jsonrpc": "2.0", "id": "0", "method": method, "params": params}
+    try:
+        res = requests.post(WALLET_RPC, json=data)
+        return res.json()
+    except Exception as e:
+        return {}
+
+def daemon_rpc(method, params={}):
+    data = {"jsonrpc": "2.0", "id": "0", "method": method, "params": params}
+    try:
+        res = requests.post(DAEMON_RPC, json=data)
+        return res.json()
+    except Exception as e:
+        return {}
+
+def get_address():
+    res = wallet_rpc("get_address")
+    return res.get("result", {}).get("address", "N/A")
+
+def get_balance():
+    res = wallet_rpc("get_balance").get("result", {})
+    return round(res.get("unlocked_balance", 0) / 1e12, 6)
+
+def start_mining(address):
+    return daemon_rpc("start_mining", {
+        "miner_address": address,
+        "threads_count": 2,
+        "do_background_mining": False,
+        "ignore_battery": True
+    })
+
+def stop_mining():
+    return daemon_rpc("stop_mining")
+
+def make_message(msg_type, payload):
+    return json.dumps({
+        "type": msg_type,
+        "from": NODE_ID,
+        "timestamp": datetime.utcnow().isoformat(),
+        "payload": payload
+    })
+
+async def process_message(data):
+    t = data.get("type")
+    p = data.get("payload")
+    sender = data.get("from")
+
+    if t == "chat":
+        chat_history.append((sender, p))
+        if len(chat_history) > 20:
+            chat_history.pop(0)
+    elif t == "vote":
+        pid, v = p.get("proposal"), p.get("vote")
+        if pid not in VOTES:
+            VOTES[pid] = {}
+        VOTES[pid][sender] = v
+    elif t == "ping":
+        pass
+
+async def broadcast(message):
+    dead_peers = set()
+    for peer in PEERS.copy():
+        try:
+            await peer.send(message)
+        except:
+            dead_peers.add(peer)
+    for dp in dead_peers:
+        PEERS.discard(dp)
+
+async def handler(websocket, path):
+    PEERS.add(websocket)
+    node_positions[socket_to_id(websocket)] = random_pos()
+    try:
+        async for message in websocket:
+            data = json.loads(message)
+            await process_message(data)
+            await broadcast(message)
+    except websockets.ConnectionClosed:
+        pass
+    finally:
+        PEERS.discard(websocket)
+
+def socket_to_id(ws):
+    try:
+        return str(ws.remote_address)
+    except:
+        return None
+
+def random_pos():
+    return (random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50))
+
+async def connect_to_peer(uri):
+    try:
+        ws = await websockets.connect(uri)
+        PEERS.add(ws)
+        node_positions[socket_to_id(ws)] = random_pos()
+        asyncio.create_task(receive(ws))
+        print(f"Connected to peer {uri}")
+    except Exception as e:
+        print(f"Failed to connect {uri}: {e}")
+
+async def receive(ws):
+    try:
+        async for message in ws:
+            data = json.loads(message)
+            await process_message(data)
+            await broadcast(message)
+    except websockets.ConnectionClosed:
+        PEERS.discard(ws)
+
+def draw_text(surface, text, pos, color=TEXT_COLOR):
+    text_surface = font.render(text, True, color)
+    surface.blit(text_surface, pos)
+
+def draw_nodes():
+    for peer in PEERS:
+        nid = socket_to_id(peer)
+        pos = node_positions.get(nid)
+        if pos:
+            pygame.draw.circle(screen, NODE_COLOR, pos, 15)
+            draw_text(screen, f"{nid}", (pos[0] - 20, pos[1] - 30))
+
+def draw_chat():
+    base_y = HEIGHT - 200
+    y = base_y
+    for sender, msg in chat_history[-10:]:
+        draw_text(screen, f"{sender}: {msg}", (10, y))
+        y += 20
+
+def game_loop():
+    running = True
+    input_text = ""
+    input_active = True
+
+    async def network_loop():
+        server = await websockets.serve(handler, "0.0.0.0", PORT)
+        print(f"Node {NODE_ID} listening on port {PORT}")
+
+        bootstrap = os.getenv("CIVICVERSE_BOOTSTRAP")
+        if bootstrap:
+            await connect_to_peer(bootstrap)
+
+        await server.wait_closed()
+
+    def start_asyncio_loop():
+        asyncio.run(network_loop())
+
+    net_thread = Thread(target=start_asyncio_loop, daemon=True)
+    net_thread.start()
+
+    address = get_address()
+    balance = get_balance()
+    mining = False
+
+    while running:
+        screen.fill(BG_COLOR)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN and input_active:
+                if event.key == pygame.K_RETURN:
+                    msg = input_text.strip()
+                    if msg:
+                        asyncio.run(broadcast(make_message("chat", msg)))
+                        chat_history.append((NODE_ID, msg))
+                    input_text = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    input_text = input_text[:-1]
+                else:
+                    input_text += event.unicode
+
+        draw_nodes()
+        draw_chat()
+
+        pygame.draw.rect(screen, (50, 50, 50), (10, HEIGHT - 30, WIDTH - 20, 25))
+        draw_text(screen, input_text, (15, HEIGHT - 28), (255, 255, 255))
+
+        draw_text(screen, f"Node ID: {NODE_ID}", (10, 10))
+        draw_text(screen, f"Wallet: {address}", (10, 30))
+        balance = get_balance()
+        draw_text(screen, f"Balance: {balance} XMR", (10, 50))
+        draw_text(screen, f"Mining: {'Yes' if mining else 'No'} (Press M to toggle)", (10, 70))
+        draw_text(screen, "Press ESC to quit", (WIDTH - 150, 10))
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_m]:
+            if not mining:
+                start_mining(address)
+                mining = True
+            else:
+                stop_mining()
+                mining = False
+            pygame.time.wait(300)
+
+        if keys[pygame.K_ESCAPE]:
+            running = False
+
+        pygame.display.flip()
+        clock.tick(30)
+
+    pygame.quit()
+    sys.exit()
+
+if __name__ == "__main__":
+    game_loop()
+
+How to run:
+	1.	Install dependencies:
+
+pip install pygame websockets requests
+
+2.	Run your local Monero wallet RPC and daemon RPC on default ports.
+	3.	Run the script:
+
+python civicverse_node.py
+
+	4.	Optionally set bootstrap peer (to connect nodes):
+
+export CIVICVERSE_BOOTSTRAP="ws://ip_of_peer:8765"
+
+This script sets you up with a fully functional CivicVerse node that:
+	•	Mines Monero using your local wallet
+	•	Connects peer-to-peer via websockets
+	•	Shows a game-style UI with live peer nodes and chat
+	•	Handles votes and mining toggles
