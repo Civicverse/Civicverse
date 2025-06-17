@@ -1,329 +1,355 @@
-#!/bin/bash
-# FIRESTARTER v1.0 — CivicVerse Alpha 3 Autopilot Deployment
-set -e
+// ===== CivicVerse Alpha 3 Firestarter v2.0 - Full Code Bundle =====
 
-echo "🔥 CIVICVERSE FIRESTARTER v1.0 — BEGIN DEPLOYMENT"
+// --- 1. coreNode.js ---
+// Peer-to-peer mesh node with NAT traversal, messaging, mining stub, and ethics checks
 
-# ---[ Update + install essentials ]---
-echo "📦 Installing system dependencies..."
-sudo apt-get update && sudo apt-get install -y curl git python3 python3-pip tor unzip docker.io
+const WebSocket = require('ws');
+const SimplePeer = require('simple-peer');
+const EventEmitter = require('events');
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
-# ---[ Create working directory ]---
-mkdir -p ~/civicverse-alpha3 && cd ~/civicverse-alpha3
+class CivicNode extends EventEmitter {
+  constructor(config) {
+    super();
+    this.id = crypto.randomBytes(8).toString('hex');
+    this.peers = new Map(); // peerId -> peer instance
+    this.config = config;
+    this.dbFile = path.resolve(config.dataDir, 'nodeData.json');
+    this.data = { messages: [], blockchain: [], walletBalance: 0 };
+    this.loadData();
+    this.signalingSocket = null;
+    this.initSignaling();
+  }
 
-# ---[ Write .env configuration file ]---
-cat <<EOF > .env
-NODE_NAME=Alpha3
-NODE_ROLE=autonomous
-WALLET_SEED=community-seed-placeholder
-EOF
+  loadData() {
+    if (fs.existsSync(this.dbFile)) {
+      this.data = JSON.parse(fs.readFileSync(this.dbFile));
+    } else {
+      this.persistData();
+    }
+  }
 
-# ---[ Write node metadata ]---
-cat <<EOF > node.json
-{
-  "node_name": "Alpha3",
-  "location": "",
-  "role": "autonomous"
+  persistData() {
+    fs.writeFileSync(this.dbFile, JSON.stringify(this.data, null, 2));
+  }
+
+  initSignaling() {
+    this.signalingSocket = new WebSocket(this.config.signalingServer);
+    this.signalingSocket.on('open', () => {
+      this.signalingSocket.send(JSON.stringify({ type: 'register', id: this.id }));
+    });
+    this.signalingSocket.on('message', msg => {
+      const data = JSON.parse(msg);
+      if (data.type === 'peer-list') {
+        data.peers.forEach(peerId => {
+          if (peerId !== this.id && !this.peers.has(peerId)) this.connectToPeer(peerId);
+        });
+      } else if (data.type === 'signal' && data.to === this.id) {
+        const peer = this.peers.get(data.from);
+        if (peer) peer.signal(data.signal);
+        else this.setupPeer(data.from, false, data.signal);
+      }
+    });
+  }
+
+  connectToPeer(peerId) {
+    this.setupPeer(peerId, true);
+  }
+
+  setupPeer(peerId, initiator, incomingSignal) {
+    const peer = new SimplePeer({ initiator, trickle: false });
+    peer.on('signal', signal => {
+      this.signalingSocket.send(JSON.stringify({
+        type: 'signal', from: this.id, to: peerId, signal
+      }));
+    });
+    peer.on('connect', () => this.emit('peer-connect', peerId));
+    peer.on('data', data => this.handleData(peerId, data));
+    peer.on('close', () => { this.peers.delete(peerId); this.emit('peer-disconnect', peerId); });
+    peer.on('error', e => console.error('Peer error:', e));
+    if (incomingSignal) peer.signal(incomingSignal);
+    this.peers.set(peerId, peer);
+  }
+
+  handleData(peerId, data) {
+    try {
+      const message = JSON.parse(data.toString());
+      if (this.checkEthics(message)) {
+        this.data.messages.push({ from: peerId, message, timestamp: Date.now() });
+        this.persistData();
+        this.emit('message', peerId, message);
+      } else {
+        this.emit('ethics-violation', peerId, message);
+      }
+    } catch {
+      console.warn('Malformed message from peer:', peerId);
+    }
+  }
+
+  checkEthics(message) {
+    // Fryboy Test: No hate speech, spam, or disallowed content
+    const bannedWords = ['hate', 'spam', 'malware'];
+    const msgText = (typeof message.text === 'string') ? message.text.toLowerCase() : '';
+    return !bannedWords.some(word => msgText.includes(word));
+  }
+
+  broadcastMessage(message) {
+    const jsonMsg = JSON.stringify(message);
+    this.peers.forEach(peer => peer.send(jsonMsg));
+  }
+
+  mineBlock() {
+    // Stub mining (proof-of-work placeholder)
+    const lastBlock = this.data.blockchain[this.data.blockchain.length - 1] || { hash: '0' };
+    const newBlock = {
+      index: this.data.blockchain.length,
+      previousHash: lastBlock.hash,
+      timestamp: Date.now(),
+      transactions: this.data.messages.slice(),
+      nonce: Math.floor(Math.random() * 1000000),
+    };
+    newBlock.hash = crypto.createHash('sha256').update(JSON.stringify(newBlock)).digest('hex');
+    this.data.blockchain.push(newBlock);
+    this.data.messages = [];
+    this.persistData();
+    this.emit('block-mined', newBlock);
+  }
 }
-EOF
 
-# ---[ Write Peer-to-Peer Service (placeholder) ]---
-mkdir -p p2p
-cat <<EOF > p2p/p2p_service.py
-print("📡 CivicVerse P2P messaging service active (placeholder)")
-EOF
+module.exports = CivicNode;
 
-# ---[ Write Governance Engine (placeholder) ]---
-mkdir -p governance
-cat <<EOF > governance/init_governance.py
-print("⚖️ Governance initialized (placeholder)")
-EOF
 
-# ---[ Write Node Runtime (placeholder) ]---
-mkdir -p init
-cat <<EOF > init/main.py
-print("🌀 CivicVerse Node main loop running (placeholder)")
-EOF
+// --- 2. communityWallet.js ---
+// Manages funds, transactions, keys, and UI hooks
 
-# ---[ Deploy Monero wallet (mock container) ]---
-echo "💰 Launching Monero wallet (mock container)..."
-docker run -d --name monero-wallet -p 18081:18081 monero-project/monero
+const cryptoWallet = require('ethereumjs-wallet').default || require('ethereumjs-wallet');
 
-# ---[ Launch P2P + Governance + Node Loop ]---
-echo "🚀 Launching CivicVerse Alpha 3 components..."
-python3 p2p/p2p_service.py &
-python3 governance/init_governance.py &
-python3 init/main.py &
+class CommunityWallet {
+  constructor(config) {
+    this.config = config;
+    this.walletFile = path.resolve(config.dataDir, 'wallet.json');
+    this.keyPair = null;
+    this.loadWallet();
+    this.balance = 0; // off-chain simulated balance for demo
+  }
 
-echo "✅ CIVICVERSE NODE ALPHA 3 IS LIVE."
+  loadWallet() {
+    if (fs.existsSync(this.walletFile)) {
+      const data = JSON.parse(fs.readFileSync(this.walletFile));
+      this.keyPair = cryptoWallet.fromPrivateKey(Buffer.from(data.privateKey, 'hex'));
+    } else {
+      this.createWallet();
+    }
+  }
 
-import asyncio
-import websockets
-import json
-import uuid
-import requests
-import pygame
-import sys
-import os
-from datetime import datetime
-from threading import Thread
-import random
+  createWallet() {
+    this.keyPair = cryptoWallet.generate();
+    const privateKeyHex = this.keyPair.getPrivateKey().toString('hex');
+    fs.writeFileSync(this.walletFile, JSON.stringify({ privateKey: privateKeyHex }));
+  }
 
-# Constants
-NODE_ID = str(uuid.uuid4())[:8]
-PORT = 8765
-PEERS = set()
+  getAddress() {
+    return this.keyPair.getAddressString();
+  }
 
-# Wallet and daemon RPC URLs (assumes local monero wallet and daemon)
-WALLET_RPC = os.getenv("WALLET_RPC_URL", "http://127.0.0.1:18082/json_rpc")
-DAEMON_RPC = os.getenv("DAEMON_RPC_URL", "http://127.0.0.1:18081/json_rpc")
+  getBalance() {
+    // Demo balance
+    return this.balance;
+  }
 
-# Pygame init
-pygame.init()
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("CivicVerse Live Node")
-font = pygame.font.SysFont("Arial", 18)
-clock = pygame.time.Clock()
+  sendFunds(amount, toAddress) {
+    if (amount > this.balance) throw new Error('Insufficient funds');
+    this.balance -= amount;
+    // Normally would create and broadcast transaction here
+    return true;
+  }
 
-# Colors
-BG_COLOR = (20, 20, 30)
-NODE_COLOR = (100, 255, 100)
-TEXT_COLOR = (220, 220, 220)
+  receiveFunds(amount) {
+    this.balance += amount;
+  }
+}
 
-# Node display positions (peer address -> position)
-node_positions = {}
+module.exports = CommunityWallet;
 
-# Chat history: list of (sender, message)
-chat_history = []
 
-# Votes: proposal_id -> {peer_id: vote}
-VOTES = {}
+// --- 3. aiEthics.js ---
+// AI ethics enforcement (Fryboy Test & CivicVerse policy)
 
-def wallet_rpc(method, params={}):
-    data = {"jsonrpc": "2.0", "id": "0", "method": method, "params": params}
-    try:
-        res = requests.post(WALLET_RPC, json=data)
-        return res.json()
-    except Exception as e:
-        return {}
+class AIEthics {
+  constructor(config) {
+    this.config = config;
+    this.policyFile = path.resolve(config.dataDir, 'ethicsPolicy.json');
+    this.policy = this.loadPolicy();
+  }
 
-def daemon_rpc(method, params={}):
-    data = {"jsonrpc": "2.0", "id": "0", "method": method, "params": params}
-    try:
-        res = requests.post(DAEMON_RPC, json=data)
-        return res.json()
-    except Exception as e:
-        return {}
+  loadPolicy() {
+    if (fs.existsSync(this.policyFile)) {
+      return JSON.parse(fs.readFileSync(this.policyFile));
+    }
+    // Default policy - Fryboy Test basics
+    return {
+      bannedContent: ['hate', 'spam', 'malware'],
+      maxMessageLength: 500,
+      requireConsent: true,
+    };
+  }
 
-def get_address():
-    res = wallet_rpc("get_address")
-    return res.get("result", {}).get("address", "N/A")
+  validateMessage(message) {
+    if (typeof message.text !== 'string' || message.text.length === 0) return false;
+    if (message.text.length > this.policy.maxMessageLength) return false;
+    const txt = message.text.toLowerCase();
+    for (const banned of this.policy.bannedContent) {
+      if (txt.includes(banned)) return false;
+    }
+    return true;
+  }
+}
 
-def get_balance():
-    res = wallet_rpc("get_balance").get("result", {})
-    return round(res.get("unlocked_balance", 0) / 1e12, 6)
+module.exports = AIEthics;
 
-def start_mining(address):
-    return daemon_rpc("start_mining", {
-        "miner_address": address,
-        "threads_count": 2,
-        "do_background_mining": False,
-        "ignore_battery": True
-    })
 
-def stop_mining():
-    return daemon_rpc("stop_mining")
+// --- 4. ui.jsx ---
+// React 16-bit Streets of Rage inspired UI with mesh chat, wallet, and node status
 
-def make_message(msg_type, payload):
-    return json.dumps({
-        "type": msg_type,
-        "from": NODE_ID,
-        "timestamp": datetime.utcnow().isoformat(),
-        "payload": payload
-    })
+import React, { useEffect, useState } from 'react';
 
-async def process_message(data):
-    t = data.get("type")
-    p = data.get("payload")
-    sender = data.get("from")
+const pixelFont = "'Press Start 2P', cursive";
 
-    if t == "chat":
-        chat_history.append((sender, p))
-        if len(chat_history) > 20:
-            chat_history.pop(0)
-    elif t == "vote":
-        pid, v = p.get("proposal"), p.get("vote")
-        if pid not in VOTES:
-            VOTES[pid] = {}
-        VOTES[pid][sender] = v
-    elif t == "ping":
-        pass
+function CivicUI({ node, wallet }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [peersCount, setPeersCount] = useState(0);
+  const [balance, setBalance] = useState(0);
+  const [status, setStatus] = useState('Initializing...');
 
-async def broadcast(message):
-    dead_peers = set()
-    for peer in PEERS.copy():
-        try:
-            await peer.send(message)
-        except:
-            dead_peers.add(peer)
-    for dp in dead_peers:
-        PEERS.discard(dp)
+  useEffect(() => {
+    node.on('message', (peerId, msg) => {
+      setMessages(prev => [...prev, `${peerId}: ${msg.text}`]);
+    });
+    node.on('peer-connect', () => setPeersCount(node.peers.size));
+    node.on('peer-disconnect', () => setPeersCount(node.peers.size));
+    node.on('block-mined', block => setStatus(`Block #${block.index} mined!`));
+    setBalance(wallet.getBalance());
+  }, [node, wallet]);
 
-async def handler(websocket, path):
-    PEERS.add(websocket)
-    node_positions[socket_to_id(websocket)] = random_pos()
-    try:
-        async for message in websocket:
-            data = json.loads(message)
-            await process_message(data)
-            await broadcast(message)
-    except websockets.ConnectionClosed:
-        pass
-    finally:
-        PEERS.discard(websocket)
+  function sendMessage() {
+    if (!input.trim()) return;
+    const msgObj = { text: input.trim(), from: wallet.getAddress() };
+    node.broadcastMessage(msgObj);
+    setMessages(prev => [...prev, `Me: ${input.trim()}`]);
+    setInput('');
+  }
 
-def socket_to_id(ws):
-    try:
-        return str(ws.remote_address)
-    except:
-        return None
+  const uiStyle = {
+    fontFamily: pixelFont,
+    background: '#222',
+    color: '#0f0',
+    minHeight: '100vh',
+    padding: 20,
+  };
 
-def random_pos():
-    return (random.randint(50, WIDTH - 50), random.randint(50, HEIGHT - 50))
+  const chatBoxStyle = {
+    border: '2px solid #0f0',
+    background: '#000',
+    height: 300,
+    overflowY: 'auto',
+    padding: 10,
+    marginBottom: 10,
+  };
 
-async def connect_to_peer(uri):
-    try:
-        ws = await websockets.connect(uri)
-        PEERS.add(ws)
-        node_positions[socket_to_id(ws)] = random_pos()
-        asyncio.create_task(receive(ws))
-        print(f"Connected to peer {uri}")
-    except Exception as e:
-        print(f"Failed to connect {uri}: {e}")
+  const inputStyle = {
+    width: '70%',
+    padding: 10,
+    fontSize: 14,
+    background: '#111',
+    color: '#0f0',
+    border: '2px solid #0f0',
+  };
 
-async def receive(ws):
-    try:
-        async for message in ws:
-            data = json.loads(message)
-            await process_message(data)
-            await broadcast(message)
-    except websockets.ConnectionClosed:
-        PEERS.discard(ws)
+  const btnStyle = {
+    marginLeft: 10,
+    padding: '10px 20px',
+    background: '#0f0',
+    border: 'none',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+  };
 
-def draw_text(surface, text, pos, color=TEXT_COLOR):
-    text_surface = font.render(text, True, color)
-    surface.blit(text_surface, pos)
+  return (
+    <div style={uiStyle}>
+      <h1 style={{ textAlign: 'center' }}>CivicVerse Firestarter Alpha 3 v2.0</h1>
+      <div style={chatBoxStyle}>
+        {messages.map((m, i) => <div key={i}>{m}</div>)}
+      </div>
+      <input
+        type="text"
+        style={inputStyle}
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
+        placeholder="Type your message..."
+      />
+      <button style={btnStyle} onClick={sendMessage}>Send</button>
+      <div style={{ marginTop: 20 }}>
+        <strong>Peers connected:</strong> {peersCount}<br />
+        <strong>Wallet balance:</strong> {balance} CVT<br />
+        <strong>Status:</strong> {status}
+      </div>
+    </div>
+  );
+}
 
-def draw_nodes():
-    for peer in PEERS:
-        nid = socket_to_id(peer)
-        pos = node_positions.get(nid)
-        if pos:
-            pygame.draw.circle(screen, NODE_COLOR, pos, 15)
-            draw_text(screen, f"{nid}", (pos[0] - 20, pos[1] - 30))
+export default CivicUI;
 
-def draw_chat():
-    base_y = HEIGHT - 200
-    y = base_y
-    for sender, msg in chat_history[-10:]:
-        draw_text(screen, f"{sender}: {msg}", (10, y))
-        y += 20
 
-def game_loop():
-    running = True
-    input_text = ""
-    input_active = True
+// --- 5. README.md ---
 
-    async def network_loop():
-        server = await websockets.serve(handler, "0.0.0.0", PORT)
-        print(f"Node {NODE_ID} listening on port {PORT}")
+/*
+# CivicVerse Alpha 3 Firestarter v2.0
 
-        bootstrap = os.getenv("CIVICVERSE_BOOTSTRAP")
-        if bootstrap:
-            await connect_to_peer(bootstrap)
+## Overview
+CivicVerse Alpha 3 Firestarter v2.0 is a decentralized peer-to-peer mesh network node daemon with integrated community wallet and AI ethics enforcement based on the Fryboy Test. The UI is inspired by 16-bit Streets of Rage aesthetics to keep it nostalgic and cool.
 
-        await server.wait_closed()
+## Features
+- Peer-to-peer mesh networking with NAT traversal using WebSockets and SimplePeer
+- Community wallet with secure key management and simulated transaction balance
+- AI ethics enforcement module with policy validation to prevent malicious messaging
+- 16-bit Streets of Rage style React UI dashboard with real-time peer, message, wallet, and node status display
+- Local data persistence and mining stub (proof-of-work simulation)
+- Designed for Windows 11 compatibility and easy packaging with tools like pkg or PyInstaller
 
-    def start_asyncio_loop():
-        asyncio.run(network_loop())
+## Setup
+1. Clone the repo.
+2. Run `npm install` to install dependencies (`ws`, `simple-peer`, `react`, `ethereumjs-wallet`, etc.).
+3. Configure `config.json` with your signaling server URL and data directory.
+4. Start signaling server (if you don't have one, a basic Node.js WebSocket server must be deployed).
+5. Run the node daemon: `node coreNode.js`
+6. Start the React app: `npm start`
+7. Open the React UI and connect to your node.
 
-    net_thread = Thread(target=start_asyncio_loop, daemon=True)
-    net_thread.start()
+## Usage
+- Chat with peers on the mesh network.
+- Monitor your community wallet balance.
+- View mining and block creation events.
+- Messages violating AI ethics policies are logged and rejected.
 
-    address = get_address()
-    balance = get_balance()
-    mining = False
+## License
+MIT License
 
-    while running:
-        screen.fill(BG_COLOR)
+## Contact
+CivicVerse Development Team
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN and input_active:
-                if event.key == pygame.K_RETURN:
-                    msg = input_text.strip()
-                    if msg:
-                        asyncio.run(broadcast(make_message("chat", msg)))
-                        chat_history.append((NODE_ID, msg))
-                    input_text = ""
-                elif event.key == pygame.K_BACKSPACE:
-                    input_text = input_text[:-1]
-                else:
-                    input_text += event.unicode
+*/
 
-        draw_nodes()
-        draw_chat()
+// --- 6. config.json ---
 
-        pygame.draw.rect(screen, (50, 50, 50), (10, HEIGHT - 30, WIDTH - 20, 25))
-        draw_text(screen, input_text, (15, HEIGHT - 28), (255, 255, 255))
+{
+  "signalingServer": "wss://your-signaling-server.com",
+  "dataDir": "./data"
+}
 
-        draw_text(screen, f"Node ID: {NODE_ID}", (10, 10))
-        draw_text(screen, f"Wallet: {address}", (10, 30))
-        balance = get_balance()
-        draw_text(screen, f"Balance: {balance} XMR", (10, 50))
-        draw_text(screen, f"Mining: {'Yes' if mining else 'No'} (Press M to toggle)", (10, 70))
-        draw_text(screen, "Press ESC to quit", (WIDTH - 150, 10))
+// ===== END OF BUNDLE =====
 
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_m]:
-            if not mining:
-                start_mining(address)
-                mining = True
-            else:
-                stop_mining()
-                mining = False
-            pygame.time.wait(300)
-
-        if keys[pygame.K_ESCAPE]:
-            running = False
-
-        pygame.display.flip()
-        clock.tick(30)
-
-    pygame.quit()
-    sys.exit()
-
-if __name__ == "__main__":
-    game_loop()
-
-How to run:
-	1.	Install dependencies:
-
-pip install pygame websockets requests
-
-2.	Run your local Monero wallet RPC and daemon RPC on default ports.
-	3.	Run the script:
-
-python civicverse_node.py
-
-	4.	Optionally set bootstrap peer (to connect nodes):
-
-export CIVICVERSE_BOOTSTRAP="ws://ip_of_peer:8765"
-
-This script sets you up with a fully functional CivicVerse node that:
-	•	Mines Monero using your local wallet
-	•	Connects peer-to-peer via websockets
-	•	Shows a game-style UI with live peer nodes and chat
-	•	Handles votes and mining toggles
+Built with ❤️ for the CivicVerse.
