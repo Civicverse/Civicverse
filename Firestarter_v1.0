@@ -1,0 +1,58 @@
+#!/bin/bash
+# FIRESTARTER v1.0 — CivicVerse Alpha 3 Autopilot Deployment
+set -e
+
+echo "🔥 CIVICVERSE FIRESTARTER v1.0 — BEGIN DEPLOYMENT"
+
+# ---[ Update + install essentials ]---
+echo "📦 Installing system dependencies..."
+sudo apt-get update && sudo apt-get install -y curl git python3 python3-pip tor unzip docker.io
+
+# ---[ Create working directory ]---
+mkdir -p ~/civicverse-alpha3 && cd ~/civicverse-alpha3
+
+# ---[ Write .env configuration file ]---
+cat <<EOF > .env
+NODE_NAME=Alpha3
+NODE_ROLE=autonomous
+WALLET_SEED=community-seed-placeholder
+EOF
+
+# ---[ Write node metadata ]---
+cat <<EOF > node.json
+{
+  "node_name": "Alpha3",
+  "location": "",
+  "role": "autonomous"
+}
+EOF
+
+# ---[ Write Peer-to-Peer Service (placeholder) ]---
+mkdir -p p2p
+cat <<EOF > p2p/p2p_service.py
+print("📡 CivicVerse P2P messaging service active (placeholder)")
+EOF
+
+# ---[ Write Governance Engine (placeholder) ]---
+mkdir -p governance
+cat <<EOF > governance/init_governance.py
+print("⚖️ Governance initialized (placeholder)")
+EOF
+
+# ---[ Write Node Runtime (placeholder) ]---
+mkdir -p init
+cat <<EOF > init/main.py
+print("🌀 CivicVerse Node main loop running (placeholder)")
+EOF
+
+# ---[ Deploy Monero wallet (mock container) ]---
+echo "💰 Launching Monero wallet (mock container)..."
+docker run -d --name monero-wallet -p 18081:18081 monero-project/monero
+
+# ---[ Launch P2P + Governance + Node Loop ]---
+echo "🚀 Launching CivicVerse Alpha 3 components..."
+python3 p2p/p2p_service.py &
+python3 governance/init_governance.py &
+python3 init/main.py &
+
+echo "✅ CIVICVERSE NODE ALPHA 3 IS LIVE."
