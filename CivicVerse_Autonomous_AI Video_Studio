@@ -1,0 +1,379 @@
+
+> Decentralized, offline, free AI cinematic video generator for narrative revolution
+
+---
+
+## Overview
+
+This project is a **fully offline AI video pipeline** that turns text prompts into cinematic trailers. It uses open-source AI models locally on your machine to generate images, animate them, create narration, and produce finished videos — no internet required after setup, no subscriptions, no fees.
+
+You get an easy-to-use local web interface to create stunning, narrative-driven content for the CivicVerse movement or any storytelling mission.
+
+---
+
+## Features
+
+- **Text-to-Image:** Generates cinematic scenes with Stable Diffusion
+- **Image Animation:** Animates still images using AnimateDiff
+- **Narration:** Converts text prompts to natural speech with Tortoise TTS
+- **Video Composition:** Combines animation and narration into MP4 using FFmpeg
+- **Local Web UI:** Simple Flask interface to manage and launch generation
+- **Fully Offline:** Once installed, runs without any internet connection
+- **Open Source:** All tools and models are free and modifiable
+
+---
+
+## System Requirements
+
+- Windows 10/11 or Linux (tested on Windows 10)
+- NVIDIA GPU with 6GB+ VRAM recommended (some CPU fallback possible but very slow)
+- Python 3.10 or higher
+- At least 15 GB free disk space for models and dependencies
+- Basic command line familiarity
+
+---
+
+## Setup Instructions
+
+### 1. Install Dependencies
+
+- Download and install [Python 3.10+](https://www.python.org/downloads/)
+- Install [Git](https://git-scm.com/downloads)
+- Install [FFmpeg](https://ffmpeg.org/download.html) and add it to your PATH
+
+---
+
+### 2. Clone Repository
+
+```bash
+git clone https://github.com/yourusername/civicverse-video-studio.git
+cd civicverse-video-studio
+3. Setup Python Environment
+Create and activate a virtual environment:
+
+bash
+Copy code
+python -m venv venv
+# Windows
+.\venv\Scripts\activate
+# Linux/macOS
+source venv/bin/activate
+Install required Python packages:
+
+bash
+Copy code
+pip install -r requirements.txt
+4. Download AI Models
+Place AI model files inside the models/ directory (create if missing):
+
+Stable Diffusion v1.5 model: models/sd-v1-5.ckpt
+Download link: https://huggingface.co/CompVis/stable-diffusion-v-1-4-original
+
+AnimateDiff model weights: models/animatediff.ckpt
+Repo and instructions: https://github.com/guoyww/AnimateDiff
+
+Tortoise TTS voice data: Follow instructions at https://github.com/neonbjb/tortoise-tts
+
+5. Run the Studio
+Start the local web UI:
+
+bash
+Copy code
+python app.py
+Open your browser and go to:
+
+arduino
+Copy code
+http://localhost:5000
+How to Use
+Enter a cinematic text prompt describing your scene.
+
+Click Generate Scene to create a still image.
+
+Click Animate Scene to create an animation from the image.
+
+Enter narration text or use prompt text for voiceover.
+
+Click Generate Narration to create the audio.
+
+Click Compose Video to combine animation and narration into a video.
+
+The final video will be saved in the output/ folder.
+
+Example Prompt
+pgsql
+Copy code
+Thousands of people walk down a busy neon-lit street, eyes glued to glowing phones, heading toward a cliff edge called The Great Fall Off. Suddenly, the CivicVerse logo appears, transforming their devices and pulling them into a futuristic city filled with light and hope.
+Project Structure
+graphql
+Copy code
+civicverse-video-studio/
+├── app.py                # Flask web app UI and backend orchestrator
+├── generate_image.py     # Stable Diffusion image generation script
+├── animate_image.py      # AnimateDiff animation script
+├── synthesize_voice.py   # Tortoise TTS narration script
+├── compose_video.py      # FFmpeg video composition script
+├── models/               # Folder for AI model weights and data
+├── output/               # Generated images, audio, videos
+├── requirements.txt      # Python dependencies
+└── README.md             # This file
+Dependencies
+All Python dependencies are listed in requirements.txt.
+Key packages include:
+
+flask
+
+torch
+
+diffusers
+
+transformers
+
+torchaudio
+
+ffmpeg-python
+
+numpy
+
+pillow
+
+License
+This project is licensed under the MIT License. See LICENSE for details.
+
+Contributing
+Contributions and feature requests are welcome!
+Open an issue or submit a pull request on GitHub.
+
+Contact
+Built by Joshua Roberts for the CivicVerse mission.
+For support or questions: joincivicverse@gmail.com
+
+Start your narrative revolution today — one cinematic scene at a time.
+
+python
+Copy code
+
+---
+
+# PART 2 — Core Code Files
+
+I will now provide you with the **complete minimal versions** of each core Python file with comments so you can copy, paste, and run.
+
+---
+
+### 1. `app.py` — Flask web UI + orchestration
+
+```python
+from flask import Flask, render_template, request, redirect, url_for
+import os
+from generate_image import generate_image_from_prompt
+from animate_image import animate_image
+from synthesize_voice import synthesize_voice_from_text
+from compose_video import compose_video
+
+app = Flask(__name__)
+
+# Ensure output folders exist
+os.makedirs('output/images', exist_ok=True)
+os.makedirs('output/animations', exist_ok=True)
+os.makedirs('output/audio', exist_ok=True)
+os.makedirs('output/videos', exist_ok=True)
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        prompt = request.form.get('prompt', '').strip()
+        narration = request.form.get('narration', '').strip() or prompt
+
+        # Step 1: Generate image
+        img_path = generate_image_from_prompt(prompt)
+
+        # Step 2: Animate image
+        anim_path = animate_image(img_path)
+
+        # Step 3: Generate narration audio
+        audio_path = synthesize_voice_from_text(narration)
+
+        # Step 4: Compose final video
+        video_path = compose_video(anim_path, audio_path)
+
+        return redirect(url_for('result', video=os.path.basename(video_path)))
+
+    return render_template('index.html')
+
+@app.route('/result')
+def result():
+    video_file = request.args.get('video')
+    return render_template('result.html', video_file=video_file)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+2. generate_image.py — Stable Diffusion image generation
+python
+Copy code
+import torch
+from diffusers import StableDiffusionPipeline
+import os
+import uuid
+
+MODEL_PATH = "models/sd-v1-5.ckpt"
+OUTPUT_DIR = "output/images"
+
+# Load model once
+device = "cuda" if torch.cuda.is_available() else "cpu"
+pipe = StableDiffusionPipeline.from_ckpt(MODEL_PATH, torch_dtype=torch.float16 if device=="cuda" else torch.float32)
+pipe = pipe.to(device)
+
+def generate_image_from_prompt(prompt: str) -> str:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    img = pipe(prompt, guidance_scale=7.5).images[0]
+
+    filename = f"{uuid.uuid4()}.png"
+    path = os.path.join(OUTPUT_DIR, filename)
+    img.save(path)
+    print(f"[generate_image] Saved image to {path}")
+    return path
+Note: The StableDiffusionPipeline.from_ckpt method may differ; you might need to use from_pretrained with appropriate repo if you don’t have the .ckpt in that format. Adjust based on your actual model files.
+
+3. animate_image.py — AnimateDiff animation script (simplified stub)
+python
+Copy code
+import os
+import uuid
+import subprocess
+
+OUTPUT_DIR = "output/animations"
+
+def animate_image(image_path: str) -> str:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    # For demo, just convert PNG to a short video loop (replace with AnimateDiff call)
+    video_path = os.path.join(OUTPUT_DIR, f"{uuid.uuid4()}.mp4")
+    
+    # Example using ffmpeg to create a 3-second video from still image
+    cmd = [
+        "ffmpeg", "-loop", "1", "-i", image_path,
+        "-c:v", "libx264", "-t", "3", "-pix_fmt", "yuv420p",
+        "-vf", "scale=640:480",
+        video_path
+    ]
+    subprocess.run(cmd, check=True)
+    print(f"[animate_image] Created animation video at {video_path}")
+    return video_path
+Note: This is a placeholder. To integrate AnimateDiff, you’d call its API or CLI in place of this stub.
+
+4. synthesize_voice.py — Tortoise TTS script (simplified stub)
+python
+Copy code
+import os
+import uuid
+import subprocess
+
+OUTPUT_DIR = "output/audio"
+
+def synthesize_voice_from_text(text: str) -> str:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    audio_path = os.path.join(OUTPUT_DIR, f"{uuid.uuid4()}.wav")
+
+    # Placeholder for actual Tortoise TTS call
+    # Replace with Tortoise API or CLI call here.
+    # For now, create a silent audio file as placeholder
+    cmd = [
+        "ffmpeg", "-f", "lavfi", "-i", "anullsrc=r=22050:cl=mono",
+        "-t", "3", audio_path
+    ]
+    subprocess.run(cmd, check=True)
+    print(f"[synthesize_voice] Created placeholder audio at {audio_path}")
+    return audio_path
+5. compose_video.py — Compose animation + narration with FFmpeg
+python
+Copy code
+import os
+import uuid
+import subprocess
+
+OUTPUT_DIR = "output/videos"
+
+def compose_video(video_path: str, audio_path: str) -> str:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.join(OUTPUT_DIR, f"{uuid.uuid4()}.mp4")
+
+    cmd = [
+        "ffmpeg",
+        "-i", video_path,
+        "-i", audio_path,
+        "-c:v", "copy",
+        "-c:a", "aac",
+        "-strict", "experimental",
+        "-shortest",
+        output_path
+    ]
+    subprocess.run(cmd, check=True)
+    print(f"[compose_video] Composed final video at {output_path}")
+    return output_path
+6. requirements.txt
+nginx
+Copy code
+flask
+torch
+diffusers
+transformers
+torchaudio
+ffmpeg-python
+numpy
+pillow
+7. Basic Flask HTML Templates
+Create a folder templates/ with these two files:
+
+index.html
+
+html
+Copy code
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CivicVerse AI Video Studio</title>
+</head>
+<body>
+    <h1>CivicVerse Autonomous AI Video Studio</h1>
+    <form method="post">
+        <label for="prompt">Enter cinematic prompt:</label><br>
+        <textarea name="prompt" rows="5" cols="60" required></textarea><br><br>
+
+        <label for="narration">Narration text (optional):</label><br>
+        <textarea name="narration" rows="3" cols="60"></textarea><br><br>
+
+        <button type="submit">Generate Video</button>
+    </form>
+</body>
+</html>
+result.html
+
+html
+Copy code
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Generated</title>
+</head>
+<body>
+    <h1>Video Generated Successfully!</h1>
+    <video width="640" height="480" controls>
+        <source src="{{ url_for('static', filename='../output/videos/' + video_file) }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <br>
+    <a href="{{ url_for('index') }}">Generate another</a>
+</body>
+</html>
+Final Notes
+This is a minimal starter kit.
+
+You will need to replace placeholders (like the Tortoise TTS stub and AnimateDiff animation stub) with actual model calls once you download and set up those models per their repos.
+
+Model loading for Stable Diffusion might require adjusting code depending on model format (.ckpt vs Huggingface diffusers).
+
+Make sure ffmpeg is installed and accessible from your command line.
+
+Run python app.py and navigate to http://localhost:5000 to try it out.
+
