@@ -20,10 +20,7 @@ It is intentionally simple, modular, and extendable.
 
 Governments are broken, corporations control AI, and surveillance is default.
 CivicVerse is a blueprint to reclaim power for communities with ethical AI and self-governance.
-This starter node is your first step — fork, build, deploy, and grow your own civic ecosystem.
-⚙️ Architecture Overview
-
-StarterNode/ ├── backend/ │ ├── app.py # FastAPI backend API server │ ├── governance.py # Simple voting logic & in-memory storage │ ├── fryboy_test.py # AI Ethics & Fryboy Test heuristics │ ├── mining.py # Minimal community mining reward logic │ └── identity.py # Basic identity verification ├── frontend/ │ ├── public/ │ ├── src/ │ │ ├── App.jsx # Main React UI │ │ ├── Mining.jsx # Mining dashboard │ │ └── Voting.jsx # Voting interface ├── README.md # This file ├── requirements.txt # Backend Python dependencies ├── package.json # Frontend Node dependencies └── docker-compose.yml # Optional multi-container setup
+This starter node is your first step — fork, build, deploy, and grow your own civic community.
 
 🛠️ Core Features
 
