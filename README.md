@@ -119,7 +119,7 @@ We have the tech, and we have the talent.
 
 You can help them code our new prison—or you can help me code our freedom.
 
-I need professionals to help tighten up the framework.
+I need analysts and professionals to help tighten up the framework.
 I need devs to help build the infrastructure.
 Feel free to offer suggestions, contribute some code, or just stick around for future updates.
 The more people supporting the wallet, the faster development can scale.
