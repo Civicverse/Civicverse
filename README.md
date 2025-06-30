@@ -3,7 +3,7 @@
 ![CivicVerse Banner](images/CivicverseLogo.png)
 
 ![VANTA-1 Node Status](https://img.shields.io/badge/VANTA--1--Node-✅%20Live-brightgreen?style=flat-square)  
-![Alpha-2 Node Status](https://img.shields.io/badge/Alpha--2--Node-✅%20Live-brightgreen?style=flat-square)
+![Alpha-3 Node Status](https://img.shields.io/badge/Alpha--2--Node-✅%20Live-brightgreen?style=flat-square)
 
 A Web5 Open Framework for Decentralized Civic Wealth, Autonomy, and Evolutionary Governance.
 
