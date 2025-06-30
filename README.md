@@ -127,7 +127,6 @@ Feel free to offer suggestions, contribute some code, or just stick around for f
 The more people supporting the wallet, the faster development can scale.
 
 If you would like to support the Civicverse or help mine feel free to add all contributions to GUI wallet: 438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp
-All funds are used for development and scaling the Civicverse all support is greatly appreciated.
 
 All contributions go to CivicVerse development and infrastructure.
 
