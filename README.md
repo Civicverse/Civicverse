@@ -129,6 +129,14 @@ The more people supporting the wallet, the faster development can scale.
 If you would like to support the Civicverse or help mine feel free to add all contributions to GUI wallet: 438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp
 All funds are used for development and scaling the Civicverse all support is greatly appreciated.
 
+All contributions go to CivicVerse development and infrastructure.
+
+✅ Fully civilian-owned  
+✅ No VCs, no middlemen  
+✅ 100% of funds stay in the open ecosystem
+
+> Transactions are publicly visible via chain explorer. Future versions will integrate transparent ledger reporting into the CivicVerse UI.
+
 CivicVerse aims to give back the "American Dream"—
 Little pink houses, white picket fences, and a little Corvette for you and me.
 
