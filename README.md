@@ -149,7 +149,9 @@ This is our Constitutional and God-given right.
 This is our country. WE BUILT IT.
 
 Lets change the game from free to play, pay to win to free to live, pay to play.
-Power to the players. This is CivicVerse.
+Power to the players in the game and in real life!
+
+This is CivicVerse.
 
 https://joincivicverse.typedream.app/
 
