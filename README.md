@@ -15,7 +15,7 @@ A Web5 Open Framework for Decentralized Civic Wealth, Autonomy, and Evolutionary
 
 ## 🧭 What Is CivicVerse?
 
-**CivicVerse** on the surface may seem like an mmorpg video game and technically it is but, it’s so much more. It’s a tech upgrade to our existing infrastructure. It evens the odds for all civilians. It’s a fully modular, decentralized societal operating system designed to empower the average citizen. It’s a living framework for local governance, community self-reliance, and aligned AI—all tied together by ethical enforcement protocols, community mining, and microtaxes.
+**CivicVerse** on the surface may seem like an mmorpg video game and technically it is but, it’s so much more. It’s a tech upgrade to our existing infrastructure. It evens the odds for all civilians. It’s a fully modular, nonpartison, decentralized societal operating system designed to empower the average citizen. It’s a living framework for local governance, community self-reliance, and aligned AI—all tied together by ethical enforcement protocols, community mining, and microtaxes.
 
 The game will be X-compatible. On mobile, you’ll have *Civic Go*—a Pokémon Go–style real-world simulation, but for civic duty. Not catching Pokémon—solving real problems. Get paid to identify issues, offer solutions, and mark them complete. No PokéStops—just real-world markers and trophies. A real-world Xbox achievement for you and your online avatar.
 
