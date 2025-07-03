@@ -22,7 +22,7 @@ In the interest of fostering an open and welcoming environment, we as contributo
 
 ## Reporting and Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project maintainers at [your-email@example.com]. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project maintainers at [joincivicverse@gmail.com]. All complaints will be reviewed and investigated promptly and fairly.
 
 Maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned with this Code of Conduct.
 
