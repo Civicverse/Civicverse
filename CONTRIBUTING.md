@@ -19,7 +19,7 @@ To keep the project organized and collaborative, please follow these guidelines:
 
 If you find a bug or want to request a feature:
 
-- Check if it’s already reported in [Issues](https://github.com/your-repo/civicverse/issues).  
+- Check if it’s already reported in [Issues](https://github.com/Civicverse/Civicverse/issues).  
 - Open a new issue with a clear description and, if applicable, steps to reproduce.
 
 ## Code of Conduct
