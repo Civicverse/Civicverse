@@ -1,3 +1,4 @@
+![Pothole Scan Example](./assets/pot_hole_example.png)
 
 # 🛰️ How CivicWatch Works
 
