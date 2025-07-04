@@ -98,7 +98,8 @@ cd civicverse
 💥 **Earn for impact.**  
 🛠️ **Help build a better world.**
 
-![Frontend Example](./assets/frontend_example.png)
+![Frontend Example](https://raw.githubusercontent.com/Civicverse/Civicverse/main/game/Civicwatch.md/assets/frontend_example.png)
+
 
 ---
 
