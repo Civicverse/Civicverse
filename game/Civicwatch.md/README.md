@@ -4,7 +4,7 @@
 ## Operator Missions Lifecycle
 
 1. **Report Issue:**  
-   Operator uses CivicVerse GO AR HUD or drone feed to identify and tag civic problems.
+   Operator uses Civicwatch AR HUD or drone feed to identify and tag civic problems.
 
 2. **Submit Solution:**  
    Operator or others propose fixes, volunteer actions, or official reports.
