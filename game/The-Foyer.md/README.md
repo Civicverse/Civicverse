@@ -1,6 +1,6 @@
 # 🏛️ The Foyer — CivicVerse Lobby City
 
-> Think **Conton City** from *Xenoverse 2* meets **GTA Online** meets the **sims** 
+> Think **Conton City** from *Xenoverse 2* meets **GTA Online** meets the **Sims** 
 > But the lobby actually **does** something—and it’s **planned for Unreal Engine 5**.
 
 Welcome to **The Foyer** — the immersive multiplayer lobby city where your **CivicWatch avatar** enters the CivicVerse. But this isn’t just a spawn zone—it’s a decentralized, living, evolving city that blends gaming, civic duty, and real-world infrastructure.
