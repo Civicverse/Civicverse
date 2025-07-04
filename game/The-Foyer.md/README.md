@@ -187,8 +187,7 @@ The Foyer has the potential to be a massive emmersive city with endless potentia
 ✅ Real crypto
 ✅ Real impact
 
-This is how we change the game from pay to win...
-To free to live. Pay to build.
+This is how we change the game from free to play, pay to win. To free to live, paid to play...
 
 This is CivicVerse.
 
