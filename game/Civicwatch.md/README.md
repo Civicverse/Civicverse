@@ -1,75 +1,80 @@
 
-How CivicWatch Works
-1. Operator Missions Lifecycle
-Report Issue: Operator uses CivicVerse GO AR HUD or drone feed to identify and tag civic problems.
+# How CivicWatch Works
 
-Submit Solution: Operator or others propose fixes, volunteer actions, or official reports.
+## Operator Missions Lifecycle
 
-Verify & Validate: Validators confirm authenticity with timestamped media and geotags.
+1. **Report Issue:**  
+   Operator uses CivicVerse GO AR HUD or drone feed to identify and tag civic problems.
 
-Reward Distribution: On-chain smart contracts automatically pay operators, validators, and contributors from the community wallet.
+2. **Submit Solution:**  
+   Operator or others propose fixes, volunteer actions, or official reports.
 
-Replication & Scaling: Operators onboard others; replication rewards incentivize network growth.
+3. **Verify & Validate:**  
+   Validators confirm authenticity with timestamped media and geotags.
 
-2. Real-Time Engagement
-Operators live-stream drone patrols and AR missions.
+4. **Reward Distribution:**  
+   On-chain smart contracts automatically pay operators, validators, and contributors from the community wallet.
 
-Spectators donate, vote, and join missions remotely.
+5. **Replication & Scaling:**  
+   Operators onboard others; replication rewards incentivize network growth.
 
-Craig AI guides operators to high-priority missions.
+6. **Real-Time Engagement:**  
+   Operators live-stream drone patrols and AR missions.  
+   Spectators donate, vote, and join missions remotely.
 
-Tech Stack Overview:
+7. **Craig AI:**  
+   Guides operators to high-priority missions.
 
-| **Layer**          | **Technologies & Tools**                                            |
-| ------------------ | ------------------------------------------------------------------- |
-| **Frontend**       | React Native (mobile), React.js (web), AR.js / WebXR                |
-| **Backend**        | Node.js (Express/Fastify), Python (FastAPI) for AI                  |
-| **Database**       | PostgreSQL / MongoDB / IPFS for decentralized data                  |
-| **Blockchain**     | Monero (mining layer), Kaspa, Bitcoin, Ethereum smart contracts     |
-| **P2P Mesh**       | LoRaWAN, Bluetooth Mesh, IPFS, libp2p                               |
-| **AI Assistant**   | Python ML models, GPT APIs, custom logic for mission prioritization |
-| **Streaming**      | WebRTC, RTMP, decentralized video streaming (e.g. Livepeer)         |
-| **Authentication** | DID (Decentralized IDs), Soulbound NFTs, OAuth fallback             |
+---
 
-Payout & Reward Flow
-Mining Pool Rewards:
+## Tech Stack Overview
 
-Mining nodes generate crypto rewards (Monero, Kaspa, BTC, ETH).
+| Layer           | Technologies & Tools                                      |
+|-----------------|----------------------------------------------------------|
+| Frontend        | React Native (mobile), React.js (web), AR.js / WebXR     |
+| Backend         | Node.js (Express/Fastify), Python (FastAPI) for AI       |
+| Database        | PostgreSQL / MongoDB / IPFS for decentralized data       |
+| Blockchain      | Monero (mining layer), Kaspa, Bitcoin, Ethereum smart contracts |
+| P2P Mesh        | LoRaWAN, Bluetooth Mesh, IPFS, libp2p                     |
+| AI Assistant    | Python ML models, GPT APIs, custom logic for mission prioritization |
+| Streaming       | WebRTC, RTMP, decentralized video streaming (e.g. Livepeer) |
+| Authentication  | DID (Decentralized IDs), Soulbound NFTs, OAuth fallback  |
 
-A portion is reserved for CivicWatch mission payouts.
+---
 
-Microtax Contributions:
+## Payout & Reward Flow
 
-1% microtax on all CivicVerse transactions funnels into community wallets supporting CivicWatch.
+### Mining Pool Rewards  
+- Mining nodes generate crypto rewards (Monero, Kaspa, BTC, ETH).  
+- A portion is reserved for CivicWatch mission payouts.
 
-Mission Completion Rewards:
+### Microtax Contributions  
+- 1% microtax on all CivicVerse transactions funnels into community wallets supporting CivicWatch.
 
-Operators earn base payouts for verified problem reports.
+### Mission Completion Rewards  
+- Operators earn base payouts for verified problem reports.  
+- Additional bounties for solutions and verifications.  
+- Validator pools receive staking rewards for confirming mission authenticity.
 
-Additional bounties for solutions and verifications.
+### Donations & Tips  
+- Spectators and community members can donate to specific missions or Operators.
 
-Validator pools receive staking rewards for confirming mission authenticity.
+### Automatic Distribution  
+- Smart contracts handle transparent and tamper-proof payout distribution.  
+- Validators and Operators can track payments through UI dashboards and blockchain explorers.
 
-Donations & Tips:
+---
 
-Spectators and community members can donate to specific missions or Operators.
+## Getting Started
 
-Automatic Distribution:
+1. Clone the repo and install dependencies for backend and frontend.  
+2. Start backend API and AI assistant services.  
+3. Run frontend apps for Operator and Spectator modes.  
+4. Deploy smart contracts on Ethereum or testnet for payout management.  
+5. Join local mesh network for offline mission support.
 
-Smart contracts handle transparent and tamper-proof payout distribution.
+---
 
-Validators and Operators can track payments through UI dashboards and blockchain explorers.
+## Summary
 
-Getting Started
-Clone the repo and install dependencies for backend and frontend.
-
-Start backend API and AI assistant services.
-
-Run frontend apps for Operator and Spectator modes.
-
-Deploy smart contracts on Ethereum or testnet for payout management.
-
-Join local mesh network for offline mission support.
-
-Summary
 CivicWatch is a complex decentralized app (dApp) connecting real-world civic action with blockchain incentives, AI assistance, and community governance. Its modular repo structure supports fast iteration and scale across desktop, mobile, and mesh environments.
