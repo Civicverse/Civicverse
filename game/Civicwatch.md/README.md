@@ -1,5 +1,7 @@
 ![Pothole Scan Example](./assets/pot_hole_example.png)
 
+![Frontend Example](./assets/frontend_example.png)
+
 # 🛰️ How CivicWatch Works
 
 CivicWatch transforms civic action into a gamified, blockchain-backed, AI-powered system of real-world missions and rewards. Operators are everyday citizens who take on verified community tasks using drones, AR, and mobile devices—all while earning crypto and building local resilience.
