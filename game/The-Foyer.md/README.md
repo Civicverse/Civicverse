@@ -12,6 +12,9 @@ This isn't just another online game.
 > 🎮 It invites indie devs, educators, and studios to **build immersive worlds** that matter.  
 > 🌍 It’s changing video games for the first time since the leap to 3D.
 
+
+![The Foyer Example](./assets.md/The_Foyer_example.png)
+
 ---
 
 ## 🧬 Avatar Carryover From CivicWatch
