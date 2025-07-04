@@ -98,6 +98,8 @@ cd civicverse
 💥 **Earn for impact.**  
 🛠️ **Help build a better world.**
 
+![Frontend Example](./assets/frontend_example.png)
+
 ---
 
 ## 🏩 The Foyer — CivicVerse Lobby City (UE5)
