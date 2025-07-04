@@ -38,7 +38,7 @@ It’s an ethical reset—or survival protocol. Let’s hope it won’t be the l
 - ✅ Makes suppression impossible through **offline resilience**. Journalism and whistleblowers no longer have to fear or be gatekept. Real access to real news, all the time. The CivicWatch will need journalists on the streets.
 - ✅ Adds a civilian security and accountability merit layer with **CivicWatch**. Encourages community and self-sustainability. Eliminates excessive government and replaces it with community-driven support.
 
-- Gta online lasted 10 years and is till going. Now imagine that world with real brands, real world plug ins and an interactive video game that actually empowers its players. Civicverse has the potential to be a quadrillion dollar 100 year game engine completley civillian owned and opperated.
+- Gta online lasted 10 years and is still going. Now imagine that world with real brands, real world plug ins and an interactive video game that actually empowers its players. Civicverse has the potential to be a quadrillion dollar 100 year game engine completley civillian owned and opperated.
 
 - Be sure to check out the full repo for the addtional modules. Theres so much more the Civicverse empowers!
 
