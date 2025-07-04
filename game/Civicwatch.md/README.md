@@ -1,5 +1,3 @@
-![Pothole Scan Example](./assets/pot_hole_example.png)
-
 ![Frontend Example](./assets/frontend_example.png)
 
 # 🛰️ How CivicWatch Works
@@ -69,6 +67,9 @@ CivicVerse's AI assistant guides Operators to high-priority missions and suggest
 ### ⚙️ Automatic Distribution
 - Transparent, on-chain **smart contracts** handle payments.
 - Operators and Validators track earnings via dashboards and blockchain explorers.
+
+![Pothole Scan Example](./assets/pot_hole_example.png)
+
 
 ---
 
