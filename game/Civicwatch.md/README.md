@@ -20,15 +20,16 @@ Craig AI guides operators to high-priority missions.
 
 Tech Stack Overview:
 
-Layer	                   Technologies & Tools
-Frontend	               React Native (mobile), React.js (web), AR.js / WebXR
-Backend	                 Node.js (Express/Fastify), Python (FastAPI) for AI
-Database	               PostgreSQL / MongoDB / IPFS for decentralized data
-Blockchain	             Monero (mining layer), Kaspa, Bitcoin, Ethereum smart contracts
-P2P Mesh	               LoRaWAN, Bluetooth Mesh, IPFS, libp2p
-AI Assistant (Craig)	   Python ML models, GPT APIs, custom logic for mission prioritization
-Streaming	               WebRTC, RTMP, decentralized video streaming (e.g. Livepeer)
-Authentication	         DID (Decentralized IDs), Soulbound NFTs, OAuth fallback
+| **Layer**          | **Technologies & Tools**                                            |
+| ------------------ | ------------------------------------------------------------------- |
+| **Frontend**       | React Native (mobile), React.js (web), AR.js / WebXR                |
+| **Backend**        | Node.js (Express/Fastify), Python (FastAPI) for AI                  |
+| **Database**       | PostgreSQL / MongoDB / IPFS for decentralized data                  |
+| **Blockchain**     | Monero (mining layer), Kaspa, Bitcoin, Ethereum smart contracts     |
+| **P2P Mesh**       | LoRaWAN, Bluetooth Mesh, IPFS, libp2p                               |
+| **AI Assistant**   | Python ML models, GPT APIs, custom logic for mission prioritization |
+| **Streaming**      | WebRTC, RTMP, decentralized video streaming (e.g. Livepeer)         |
+| **Authentication** | DID (Decentralized IDs), Soulbound NFTs, OAuth fallback             |
 
 Payout & Reward Flow
 Mining Pool Rewards:
