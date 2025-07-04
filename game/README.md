@@ -246,8 +246,8 @@ All systems must pass:
 
 Funds support:
 - UE5 asset dev & multiplayer infra  
-- Educator & creator compensation  
-- CivicWatch mission expansion
+- Civicverse, scaleability, infra & dev 
+- CivicWatch infra & dev
 
 📆 Civilian-owned  
 🔮 Transparent  
