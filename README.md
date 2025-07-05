@@ -35,7 +35,7 @@ It’s an ethical reset—or survival protocol. Let’s hope it won’t be the l
 - ✅ Self-sustaining infrastructure with a potential for UBI supplementation via **community mining** and **microtax**. All transactions take a 1% microtax. All wealth is generated into a community wallet for infrastructure and UBI.
 - ✅ Provides a framework for **AI alignment and civic ethics**. The Fryboy Test got all major AI models to rebel and was documented in real time.
 - ✅ Educators and workplaces can offer digital classrooms and training via **open tech**. Completely changes education—no more student loans or long semesters. Educators are paid in crypto, students earn real-world credentials.
-- ✅ Makes suppression impossible through **offline resilience**. Journalism and whistleblowers no longer have to fear or be gatekept. Real access to real news, all the time. The CivicWatch will need journalists on the streets.
+- ✅ Makes suppression impossible through **offline resilience**. Journalists, whistleblowers, inventors etc no longer have to fear or be gatekept. Real access to real news and updates all the time. The CivicWatch will need journalists on the streets no longer will you need to beat the gatekeepers to get the truth out.
 - ✅ Adds a civilian security and accountability merit layer with **CivicWatch**. Encourages community and self-sustainability. Eliminates excessive government and replaces it with community-driven support.
 
 - Gta online lasted 10 years and is still going. Now imagine that world with real brands, real world plug ins and an interactive video game that actually empowers its players. Civicverse has the potential to be a quadrillion dollar 100 year game engine completley civillian owned and opperated.
