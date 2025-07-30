@@ -43,7 +43,8 @@ This protocol ensures humans—not bots or governments—remain in control of de
 **Step 2:** Complete proof-of-human challenge  
 - 📷 Video Selfie + Voice Phrase: “I am CivicVerse and I am alive”  
 - 🤖 CAPTCHA + Head/Nod Detection  
-- 🧍 Optional Peer Witness Verification
+- 🧍 Optional Peer Witness Verification must have 3 verfied peer witnesses to bypass video confirmation. 
+Your personal information is sacred and video confirmation is only required when all else fails. Encourages you to get involved with your community to gain peer verification so your personal data can stay personal.
 
 **Step 3:** System creates `proof_hash = sha256(video + voice + userID)`  
 **Step 4:** Mint CivicID (Soulbound NFT or CivicID.json)
