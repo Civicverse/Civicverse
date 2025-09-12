@@ -1,7 +1,7 @@
 
 CivicVerse Governance Whitepaper v1.0
 
-Title: CivicVerse Protocol — Resilient Digital Governance for an Unstable World
+CivicVerse Protocol — Resilient Digital Governance for an Unstable World
 
 ⸻
 
