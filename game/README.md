@@ -56,7 +56,7 @@
   Monero/Kaspa/Bitcoin mining partially funds CivicWatch rewards.
 
 - **📟 Microtax Contributions**  
-  1% fee on all CivicVerse transactions goes to the mission pool.
+  1% fee on all Civicwatch transactions goes to the mission pool.
 
 - **🎯 Mission Completion Rewards**  
   Base payouts + bounties for verified reports and actions. Validators earn staking rewards.
