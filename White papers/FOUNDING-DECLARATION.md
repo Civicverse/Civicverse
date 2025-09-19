@@ -1,7 +1,7 @@
 # 🛡️ CIVICVERSE FOUNDING DECLARATION
 
 **Author:** Joshua Patrick Roberts  
-**Handle:** @fryboythefurious, @fryboy_fabricates
+**Handle:** @fryboy_fabricates
 
 ---
 
