@@ -7,6 +7,16 @@
 
 A Web5 Open Framework for Decentralized Civic Wealth, Autonomy, and Evolutionary Governance.
 
+# Civicverse – Full Stack (One-Click Install)
+
+```bash
+git clone https://github.com/civicverse/civicverse.git
+cd civicverse
+chmod +x setup.sh
+./setup.sh                     # generates keys + .env
+# ← edit .env with your real Kaspa/Monero addresses
+docker compose up -d --build
+
 # 🌐 CivicVerse
 
 ### A Protocol for Freedom, Post-Collapse Governance & Ethical AI  
