@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  monerod:
+    image: sethsimmons/simple-monero-wallet-rpc:latest
+    command: --daemon-host host.docker.internal --rpc-bind-port 18081 --wallet-rpc-bind-port 18083 --non-interactive
+    ports:
+      - "18081:18081"
+      - "18083:18083"
+    restart: unless-stopped
+
+  kaspa-node:
+    image: kaspanet/kaspad:v0.15.2
+    command: --utxoindex --rpcmaxclients 500
+    ports:
+      - "16110:16110"
+    volumes:
+      - kaspa-data:/root/.kaspad
+    restart: unless-stopped
+
+  civicverse-backend:
+    build: ./backend
+    env_file: .env
+    depends_on:
+      - monerod
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  civicverse-frontend:
+    build: ./frontend
+    env_file: .env
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
+  craig-watcher:
+    build: ./craig-v2
+    env_file: .env
+    depends_on:
+      - civicverse-backend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  kaspa-data:
+  caddy_data:
+  caddy_config:
