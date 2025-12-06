@@ -68,18 +68,20 @@ const PlayerController = ({ onStateChange, onAttack, playerId }) => {
   return null
 }
 
-// Neon colors palette (32-bit cyberpunk)
-const NEON = {
-  pink: '#ff00ff',
-  cyan: '#00ffff',
-  yellow: '#ffff00',
-  green: '#00ff00',
-  purple: '#8800ff',
-  orange: '#ff8800',
-  red: '#ff0044',
-  blue: '#0088ff',
-  darkCyan: '#002255',
-  darkMagenta: '#220044',
+// Anime vibrant digital city colors
+const ANIME = {
+  sakuraPink: '#ff6b9d',
+  skyBlue: '#87ceeb',
+  deepBlue: '#0a3d62',
+  vibrantPurple: '#d4a5ff',
+  goldYellow: '#ffd700',
+  limeGreen: '#39ff14',
+  hotPink: '#ff10f0',
+  brightCyan: '#00f0ff',
+  sunsetOrange: '#ff6b35',
+  lavender: '#e6ccff',
+  brightRed: '#ff1744',
+  aquaMarine: '#7fffd4',
 }
 
 export default function CityScene({ onMultiplayerUpdate }) {
@@ -210,25 +212,25 @@ export default function CityScene({ onMultiplayerUpdate }) {
     <group>
       <PlayerController onStateChange={setPlayerState} onAttack={handleAttack} playerId={playerState.playerId} />
 
-      {/* Neon sky gradient */}
+      {/* Anime vibrant gradient sky */}
       <mesh position={[0, 30, 0]} scale={200}>
         <sphereGeometry args={[1, 32, 32]} />
-        <meshBasicMaterial color={NEON.darkMagenta} side={THREE.BackSide} />
+        <meshBasicMaterial color={ANIME.skyBlue} side={THREE.BackSide} />
       </mesh>
 
-      {/* Scanline overlay */}
-      <mesh position={[0, 0, -100]} scale={[300, 300, 1]}>
+      {/* Dynamic sky gradient (sunrise/sunset feel) */}
+      <mesh position={[0, 50, -100]} scale={[300, 200, 1]}>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial map={null} color="#000000" transparent opacity={0.1} />
+        <meshBasicMaterial color={ANIME.sunsetOrange} transparent opacity={0.3} />
       </mesh>
 
-      {/* Ground - grid pattern */}
+      {/* Ground - anime digital style */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
         <planeGeometry args={[300, 300]} />
-        <meshStandardMaterial color="#000011" />
+        <meshStandardMaterial color="#f0f8ff" metalness={0.1} roughness={0.9} />
       </mesh>
 
-      {/* Neon grid lines - brighter and thicker */}
+      {/* Glowing grid lines - anime style (vibrant) */}
       {useMemo(() => {
         const lines = []
         for (let i = -150; i <= 150; i += 20) {
@@ -237,20 +239,20 @@ export default function CityScene({ onMultiplayerUpdate }) {
               <bufferGeometry>
                 <bufferAttribute attach="attributes-position" count={2} array={new Float32Array([-150, 0, 0, 150, 0, 0])} itemSize={3} />
               </bufferGeometry>
-              <lineBasicMaterial color={NEON.cyan} linewidth={2} fog={false} />
+              <lineBasicMaterial color={ANIME.brightCyan} linewidth={2} fog={false} />
             </line>,
             <line key={`z-${i}`} position={[0, 0.02, i]}>
               <bufferGeometry>
                 <bufferAttribute attach="attributes-position" count={2} array={new Float32Array([0, 0, -150, 0, 0, 150])} itemSize={3} />
               </bufferGeometry>
-              <lineBasicMaterial color={NEON.cyan} linewidth={2} fog={false} />
+              <lineBasicMaterial color={ANIME.aquaMarine} linewidth={2} fog={false} />
             </line>
           )
         }
         return lines
       }, [])}
 
-      {/* Neon street lights - huge glow */}
+      {/* Anime lantern street lights */}
       {useMemo(() => {
         const lights = []
         const positions = [
@@ -260,50 +262,75 @@ export default function CityScene({ onMultiplayerUpdate }) {
           [50, 0, 50],
         ]
         positions.forEach((pos, idx) => {
-          const neonColor = [NEON.pink, NEON.cyan, NEON.yellow, NEON.purple][idx % 4]
+          const lightColor = [ANIME.sakuraPink, ANIME.goldYellow, ANIME.vibrantPurple, ANIME.limeGreen][idx % 4]
           lights.push(
             <group key={`light-${idx}`} position={pos}>
+              {/* Lantern pole */}
               <mesh position={[0, 0.5, 0]}>
-                <cylinderGeometry args={[0.2, 0.2, 1, 8]} />
-                <meshStandardMaterial color="#333" />
+                <cylinderGeometry args={[0.25, 0.25, 1, 8]} />
+                <meshStandardMaterial color="#8b7355" />
               </mesh>
-              <mesh position={[0, 1.3, 0]}>
-                <sphereGeometry args={[0.3, 8, 8]} />
-                <meshStandardMaterial color={neonColor} emissive={neonColor} emissiveIntensity={3} />
+              {/* Lantern bulb */}
+              <mesh position={[0, 1.5, 0]}>
+                <sphereGeometry args={[0.4, 16, 16]} />
+                <meshStandardMaterial color={lightColor} emissive={lightColor} emissiveIntensity={3} />
               </mesh>
-              <pointLight position={[0, 1.3, 0]} intensity={3} distance={60} color={neonColor} />
+              <pointLight position={[0, 1.5, 0]} intensity={2.5} distance={70} color={lightColor} />
             </group>
           )
         })
         return lights
       }, [])}
 
-      {/* Holographic buildings with neon outlines */}
+      {/* Vibrant anime buildings with bold outlines */}
       {[
-        { pos: [-50, 0, -60], scale: [30, 45, 25], color: NEON.pink, neon: NEON.cyan },
-        { pos: [50, 0, -60], scale: [35, 55, 28], color: NEON.purple, neon: NEON.yellow },
-        { pos: [-60, 0, 30], scale: [28, 42, 32], color: NEON.cyan, neon: NEON.pink },
-        { pos: [60, 0, 30], scale: [32, 50, 26], color: NEON.yellow, neon: NEON.green },
-        { pos: [-30, 0, -40], scale: [25, 35, 30], color: NEON.green, neon: NEON.orange },
-        { pos: [30, 0, -40], scale: [26, 40, 28], color: NEON.orange, neon: NEON.pink },
-        { pos: [0, 0, 50], scale: [45, 65, 35], color: NEON.blue, neon: NEON.cyan },
+        { pos: [-50, 0, -60], scale: [30, 45, 25], color: ANIME.hotPink, outline: ANIME.brightRed, windows: ANIME.goldYellow },
+        { pos: [50, 0, -60], scale: [35, 55, 28], color: ANIME.vibrantPurple, outline: ANIME.lavender, windows: ANIME.brightCyan },
+        { pos: [-60, 0, 30], scale: [28, 42, 32], color: ANIME.aquaMarine, outline: ANIME.brightCyan, windows: ANIME.sakuraPink },
+        { pos: [60, 0, 30], scale: [32, 50, 26], color: ANIME.limeGreen, outline: ANIME.goldYellow, windows: ANIME.hotPink },
+        { pos: [-30, 0, -40], scale: [25, 35, 30], color: ANIME.skyBlue, outline: ANIME.deepBlue, windows: ANIME.sunsetOrange },
+        { pos: [30, 0, -40], scale: [26, 40, 28], color: ANIME.sunsetOrange, outline: ANIME.hotPink, windows: ANIME.sakuraPink },
+        { pos: [0, 0, 50], scale: [45, 65, 35], color: ANIME.vibrantPurple, outline: ANIME.lavender, windows: ANIME.brightCyan },
       ].map((bld, i) => (
         <group key={`bld-${i}`} position={[bld.pos[0], 0, bld.pos[2]]}>
           {/* Building body */}
           <mesh position={[0, bld.scale[1] / 2, 0]}>
             <boxGeometry args={bld.scale} />
-            <meshStandardMaterial color={bld.color} emissive={bld.color} emissiveIntensity={0.3} metalness={0.7} roughness={0.2} />
+            <meshStandardMaterial 
+              color={bld.color} 
+              emissive={bld.color} 
+              emissiveIntensity={0.4}
+              metalness={0.3}
+              roughness={0.6}
+            />
           </mesh>
 
-          {/* Animated neon windows */}
+          {/* Bold outline edges (anime cel-shading effect) */}
+          <lineSegments position={[0, bld.scale[1] / 2, 0]}>
+            <bufferGeometry>
+              <bufferAttribute attach="attributes-position" count={24} array={new Float32Array([
+                -bld.scale[0]/2, -bld.scale[1]/2, -bld.scale[2]/2, bld.scale[0]/2, -bld.scale[1]/2, -bld.scale[2]/2,
+                bld.scale[0]/2, -bld.scale[1]/2, -bld.scale[2]/2, bld.scale[0]/2, bld.scale[1]/2, -bld.scale[2]/2,
+                bld.scale[0]/2, bld.scale[1]/2, -bld.scale[2]/2, -bld.scale[0]/2, bld.scale[1]/2, -bld.scale[2]/2,
+                -bld.scale[0]/2, bld.scale[1]/2, -bld.scale[2]/2, -bld.scale[0]/2, -bld.scale[1]/2, -bld.scale[2]/2,
+              ])} itemSize={3} />
+            </bufferGeometry>
+            <lineBasicMaterial color={bld.outline} linewidth={2} fog={false} />
+          </lineSegments>
+
+          {/* Vibrant animated windows */}
           {Array.from({ length: Math.floor(bld.scale[1] / 4) }).map((_, fy) => (
             Array.from({ length: Math.floor(bld.scale[0] / 4) }).map((_, fx) => {
               const seed = fx + fy * 100 + i * 1000
-              const lightOn = Math.sin(time.current * 0.5 + seed) > 0.3
+              const lightOn = Math.sin(time.current * 0.6 + seed) > 0.1
               return (
                 <mesh key={`win-${i}-${fx}-${fy}`} position={[(fx - Math.floor(bld.scale[0] / 8)) * 4 + 2, bld.scale[1] / 2 - fy * 4 - 2, bld.scale[2] / 2 + 0.1]}>
                   <planeGeometry args={[2.5, 2.5]} />
-                  <meshStandardMaterial emissive={lightOn ? bld.neon : '#001122'} emissiveIntensity={lightOn ? 1.5 : 0.1} />
+                  <meshStandardMaterial 
+                    emissive={lightOn ? bld.windows : '#cccccc'} 
+                    emissiveIntensity={lightOn ? 2 : 0.2}
+                    color={lightOn ? bld.windows : '#ffffff'}
+                  />
                 </mesh>
               )
             })
@@ -311,81 +338,109 @@ export default function CityScene({ onMultiplayerUpdate }) {
         </group>
       ))}
 
-      {/* Holographic billboard */}
+      {/* Holographic anime billboard */}
       <group ref={billboardRef} position={[0, 22, -85]}>
         <mesh position={[0, 0, 0]}>
           <boxGeometry args={[40, 24, 2]} />
-          <meshStandardMaterial emissive={NEON.cyan} emissiveIntensity={2} color="#000011" metalness={0.8} />
+          <meshStandardMaterial emissive={ANIME.brightCyan} emissiveIntensity={2.5} color={ANIME.aquaMarine} metalness={0.5} />
         </mesh>
-        <pointLight position={[0, 0, 2]} intensity={2} distance={60} color={NEON.cyan} />
-        <Text position={[0, 6, 1]} fontSize={5} color={NEON.pink} fontWeight="bold">
-          CVT ${Math.floor(Math.random() * 10000)}
+        <pointLight position={[0, 0, 2]} intensity={3} distance={80} color={ANIME.brightCyan} />
+        <Text position={[0, 6, 1]} fontSize={5} color={ANIME.hotPink} fontWeight="bold">
+          CVT ¥{Math.floor(Math.random() * 10000)}
         </Text>
-        <Text position={[0, -2, 1]} fontSize={4} color={NEON.cyan}>
-          PXL ${Math.floor(Math.random() * 5000)}
+        <Text position={[0, -2, 1]} fontSize={4} color={ANIME.goldYellow}>
+          PXL ¥{Math.floor(Math.random() * 5000)}
         </Text>
       </group>
 
-      {/* Player - neon voxel style */}
+      {/* Cherry blossom particles (anime effect) */}
+      {useMemo(() => {
+        const blossoms = []
+        for (let i = 0; i < 50; i++) {
+          const x = (Math.random() - 0.5) * 250
+          const z = (Math.random() - 0.5) * 250
+          const y = 10 + Math.random() * 50
+          const scale = 0.15 + Math.random() * 0.3
+          blossoms.push(
+            <mesh key={`blossom-${i}`} position={[x, y + Math.sin(time.current * 0.3 + i) * 8, z]}>
+              <sphereGeometry args={[scale, 8, 8]} />
+              <meshStandardMaterial 
+                color={ANIME.sakuraPink} 
+                emissive={ANIME.sakuraPink} 
+                emissiveIntensity={1.5}
+              />
+            </mesh>
+          )
+        }
+        return blossoms
+      }, [])}
+
+      {/* Anime player - vibrant with cell shading feel */}
       <group position={playerState.playerPos}>
         <group rotation={[0, playerState.playerRot, 0]}>
           <mesh position={[0, 1, 0]}>
             <boxGeometry args={[0.5, 0.8, 0.3]} />
-            <meshStandardMaterial color={NEON.pink} emissive={NEON.pink} emissiveIntensity={1.5} />
+            <meshStandardMaterial color={ANIME.hotPink} emissive={ANIME.hotPink} emissiveIntensity={1.2} />
           </mesh>
           <mesh position={[0, 1.8, 0]}>
-            <sphereGeometry args={[0.35, 8, 8]} />
-            <meshStandardMaterial color={NEON.yellow} emissive={NEON.yellow} emissiveIntensity={1.5} />
+            <sphereGeometry args={[0.35, 16, 16]} />
+            <meshStandardMaterial color={ANIME.goldYellow} emissive={ANIME.goldYellow} emissiveIntensity={1.2} />
           </mesh>
           <mesh position={[-0.4, 1.4, 0]} rotation={[playerState.isMoving ? Math.sin(time.current * 8) * 0.3 : 0, 0, -0.2]}>
             <boxGeometry args={[0.2, 0.6, 0.2]} />
-            <meshStandardMaterial color={NEON.cyan} emissive={NEON.cyan} emissiveIntensity={1} />
+            <meshStandardMaterial color={ANIME.brightCyan} emissive={ANIME.brightCyan} emissiveIntensity={1} />
           </mesh>
           <mesh position={[0.4, 1.4, 0]} rotation={[playerState.isMoving ? -Math.sin(time.current * 8) * 0.3 : 0, 0, 0.2]}>
             <boxGeometry args={[0.2, 0.6, 0.2]} />
-            <meshStandardMaterial color={NEON.cyan} emissive={NEON.cyan} emissiveIntensity={1} />
+            <meshStandardMaterial color={ANIME.brightCyan} emissive={ANIME.brightCyan} emissiveIntensity={1} />
           </mesh>
 
-          {/* Neon sword */}
+          {/* Vibrant anime katana */}
           <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
             <boxGeometry args={[0.15, 1.5, 0.08]} />
-            <meshStandardMaterial color={NEON.green} emissive={NEON.green} emissiveIntensity={2.5} metalness={0.9} />
+            <meshStandardMaterial color={ANIME.limeGreen} emissive={ANIME.limeGreen} emissiveIntensity={2} metalness={0.9} />
           </mesh>
         </group>
 
-        {/* Health bar - neon style */}
+        {/* Health bar - anime style */}
         <mesh position={[0, 2.8, 0]}>
           <planeGeometry args={[1, 0.15]} />
           <meshBasicMaterial color="#333333" />
         </mesh>
         <mesh position={[-0.5 + (playerState.health / 100), 2.8, 0.01]}>
           <planeGeometry args={[(playerState.health / 100), 0.15]} />
-          <meshBasicMaterial color={playerState.health > 50 ? NEON.green : playerState.health > 25 ? NEON.yellow : NEON.red} />
+          <meshBasicMaterial color={playerState.health > 50 ? ANIME.limeGreen : playerState.health > 25 ? ANIME.goldYellow : ANIME.brightRed} />
         </mesh>
 
-        <Text position={[0, 2.95, 0]} fontSize={0.3} color={NEON.cyan}>
+        <Text position={[0, 2.95, 0]} fontSize={0.3} color={ANIME.vibrantPurple}>
           YOU | HP: {playerState.health}
         </Text>
       </group>
 
-      {/* Other players - neon style */}
+      {/* Other players - vibrant anime style */}
       {Object.entries(otherPlayers).map(([playerId, player]) => {
         if (!player.isAlive) return null
         const healthPercent = Math.max(0, Math.min(100, player.health)) / 100
+        const playerColors = [
+          { body: ANIME.aquaMarine, head: ANIME.vibrantPurple, sword: ANIME.goldYellow },
+          { body: ANIME.sakuraPink, head: ANIME.limeGreen, sword: ANIME.brightCyan },
+          { body: ANIME.skyBlue, head: ANIME.sunsetOrange, sword: ANIME.hotPink },
+        ]
+        const colors = playerColors[Math.abs(player.id) % playerColors.length]
         return (
           <group key={playerId} position={[player.position?.x || 0, player.position?.y || 0, player.position?.z || 0]}>
             <group rotation={[0, player.rotation?.y || 0, 0]}>
               <mesh position={[0, 1, 0]}>
                 <boxGeometry args={[0.5, 0.8, 0.3]} />
-                <meshStandardMaterial color={NEON.cyan} emissive={NEON.cyan} emissiveIntensity={1.5} />
+                <meshStandardMaterial color={colors.body} emissive={colors.body} emissiveIntensity={1.2} />
               </mesh>
               <mesh position={[0, 1.8, 0]}>
-                <sphereGeometry args={[0.35, 8, 8]} />
-                <meshStandardMaterial color={NEON.green} emissive={NEON.green} emissiveIntensity={1.5} />
+                <sphereGeometry args={[0.35, 16, 16]} />
+                <meshStandardMaterial color={colors.head} emissive={colors.head} emissiveIntensity={1.2} />
               </mesh>
               <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
                 <boxGeometry args={[0.15, 1.5, 0.08]} />
-                <meshStandardMaterial color={NEON.yellow} emissive={NEON.yellow} emissiveIntensity={2.5} metalness={0.9} />
+                <meshStandardMaterial color={colors.sword} emissive={colors.sword} emissiveIntensity={2} metalness={0.9} />
               </mesh>
             </group>
             <mesh position={[0, 2.8, 0]}>
@@ -394,80 +449,61 @@ export default function CityScene({ onMultiplayerUpdate }) {
             </mesh>
             <mesh position={[-0.5 + healthPercent * 0.5, 2.8, 0.01]}>
               <planeGeometry args={[healthPercent, 0.15]} />
-              <meshBasicMaterial color={healthPercent > 0.5 ? NEON.green : healthPercent > 0.25 ? NEON.yellow : NEON.red} />
+              <meshBasicMaterial color={healthPercent > 0.5 ? ANIME.limeGreen : healthPercent > 0.25 ? ANIME.goldYellow : ANIME.brightRed} />
             </mesh>
-            <Text position={[0, 2.95, 0]} fontSize={0.3} color={NEON.pink}>
+            <Text position={[0, 2.95, 0]} fontSize={0.3} color={ANIME.hotPink}>
               P{player.id} | HP: {Math.ceil(player.health)}
             </Text>
           </group>
         )
       })}
 
-      {/* Attack effects - neon glow */}
+      {/* Attack effects - vibrant anime */}
       {attacks.map(attack => (
         <mesh key={attack.id} position={[attack.position[0], attack.position[1] + 1, attack.position[2] - 0.5]}>
           <boxGeometry args={[2, 0.1, 2.5]} />
-          <meshBasicMaterial color={NEON.pink} transparent opacity={1 - (Date.now() - attack.timestamp) / 300} />
+          <meshBasicMaterial color={ANIME.sakuraPink} transparent opacity={1 - (Date.now() - attack.timestamp) / 300} />
         </mesh>
       ))}
 
-      {/* Neon fountain */}
+      {/* Vibrant anime fountain */}
       <group position={[0, 0, 0]}>
         <mesh>
           <cylinderGeometry args={[10, 10, 0.5, 16]} />
-          <meshStandardMaterial emissive={NEON.blue} emissiveIntensity={1.5} color="#001144" />
+          <meshStandardMaterial emissive={ANIME.vibrantPurple} emissiveIntensity={2} color={ANIME.skyBlue} />
         </mesh>
-        <pointLight position={[0, 3, 0]} intensity={2} distance={40} color={NEON.blue} />
-        {Array.from({ length: 8 }).map((_, i) => {
-          const angle = (i / 8) * Math.PI * 2
-          const height = 2 + Math.sin(time.current * 3 + i) * 1
+        <pointLight position={[0, 3, 0]} intensity={2.5} distance={50} color={ANIME.vibrantPurple} />
+        {Array.from({ length: 12 }).map((_, i) => {
+          const angle = (i / 12) * Math.PI * 2
+          const height = 3 + Math.sin(time.current * 4 + i) * 2
           return (
-            <mesh key={`water-${i}`} position={[Math.cos(angle) * 7, height, Math.sin(angle) * 7]}>
-              <sphereGeometry args={[0.4, 8, 8]} />
-              <meshStandardMaterial color={NEON.cyan} emissive={NEON.cyan} emissiveIntensity={2} />
+            <mesh key={`water-${i}`} position={[Math.cos(angle) * 8, height, Math.sin(angle) * 8]}>
+              <sphereGeometry args={[0.5, 16, 16]} />
+              <meshStandardMaterial color={ANIME.aquaMarine} emissive={ANIME.aquaMarine} emissiveIntensity={2.5} />
             </mesh>
           )
         })}
       </group>
 
-      {/* Floating neon particles */}
-      {useMemo(() => {
-        const particles = []
-        for (let i = 0; i < 30; i++) {
-          const x = (Math.random() - 0.5) * 200
-          const z = (Math.random() - 0.5) * 200
-          const y = 5 + Math.random() * 40
-          const colors = [NEON.pink, NEON.cyan, NEON.yellow, NEON.purple, NEON.green]
-          const color = colors[Math.floor(Math.random() * colors.length)]
-          particles.push(
-            <mesh key={`particle-${i}`} position={[x, y + Math.sin(time.current * 0.5 + i) * 5, z]}>
-              <sphereGeometry args={[0.2, 4, 4]} />
-              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} />
-            </mesh>
-          )
-        }
-        return particles
-      }, [])}
-
-      {/* HUD - neon style */}
-      <Text position={[-70, 20, -50]} fontSize={3} color={NEON.pink} fontWeight="bold">
+      {/* Anime HUD */}
+      <Text position={[-70, 20, -50]} fontSize={3} color={ANIME.hotPink} fontWeight="bold">
         KILLS: {kills}
       </Text>
-      <Text position={[-70, 17, -50]} fontSize={2.5} color={NEON.cyan}>
+      <Text position={[-70, 17, -50]} fontSize={2.5} color={ANIME.brightCyan}>
         DEATHS: {deaths}
       </Text>
-      <Text position={[-70, 14, -50]} fontSize={2.5} color={NEON.yellow}>
+      <Text position={[-70, 14, -50]} fontSize={2.5} color={ANIME.goldYellow}>
         HP: {Math.ceil(playerState.health)}
       </Text>
 
-      <Text position={[-70, 10, -50]} fontSize={1.8} color={NEON.green}>
+      <Text position={[-70, 10, -50]} fontSize={1.8} color={ANIME.limeGreen}>
         WASD:MOVE | SPACE:ATTACK
       </Text>
 
-      {/* Ambient neon glow */}
+      {/* Ambient vibrant glow */}
       <mesh position={[0, 25, 0]}>
         <sphereGeometry args={[200, 16, 16]} />
-        <meshBasicMaterial wireframe color={NEON.purple} transparent opacity={0.05} />
+        <meshBasicMaterial wireframe color={ANIME.vibrantPurple} transparent opacity={0.08} />
       </mesh>
     </group>
   )
