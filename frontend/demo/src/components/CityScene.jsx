@@ -538,6 +538,9 @@ export default function CityScene({ onMultiplayerUpdate }) {
   // Canvas texture for stats sparklines
   const statsCanvasObj = useMemo(() => createStatsCanvas(256, 128), [])
   const statsTextureRef = useRef(statsCanvasObj.texture)
+  const [showStatsModal, setShowStatsModal] = useState(false)
+  const [musicOn, setMusicOn] = useState(false)
+  const audioSynthRef = useRef(null)
   
   // Memoize textures and neon cityscape
   const textures = useMemo(() => ({
@@ -651,6 +654,41 @@ export default function CityScene({ onMultiplayerUpdate }) {
     const id = setInterval(fetchStats, 2000)
     return () => { alive = false; clearInterval(id) }
   }, [])
+
+  // Initialize audio synthesizer (lazy) and keyboard interaction for kiosk and music
+  useEffect(() => {
+    audioSynthRef.current = audioSynthRef.current || new AudioSynthesizer()
+
+    const handleKey = (e) => {
+      const key = e.key.toLowerCase()
+      if (key === 'm') {
+        // Toggle music
+        if (!audioSynthRef.current) return
+        if (!musicOn) {
+          try { audioSynthRef.current.play() } catch (err) {}
+          audioSynthRef.current.setVolume(0.3)
+          setMusicOn(true)
+        } else {
+          try { audioSynthRef.current.stop() } catch (err) {}
+          setMusicOn(false)
+        }
+      }
+
+      if (key === 'e') {
+        // Interact with kiosk if close enough to kiosk center (0,0,0)
+        const pos = playerState.playerPos || [0,0,0]
+        const dx = pos[0] - 0
+        const dz = pos[2] - 0
+        const dist = Math.sqrt(dx*dx + dz*dz)
+        if (dist < 8) {
+          setShowStatsModal(s => !s)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [musicOn, playerState])
 
   // Update history arrays and draw sparklines when sysStats changes
   useEffect(() => {
