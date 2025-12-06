@@ -539,6 +539,8 @@ export default function CityScene({ onMultiplayerUpdate }) {
   const statsCanvasObj = useMemo(() => createStatsCanvas(256, 128), [])
   const statsTextureRef = useRef(statsCanvasObj.texture)
   const [showStatsModal, setShowStatsModal] = useState(false)
+  const [historyData, setHistoryData] = useState(null)
+  const historyCanvasObj = useMemo(() => createStatsCanvas(512, 256), [])
   const [musicOn, setMusicOn] = useState(false)
   const audioSynthRef = useRef(null)
   
@@ -689,6 +691,72 @@ export default function CityScene({ onMultiplayerUpdate }) {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [musicOn, playerState])
+
+  // Fetch historical stats when kiosk modal opens
+  useEffect(() => {
+    if (!showStatsModal) return
+    let alive = true
+    const fetchHistory = async () => {
+      try {
+        const base = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
+        const resp = await fetch(`${base}/api/stats/history?limit=600`, { cache: 'no-store' })
+        if (!alive) return
+        if (resp.ok) {
+          const json = await resp.json()
+          setHistoryData(json)
+
+          // Draw a simple historical CPU chart onto the larger history canvas
+          try {
+            const { canvas, ctx, texture } = historyCanvasObj
+            const w = canvas.width
+            const h = canvas.height
+            ctx.clearRect(0, 0, w, h)
+            ctx.fillStyle = 'rgba(6,10,18,0.98)'
+            ctx.fillRect(0, 0, w, h)
+            ctx.fillStyle = '#88f0ff'
+            ctx.font = '18px monospace'
+            ctx.fillText('SYSTEM STATS HISTORY (CPU % over time)', 12, 26)
+
+            const cpuPercents = json.map(e => {
+              try {
+                const s = e.stats
+                const cpuPercent = s && s.cpu && s.cpu.loadavg && s.cpu.cores ? Math.min(100, (s.cpu.loadavg[0] / s.cpu.cores) * 100) : 0
+                return cpuPercent
+              } catch (e) { return 0 }
+            })
+
+            // draw axis & sparkline
+            const margin = 40
+            const plotW = w - margin * 2
+            const plotH = h - margin * 2
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)'
+            ctx.lineWidth = 1
+            ctx.strokeRect(margin, margin, plotW, plotH)
+
+            ctx.beginPath()
+            for (let i = 0; i < cpuPercents.length; i++) {
+              const vx = margin + (i / Math.max(1, cpuPercents.length - 1)) * plotW
+              const vy = margin + plotH - (cpuPercents[i] / 100) * plotH
+              if (i === 0) ctx.moveTo(vx, vy)
+              else ctx.lineTo(vx, vy)
+            }
+            ctx.strokeStyle = '#ff6b9d'
+            ctx.lineWidth = 2
+            ctx.stroke()
+
+            texture.needsUpdate = true
+          } catch (e) {
+            // ignore drawing errors
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    fetchHistory()
+    return () => { alive = false }
+  }, [showStatsModal, historyCanvasObj])
 
   // Update history arrays and draw sparklines when sysStats changes
   useEffect(() => {
@@ -1160,6 +1228,17 @@ export default function CityScene({ onMultiplayerUpdate }) {
           Real-World Governance Access Point
         </Text>
       </group>
+
+      {/* Kiosk modal / history overlay (appears when player presses E near kiosk) */}
+      {showStatsModal && (
+        <group position={[0, 11, 6]}>
+          <mesh position={[0, 0, 0]}>
+            <planeGeometry args={[10, 5]} />
+            <meshStandardMaterial map={historyCanvasObj.texture} emissive="#002233" emissiveIntensity={0.6} side={THREE.DoubleSide} />
+          </mesh>
+          <Text position={[0, 2.6, 0.1]} fontSize={0.8} color="#00ffff">HISTORY (press E to close)</Text>
+        </group>
+      )}
 
       {/* Holographic anime billboard */}
       <group ref={billboardRef} position={[0, 22, -85]}>
