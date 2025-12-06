@@ -23,11 +23,25 @@ services:
       - "3001:3001"
     restart: unless-stopped
 
+  multiplayer-server:
+    build: ./backend
+    working_dir: /app/backend
+    command: node multiplayer-server.js
+    ports:
+      - "8080:8080"
+    environment:
+      - MULTIPLAYER_PORT=8080
+    restart: unless-stopped
+
   civicverse-frontend:
     build: ./frontend
     env_file: .env
     ports:
       - "3000:80"
+    depends_on:
+      - multiplayer-server
+    environment:
+      - VITE_WS_URL=ws://localhost:8080/ws
     restart: unless-stopped
 
   craig-watcher:

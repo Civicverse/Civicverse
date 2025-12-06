@@ -1,12 +1,23 @@
 {
-  "name": "civicverse-backend-stub",
-  "version": "0.0.1",
-  "private": true,
-  "main": "index.js",
+  "name": "civicverse-backend",
+  "version": "1.0.0",
+  "description": "Civicverse Backend with Multiplayer Server",
+  "main": "multiplayer-server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node multiplayer-server.js",
+    "dev": "node multiplayer-server.js",
+    "server": "node multiplayer-server.js"
   },
+  "keywords": [
+    "civicverse",
+    "multiplayer",
+    "websocket"
+  ],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "ws": "^8.14.2",
+    "cors": "^2.8.5"
   }
 }

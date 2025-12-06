@@ -67,14 +67,118 @@ const PlayerController = ({ onStateChange, onAttack, playerId }) => {
   return null
 }
 
-export default function CityScene({ kills = 0, onMultiplayerUpdate }) {
+export default function CityScene({ onMultiplayerUpdate }) {
   const [playerState, setPlayerState] = useState({ playerPos: [0, 0, 0], playerRot: 0, isMoving: false, health: 100, playerId: 'local' })
   const [otherPlayers, setOtherPlayers] = useState({})
   const [attacks, setAttacks] = useState([])
+  const [kills, setKills] = useState(0)
+  const [deaths, setDeaths] = useState(0)
   const billboardRef = useRef()
   const time = useRef(0)
+  const ws = useRef(null)
+
+  // Connect to multiplayer server
+  useEffect(() => {
+    const connectWebSocket = () => {
+      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws'
+      ws.current = new WebSocket(wsUrl)
+
+      ws.current.onopen = () => {
+        console.log('✓ Connected to multiplayer server')
+      }
+
+      ws.current.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data)
+
+          if (message.type === 'player_id') {
+            setPlayerState(prev => ({ ...prev, playerId: message.playerId }))
+            console.log('Assigned player ID:', message.playerId)
+          }
+
+          if (message.type === 'players_update') {
+            const updated = {}
+            message.players.forEach(p => {
+              if (p.id !== playerState.playerId) {
+                updated[p.id] = p
+              } else {
+                // Update own health from server
+                setPlayerState(prev => ({
+                  ...prev,
+                  health: p.health,
+                }))
+                setKills(p.kills)
+                setDeaths(p.deaths)
+              }
+            })
+            setOtherPlayers(updated)
+          }
+        } catch (err) {
+          console.error('WebSocket error:', err)
+        }
+      }
+
+      ws.current.onerror = (err) => {
+        console.error('WebSocket connection error')
+      }
+
+      ws.current.onclose = () => {
+        console.log('Disconnected, retrying...')
+        setTimeout(connectWebSocket, 3000)
+      }
+    }
+
+    connectWebSocket()
+    return () => {
+      if (ws.current) ws.current.close()
+    }
+  }, [playerState.playerId])
+
+  // Send player state to server
+  const sendPlayerState = () => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({
+        type: 'player_move',
+        position: {
+          x: playerState.playerPos[0],
+          y: playerState.playerPos[1],
+          z: playerState.playerPos[2],
+        },
+        rotation: {
+          x: 0,
+          y: playerState.playerRot,
+          z: 0,
+        },
+      }))
+    }
+  }
 
   const handleAttack = (attackData) => {
+    // Find nearest other player
+    let nearestPlayer = null
+    let nearestDistance = 5
+
+    Object.values(otherPlayers).forEach(p => {
+      if (!p.isAlive) return
+      const dx = p.position.x - playerState.playerPos[0]
+      const dy = p.position.y - playerState.playerPos[1]
+      const dz = p.position.z - playerState.playerPos[2]
+      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearestPlayer = p
+      }
+    })
+
+    // Send attack to server
+    if (nearestPlayer && ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({
+        type: 'player_attack',
+        targetId: nearestPlayer.id,
+      }))
+    }
+
+    // Local visual feedback
     setAttacks(prev => [...prev.slice(-20), { ...attackData, id: Math.random() }])
     setTimeout(() => setAttacks(prev => prev.filter(a => a.id !== attackData.id)), 300)
   }
@@ -83,6 +187,7 @@ export default function CityScene({ kills = 0, onMultiplayerUpdate }) {
     time.current += delta
     if (billboardRef.current) billboardRef.current.rotation.y += delta * 0.15
     setAttacks(prev => prev.filter(a => Date.now() - a.timestamp < 300))
+    sendPlayerState()
     if (onMultiplayerUpdate) onMultiplayerUpdate(playerState)
   })
 
@@ -240,35 +345,40 @@ export default function CityScene({ kills = 0, onMultiplayerUpdate }) {
       </group>
 
       {/* Other players */}
-      {Object.entries(otherPlayers).map(([playerId, player]) => (
-        <group key={playerId} position={player.position || [0, 0, 0]}>
-          <group rotation={[0, player.rotation || 0, 0]}>
-            <mesh position={[0, 1, 0]}>
-              <boxGeometry args={[0.5, 0.8, 0.3]} />
-              <meshStandardMaterial color="#00ff66" metalness={0.1} />
+      {Object.entries(otherPlayers).map(([playerId, player]) => {
+        if (!player.isAlive) return null
+        const healthPercent = Math.max(0, Math.min(100, player.health)) / 100
+        return (
+          <group key={playerId} position={[player.position?.x || 0, player.position?.y || 0, player.position?.z || 0]}>
+            <group rotation={[0, player.rotation?.y || 0, 0]}>
+              <mesh position={[0, 1, 0]}>
+                <boxGeometry args={[0.5, 0.8, 0.3]} />
+                <meshStandardMaterial color="#00ff66" metalness={0.1} />
+              </mesh>
+              <mesh position={[0, 1.8, 0]}>
+                <sphereGeometry args={[0.35, 16, 16]} />
+                <meshStandardMaterial color="#ffaa44" metalness={0.1} />
+              </mesh>
+              <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
+                <boxGeometry args={[0.15, 1.5, 0.08]} />
+                <meshStandardMaterial color="#ffcc00" metalness={0.8} />
+              </mesh>
+            </group>
+            {/* Health bar */}
+            <mesh position={[0, 2.8, 0]}>
+              <planeGeometry args={[1, 0.15]} />
+              <meshBasicMaterial color="#333333" />
             </mesh>
-            <mesh position={[0, 1.8, 0]}>
-              <sphereGeometry args={[0.35, 16, 16]} />
-              <meshStandardMaterial color="#ffaa44" metalness={0.1} />
+            <mesh position={[-0.5 + healthPercent * 0.5, 2.8, 0.01]}>
+              <planeGeometry args={[healthPercent, 0.15]} />
+              <meshBasicMaterial color={healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffff00' : '#ff0000'} />
             </mesh>
-            <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
-              <boxGeometry args={[0.15, 1.5, 0.08]} />
-              <meshStandardMaterial color="#ffcc00" metalness={0.8} />
-            </mesh>
+            <Text position={[0, 2.95, 0]} fontSize={0.3} color="#00ff88">
+              P{player.id} | HP: {Math.ceil(player.health)}
+            </Text>
           </group>
-          <mesh position={[0, 2.8, 0]}>
-            <planeGeometry args={[1, 0.15]} />
-            <meshBasicMaterial color="#333333" />
-          </mesh>
-          <mesh position={[player.health ? -0.5 + (player.health / 100) : 0, 2.8, 0.01]}>
-            <planeGeometry args={[(player.health || 100) / 100, 0.15]} />
-            <meshBasicMaterial color="#00ff00" />
-          </mesh>
-          <Text position={[0, 2.95, 0]} fontSize={0.3} color="#00ff88">
-            {playerId.substring(0, 6)} | HP: {player.health || 100}
-          </Text>
-        </group>
-      ))}
+        )
+      })}
 
       {/* Attack effects */}
       {attacks.map(attack => (
