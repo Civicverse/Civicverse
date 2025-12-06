@@ -72,6 +72,145 @@ const createSnowParticles = (count = 500) => {
   return particles
 }
 
+// Create CivicWatch LCD screen texture with animated display
+const createCivicWatchScreen = (timeValue) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 800
+  canvas.height = 600
+  const ctx = canvas.getContext('2d')
+  
+  // LCD background
+  ctx.fillStyle = '#001a33'
+  ctx.fillRect(0, 0, 800, 600)
+  
+  // Border glow
+  ctx.strokeStyle = '#00ffff'
+  ctx.lineWidth = 3
+  ctx.strokeRect(5, 5, 790, 590)
+  
+  // Grid pattern
+  for (let x = 0; x < 800; x += 20) {
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, 600)
+    ctx.stroke()
+  }
+  for (let y = 0; y < 600; y += 20) {
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(800, y)
+    ctx.stroke()
+  }
+  
+  // Title
+  ctx.fillStyle = '#00ffff'
+  ctx.font = 'bold 80px Arial'
+  ctx.textAlign = 'center'
+  ctx.fillText('CIVICWATCH', 400, 100)
+  
+  // Subtitle
+  ctx.fillStyle = '#ffff00'
+  ctx.font = '32px Arial'
+  ctx.fillText('Real-World Civic Engagement', 400, 150)
+  
+  // Live stats
+  ctx.fillStyle = '#00ff00'
+  ctx.font = 'bold 28px Courier'
+  ctx.textAlign = 'left'
+  ctx.fillText(`ACTIVE PLAYERS: ${Math.floor(Math.random() * 500)}`, 50, 250)
+  ctx.fillText(`CIVIC ACTS: ${Math.floor(Math.random() * 10000)}`, 50, 300)
+  ctx.fillText(`VOTES CAST: ${Math.floor(Math.random() * 50000)}`, 50, 350)
+  
+  // Animated scan lines
+  ctx.strokeStyle = 'rgba(255, 0, 255, 0.3)'
+  ctx.lineWidth = 2
+  const scanY = (Math.sin(timeValue * 3) + 1) * 300
+  ctx.beginPath()
+  ctx.moveTo(0, scanY)
+  ctx.lineTo(800, scanY)
+  ctx.stroke()
+  
+  // Bottom info
+  ctx.fillStyle = '#ff6b9d'
+  ctx.font = '20px Arial'
+  ctx.textAlign = 'center'
+  ctx.fillText('Access from The Foyer | Real-World Governance Platform', 400, 550)
+  
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.magFilter = THREE.LinearFilter
+  texture.minFilter = THREE.LinearFilter
+  return texture
+}
+
+// Create character skin texture
+const createCharacterSkin = () => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  
+  // Base skin tone
+  ctx.fillStyle = '#f4a460'
+  ctx.fillRect(0, 0, 256, 256)
+  
+  // Subtle skin texture
+  for (let i = 0; i < 500; i++) {
+    const x = Math.random() * 256
+    const y = Math.random() * 256
+    const size = Math.random() * 2
+    ctx.fillStyle = `rgba(139, 69, 19, ${Math.random() * 0.1})`
+    ctx.fillRect(x, y, size, size)
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.magFilter = THREE.LinearFilter
+  texture.minFilter = THREE.LinearFilter
+  return texture
+}
+
+// Create armor/clothing texture
+const createArmorTexture = (color = '#ff1493') => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  
+  // Base color
+  const rgb = parseInt(color.slice(1), 16)
+  const r = (rgb >> 16) & 255
+  const g = (rgb >> 8) & 255
+  const b = rgb & 255
+  ctx.fillStyle = color
+  ctx.fillRect(0, 0, 256, 256)
+  
+  // Fabric weave pattern
+  for (let y = 0; y < 256; y += 4) {
+    for (let x = 0; x < 256; x += 4) {
+      if ((x + y) % 8 === 0) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${0.1 + Math.random() * 0.1})`
+        ctx.fillRect(x, y, 2, 2)
+      }
+    }
+  }
+  
+  // Shine/highlights
+  ctx.fillStyle = `rgba(255, 255, 255, ${0.15})`
+  for (let i = 0; i < 100; i++) {
+    const x = Math.random() * 256
+    const y = Math.random() * 256
+    ctx.fillRect(x, y, 3, 1)
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.magFilter = THREE.LinearFilter
+  texture.minFilter = THREE.LinearFilter
+  return texture
+}
+
 const PlayerController = ({ onStateChange, onAttack, playerId }) => {
   const [playerPos, setPlayerPos] = useState([0, 0, 0])
   const [playerRot, setPlayerRot] = useState(0)
@@ -255,7 +394,12 @@ export default function CityScene({ onMultiplayerUpdate }) {
     stucco: createCanvasTexture('stucco', '#fef3d0', '#e6d9b0'),
     cobblestone: createCanvasTexture('cobblestone', '#8a8a8a', '#5a5a5a'),
     neonSkyline: createNeonCitySkyline(),
-  }), [])
+    civicWatchScreen: createCivicWatchScreen(time.current),
+    characterSkin: createCharacterSkin(),
+    armorPink: createArmorTexture('#ff1493'),
+    armorPurple: createArmorTexture('#d4a5ff'),
+    armorCyan: createArmorTexture('#00f0ff'),
+  }), [time])
 
   // Connect to multiplayer server
   useEffect(() => {
@@ -632,6 +776,106 @@ export default function CityScene({ onMultiplayerUpdate }) {
         </group>
       ))}
 
+      {/* CivicWatch Giant LCD Screen on Central Building */}
+      <group position={[0, 0, 80]}>
+        {/* Screen mounting structure - steel frame */}
+        <mesh position={[0, 45, 0]} castShadow receiveShadow>
+          <boxGeometry args={[55, 45, 3]} />
+          <meshStandardMaterial color="#2a2a2a" metalness={0.8} roughness={0.2} />
+        </mesh>
+
+        {/* LCD Display - animated */}
+        <mesh position={[0, 45, 2]} castShadow receiveShadow>
+          <boxGeometry args={[52, 42, 1]} />
+          <meshStandardMaterial 
+            map={textures.civicWatchScreen}
+            emissive="#00ffff"
+            emissiveIntensity={1.2}
+            metalness={0.4}
+            roughness={0.3}
+          />
+        </mesh>
+
+        {/* Screen glow effect */}
+        <pointLight position={[0, 45, 5]} intensity={2.5} distance={100} color="#00ffff" />
+        <pointLight position={[0, 45, 3]} intensity={1.5} distance={80} color="#ffff00" />
+
+        {/* Screen frame/bezel */}
+        <mesh position={[0, 45, 2.5]}>
+          <boxGeometry args={[54, 44, 0.5]} />
+          <meshStandardMaterial color="#1a1a1a" metalness={0.9} roughness={0.1} />
+        </mesh>
+
+        {/* Interactive Kiosk Base - Central tower */}
+        <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+          <boxGeometry args={[12, 1, 12]} />
+          <meshStandardMaterial 
+            map={textures.cobblestone}
+            color="#7a7a7a"
+            metalness={0.2}
+            roughness={0.8}
+          />
+        </mesh>
+
+        {/* Kiosk central column */}
+        <mesh position={[0, 4, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[3, 3.5, 8, 8]} />
+          <meshStandardMaterial color="#1a1a2e" metalness={0.7} roughness={0.3} />
+        </mesh>
+
+        {/* Kiosk display panel */}
+        <mesh position={[0, 9, 0]} castShadow receiveShadow>
+          <boxGeometry args={[8, 6, 0.5]} />
+          <meshStandardMaterial 
+            color="#001a33"
+            metalness={0.4}
+            roughness={0.5}
+            emissive="#00ff00"
+            emissiveIntensity={0.4}
+          />
+        </mesh>
+
+        {/* Kiosk interactive screen glow */}
+        <pointLight position={[0, 9, 1]} intensity={1.5} distance={40} color="#00ff00" />
+
+        {/* Kiosk text/interface */}
+        <Text position={[0, 10, 0.5]} fontSize={2} color="#00ff00" fontWeight="bold">
+          CIVICWATCH
+        </Text>
+        <Text position={[0, 8.5, 0.5]} fontSize={1.2} color="#ffff00">
+          TAP TO INTERACT
+        </Text>
+
+        {/* Kiosk buttons - glowing interactive points */}
+        {Array.from({ length: 4 }).map((_, i) => {
+          const angle = (i / 4) * Math.PI * 2
+          const x = Math.cos(angle) * 4
+          const z = Math.sin(angle) * 4
+          return (
+            <group key={`kiosk-btn-${i}`} position={[x, 5.5, z]}>
+              <mesh castShadow>
+                <cylinderGeometry args={[0.8, 0.8, 0.3, 16]} />
+                <meshStandardMaterial 
+                  color={['#ff1493', '#00ffff', '#ffff00', '#00ff00'][i]}
+                  emissive={['#ff1493', '#00ffff', '#ffff00', '#00ff00'][i]}
+                  emissiveIntensity={2}
+                  metalness={0.8}
+                />
+              </mesh>
+              <pointLight position={[0, 0.5, 0]} intensity={2} distance={20} color={['#ff1493', '#00ffff', '#ffff00', '#00ff00'][i]} />
+            </group>
+          )
+        })}
+
+        {/* Information plaque */}
+        <Text position={[0, 0.2, 6.5]} fontSize={1.5} color="#00ffff">
+          CIVICWATCH KIOSK
+        </Text>
+        <Text position={[0, -0.3, 6.5]} fontSize={0.8} color="#ffff00">
+          Real-World Governance Access Point
+        </Text>
+      </group>
+
       {/* Holographic anime billboard */}
       <group ref={billboardRef} position={[0, 22, -85]}>
         <mesh position={[0, 0, 0]}>
@@ -669,37 +913,84 @@ export default function CityScene({ onMultiplayerUpdate }) {
         return blossoms
       }, [])}
 
-      {/* Anime player - vibrant with cell shading feel */}
+      {/* Anime player - vibrant with cell shading feel and detailed textures */}
       <group position={playerState.playerPos}>
         <group rotation={[0, playerState.playerRot, 0]}>
-          <mesh position={[0, 1, 0]}>
+          {/* Body with armor texture */}
+          <mesh position={[0, 1, 0]} castShadow>
             <boxGeometry args={[0.5, 0.8, 0.3]} />
-            <meshStandardMaterial color={ANIME.hotPink} emissive={ANIME.hotPink} emissiveIntensity={1.2} />
+            <meshStandardMaterial 
+              map={textures.armorPink}
+              color={ANIME.hotPink} 
+              emissive={ANIME.hotPink} 
+              emissiveIntensity={0.8}
+              metalness={0.3}
+              roughness={0.6}
+            />
           </mesh>
-          <mesh position={[0, 1.8, 0]}>
+          {/* Head with skin texture */}
+          <mesh position={[0, 1.8, 0]} castShadow>
             <sphereGeometry args={[0.35, 16, 16]} />
-            <meshStandardMaterial color={ANIME.goldYellow} emissive={ANIME.goldYellow} emissiveIntensity={1.2} />
+            <meshStandardMaterial 
+              map={textures.characterSkin}
+              color={ANIME.goldYellow} 
+              emissive={ANIME.goldYellow} 
+              emissiveIntensity={0.8}
+              metalness={0.1}
+              roughness={0.5}
+            />
           </mesh>
-          <mesh position={[-0.4, 1.4, 0]} rotation={[playerState.isMoving ? Math.sin(time.current * 8) * 0.3 : 0, 0, -0.2]}>
-            <boxGeometry args={[0.2, 0.6, 0.2]} />
-            <meshStandardMaterial color={ANIME.brightCyan} emissive={ANIME.brightCyan} emissiveIntensity={1} />
+          {/* Eyes glow */}
+          <mesh position={[-0.12, 1.95, 0.3]}>
+            <sphereGeometry args={[0.08, 8, 8]} />
+            <meshStandardMaterial color="#ffffff" emissive="#00ffff" emissiveIntensity={2} />
           </mesh>
-          <mesh position={[0.4, 1.4, 0]} rotation={[playerState.isMoving ? -Math.sin(time.current * 8) * 0.3 : 0, 0, 0.2]}>
+          <mesh position={[0.12, 1.95, 0.3]}>
+            <sphereGeometry args={[0.08, 8, 8]} />
+            <meshStandardMaterial color="#ffffff" emissive="#00ffff" emissiveIntensity={2} />
+          </mesh>
+          {/* Left arm with texture */}
+          <mesh position={[-0.4, 1.4, 0]} rotation={[playerState.isMoving ? Math.sin(time.current * 8) * 0.3 : 0, 0, -0.2]} castShadow>
             <boxGeometry args={[0.2, 0.6, 0.2]} />
-            <meshStandardMaterial color={ANIME.brightCyan} emissive={ANIME.brightCyan} emissiveIntensity={1} />
+            <meshStandardMaterial 
+              map={textures.armorCyan}
+              color={ANIME.brightCyan} 
+              emissive={ANIME.brightCyan} 
+              emissiveIntensity={0.7}
+              metalness={0.4}
+              roughness={0.5}
+            />
+          </mesh>
+          {/* Right arm with texture */}
+          <mesh position={[0.4, 1.4, 0]} rotation={[playerState.isMoving ? -Math.sin(time.current * 8) * 0.3 : 0, 0, 0.2]} castShadow>
+            <boxGeometry args={[0.2, 0.6, 0.2]} />
+            <meshStandardMaterial 
+              map={textures.armorCyan}
+              color={ANIME.brightCyan} 
+              emissive={ANIME.brightCyan} 
+              emissiveIntensity={0.7}
+              metalness={0.4}
+              roughness={0.5}
+            />
           </mesh>
 
-          {/* Vibrant anime katana */}
-          <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
+          {/* Vibrant anime katana with metallic texture */}
+          <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]} castShadow>
             <boxGeometry args={[0.15, 1.5, 0.08]} />
-            <meshStandardMaterial color={ANIME.limeGreen} emissive={ANIME.limeGreen} emissiveIntensity={2} metalness={0.9} />
+            <meshStandardMaterial 
+              color={ANIME.limeGreen} 
+              emissive={ANIME.limeGreen} 
+              emissiveIntensity={2} 
+              metalness={0.95}
+              roughness={0.1}
+            />
           </mesh>
         </group>
 
-        {/* Health bar - anime style */}
+        {/* Health bar with texture - anime style */}
         <mesh position={[0, 2.8, 0]}>
           <planeGeometry args={[1, 0.15]} />
-          <meshBasicMaterial color="#333333" />
+          <meshBasicMaterial color="#1a1a1a" />
         </mesh>
         <mesh position={[-0.5 + (playerState.health / 100), 2.8, 0.01]}>
           <planeGeometry args={[(playerState.health / 100), 0.15]} />
@@ -724,22 +1015,51 @@ export default function CityScene({ onMultiplayerUpdate }) {
         return (
           <group key={playerId} position={[player.position?.x || 0, player.position?.y || 0, player.position?.z || 0]}>
             <group rotation={[0, player.rotation?.y || 0, 0]}>
-              <mesh position={[0, 1, 0]}>
+              <mesh position={[0, 1, 0]} castShadow>
                 <boxGeometry args={[0.5, 0.8, 0.3]} />
-                <meshStandardMaterial color={colors.body} emissive={colors.body} emissiveIntensity={1.2} />
+                <meshStandardMaterial 
+                  map={textures.armorPurple}
+                  color={colors.body} 
+                  emissive={colors.body} 
+                  emissiveIntensity={0.8}
+                  metalness={0.3}
+                  roughness={0.6}
+                />
               </mesh>
-              <mesh position={[0, 1.8, 0]}>
+              <mesh position={[0, 1.8, 0]} castShadow>
                 <sphereGeometry args={[0.35, 16, 16]} />
-                <meshStandardMaterial color={colors.head} emissive={colors.head} emissiveIntensity={1.2} />
+                <meshStandardMaterial 
+                  map={textures.characterSkin}
+                  color={colors.head} 
+                  emissive={colors.head} 
+                  emissiveIntensity={0.8}
+                  metalness={0.1}
+                  roughness={0.5}
+                />
               </mesh>
-              <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
+              {/* Eyes glow for other players */}
+              <mesh position={[-0.12, 1.95, 0.3]}>
+                <sphereGeometry args={[0.08, 8, 8]} />
+                <meshStandardMaterial color="#ffffff" emissive={colors.head} emissiveIntensity={1.5} />
+              </mesh>
+              <mesh position={[0.12, 1.95, 0.3]}>
+                <sphereGeometry args={[0.08, 8, 8]} />
+                <meshStandardMaterial color="#ffffff" emissive={colors.head} emissiveIntensity={1.5} />
+              </mesh>
+              <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]} castShadow>
                 <boxGeometry args={[0.15, 1.5, 0.08]} />
-                <meshStandardMaterial color={colors.sword} emissive={colors.sword} emissiveIntensity={2} metalness={0.9} />
+                <meshStandardMaterial 
+                  color={colors.sword} 
+                  emissive={colors.sword} 
+                  emissiveIntensity={2} 
+                  metalness={0.95}
+                  roughness={0.1}
+                />
               </mesh>
             </group>
             <mesh position={[0, 2.8, 0]}>
               <planeGeometry args={[1, 0.15]} />
-              <meshBasicMaterial color="#333333" />
+              <meshBasicMaterial color="#1a1a1a" />
             </mesh>
             <mesh position={[-0.5 + healthPercent * 0.5, 2.8, 0.01]}>
               <planeGeometry args={[healthPercent, 0.15]} />
@@ -807,7 +1127,32 @@ export default function CityScene({ onMultiplayerUpdate }) {
         })}
       </group>
 
-      {/* Anime HUD */}
+      {/* Anime HUD with enhanced styling */}
+      {/* HUD background panel */}
+      <mesh position={[-75, 18, -45]}>
+        <boxGeometry args={[20, 12, 0.5]} />
+        <meshStandardMaterial 
+          color="#0a0a15"
+          emissive="#1a1a2e"
+          emissiveIntensity={0.5}
+          metalness={0.2}
+          roughness={0.8}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+
+      {/* HUD border glow */}
+      <lineSegments position={[-75, 18, -44.8]}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" count={8} array={new Float32Array([
+            -10, -6, 0, 10, -6, 0,
+            10, -6, 0, 10, 6, 0,
+          ])} itemSize={3} />
+        </bufferGeometry>
+        <lineBasicMaterial color={ANIME.hotPink} linewidth={2} />
+      </lineSegments>
+
       <Text position={[-70, 20, -50]} fontSize={3} color={ANIME.hotPink} fontWeight="bold">
         KILLS: {kills}
       </Text>
@@ -820,6 +1165,11 @@ export default function CityScene({ onMultiplayerUpdate }) {
 
       <Text position={[-70, 10, -50]} fontSize={1.8} color={ANIME.limeGreen}>
         WASD:MOVE | SPACE:ATTACK
+      </Text>
+
+      {/* CivicWatch prompt near kiosk */}
+      <Text position={[0, 12, 85]} fontSize={1.5} color={ANIME.brightCyan}>
+        ⚡ CIVICWATCH ACTIVE ⚡
       </Text>
 
       {/* Ambient vibrant glow */}
