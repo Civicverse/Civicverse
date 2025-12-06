@@ -3,6 +3,14 @@ const app = express()
 const port = process.env.PORT || 3001
 const os = require('os')
 const { exec } = require('child_process')
+const fs = require('fs')
+const path = require('path')
+const STATS_LOG = path.join(__dirname, '..', 'data', 'stats.log')
+
+// Ensure data directory exists
+try {
+  fs.mkdirSync(path.join(__dirname, '..', 'data'), { recursive: true })
+} catch (e) {}
 
 // Simple CORS for demo frontend running on a different port
 app.use((req, res, next) => {
@@ -87,10 +95,35 @@ app.get('/api/stats', async (req, res) => {
           // ignore parse
         }
       }
+
+      // Append to log for persistence
+      try {
+        const entry = { ts: Date.now(), stats }
+        fs.appendFile(STATS_LOG, JSON.stringify(entry) + '\n', () => {})
+      } catch (e) {
+        // ignore write errors
+      }
+
       res.json(stats)
     })
   } catch (err) {
     res.status(500).json({ error: 'failed to collect stats', message: err.message })
+  }
+})
+
+// Return historical stats (last N entries)
+app.get('/api/stats/history', (req, res) => {
+  const limit = Math.min(1000, parseInt(req.query.limit || '200', 10)) || 200
+  try {
+    if (!fs.existsSync(STATS_LOG)) return res.json([])
+    const data = fs.readFileSync(STATS_LOG, 'utf8')
+    const lines = data.trim().split('\n').filter(Boolean)
+    const selected = lines.slice(-limit).map(l => {
+      try { return JSON.parse(l) } catch (e) { return null }
+    }).filter(Boolean)
+    res.json(selected)
+  } catch (e) {
+    res.status(500).json({ error: 'failed to read history' })
   }
 })
 
