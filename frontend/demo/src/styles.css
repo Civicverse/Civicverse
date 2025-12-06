@@ -1,0 +1,251 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html, #root {
+  height: 100%;
+  font-family: 'Monaco', 'Courier New', monospace;
+  background: linear-gradient(180deg, #020617 0%, #061021 100%);
+  color: #dff6ff;
+}
+
+.app-root {
+  display: flex;
+  height: 100vh;
+  gap: 0;
+}
+
+.left-sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #030812 0%, #051320 100%);
+  border-right: 2px solid #00ffff;
+  padding: 16px;
+  overflow-y: auto;
+  box-shadow: inset -2px 0 8px rgba(0, 255, 255, 0.1);
+}
+
+.left-sidebar h1 {
+  font-size: 18px;
+  color: #00ffff;
+  text-shadow: 0 0 10px #00ffff;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+
+.module-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.mod-btn {
+  background: linear-gradient(135deg, #051320, #0b1826);
+  border: 1px solid #00ffff;
+  color: #00ffff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.mod-btn:hover {
+  background: #0b2840;
+  text-shadow: 0 0 8px #00ffff;
+}
+
+.mod-btn.active {
+  background: linear-gradient(135deg, #00ffff, #00ff88);
+  color: #001133;
+  box-shadow: 0 0 15px #00ffff;
+}
+
+.sidebar-content {
+  max-height: calc(100vh - 380px);
+  overflow-y: auto;
+}
+
+.main-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.canvas-container {
+  flex: 1;
+  position: relative;
+  background: #010407;
+  border-radius: 4px;
+  margin: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+.panel {
+  background: linear-gradient(180deg, #071126, #021021);
+  border: 1px solid #0066ff;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  box-shadow: 0 0 8px rgba(0, 102, 255, 0.3);
+}
+
+.panel h3 {
+  color: #00ffff;
+  margin-bottom: 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.action-btn {
+  background: linear-gradient(135deg, #0066ff, #00ccff);
+  border: none;
+  color: #001;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+  margin-top: 8px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: linear-gradient(135deg, #0088ff, #00ffff);
+  box-shadow: 0 0 12px #00ffff;
+}
+
+.small-btn {
+  background: #0066ff;
+  border: none;
+  color: #fff;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.small-btn:hover {
+  background: #00ccff;
+}
+
+.input-field {
+  width: 100%;
+  background: #001122;
+  border: 1px solid #00ffff;
+  color: #00ffff;
+  padding: 6px;
+  border-radius: 4px;
+  margin: 6px 0;
+  font-family: inherit;
+}
+
+.select-field {
+  background: #001122;
+  border: 1px solid #0066ff;
+  color: #00ffff;
+  padding: 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  font-family: inherit;
+}
+
+.feed-item {
+  padding: 6px;
+  margin: 4px 0;
+  background: rgba(0, 102, 255, 0.1);
+  border-left: 2px solid #ff006f;
+  border-radius: 2px;
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.course-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px;
+  margin: 4px 0;
+  background: rgba(0, 255, 136, 0.1);
+  border-radius: 3px;
+}
+
+.prop-row {
+  margin: 8px 0;
+  padding: 8px;
+  background: rgba(0, 255, 255, 0.05);
+  border-left: 3px solid #ff006f;
+  border-radius: 3px;
+}
+
+.prop-title {
+  font-weight: bold;
+  color: #00ffff;
+  margin-bottom: 4px;
+}
+
+.news-item {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.news-item:last-child {
+  border-bottom: none;
+}
+
+.hud {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 6, 20, 0.85);
+  border: 2px solid #00ffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  text-shadow: 0 0 8px #00ffff;
+  z-index: 100;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.hud-item {
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hud-val {
+  color: #00ff88;
+  font-weight: bold;
+}
+
+.module-view {
+  width: 100%;
+}
