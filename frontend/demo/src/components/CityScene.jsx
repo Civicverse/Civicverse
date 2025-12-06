@@ -84,6 +84,88 @@ const ANIME = {
   aquaMarine: '#7fffd4',
 }
 
+// Generate canvas texture for Ghibli-style surfaces
+const createCanvasTexture = (pattern, baseColor, accentColor) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  
+  if (pattern === 'wood') {
+    // Wooden planks with grain
+    ctx.fillStyle = baseColor
+    ctx.fillRect(0, 0, 256, 256)
+    for (let i = 0; i < 8; i++) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.05 + Math.random() * 0.05})`
+      ctx.fillRect(0, i * 32, 256, 2)
+      // Grain lines
+      for (let j = 0; j < 256; j += 20) {
+        ctx.strokeStyle = `rgba(0, 0, 0, ${0.03 + Math.random() * 0.04})`
+        ctx.beginPath()
+        ctx.moveTo(j, i * 32)
+        ctx.lineTo(j + 15 + Math.sin(i * 0.5) * 5, i * 32 + 32)
+        ctx.stroke()
+      }
+    }
+  } else if (pattern === 'brick') {
+    // Brick wall texture
+    ctx.fillStyle = baseColor
+    ctx.fillRect(0, 0, 256, 256)
+    ctx.strokeStyle = accentColor
+    ctx.lineWidth = 1.5
+    for (let y = 0; y < 256; y += 32) {
+      for (let x = 0; x < 256; x += 40) {
+        ctx.strokeRect(x + (y % 64) / 2, y, 40, 32)
+        // Weathering
+        if (Math.random() > 0.7) {
+          ctx.fillStyle = `rgba(0, 0, 0, ${0.08})`
+          ctx.fillRect(x + (y % 64) / 2, y, 40, 32)
+        }
+      }
+    }
+  } else if (pattern === 'stucco') {
+    // Stucco/plaster with paint texture
+    ctx.fillStyle = baseColor
+    ctx.fillRect(0, 0, 256, 256)
+    for (let i = 0; i < 200; i++) {
+      const x = Math.random() * 256
+      const y = Math.random() * 256
+      const radius = Math.random() * 3
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.2})`
+      ctx.beginPath()
+      ctx.arc(x, y, radius, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  } else if (pattern === 'cobblestone') {
+    // Cobblestone street
+    ctx.fillStyle = baseColor
+    ctx.fillRect(0, 0, 256, 256)
+    ctx.strokeStyle = accentColor
+    ctx.lineWidth = 1
+    for (let y = 0; y < 256; y += 24) {
+      for (let x = 0; x < 256; x += 24) {
+        ctx.strokeRect(x, y, 24, 24)
+        ctx.fillStyle = `rgba(0, 0, 0, ${0.05 + Math.random() * 0.08})`
+        ctx.fillRect(x + 2, y + 2, 20, 20)
+      }
+    }
+    // Moss/weathering streaks
+    for (let i = 0; i < 20; i++) {
+      ctx.strokeStyle = `rgba(100, 150, 100, ${0.1})`
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(Math.random() * 256, 0)
+      ctx.lineTo(Math.random() * 256, 256)
+      ctx.stroke()
+    }
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.magFilter = THREE.NearestFilter
+  texture.minFilter = THREE.NearestFilter
+  return texture
+}
+
 export default function CityScene({ onMultiplayerUpdate }) {
   const [playerState, setPlayerState] = useState({ playerPos: [0, 0, 0], playerRot: 0, isMoving: false, health: 100, playerId: 'local' })
   const [otherPlayers, setOtherPlayers] = useState({})
@@ -93,6 +175,16 @@ export default function CityScene({ onMultiplayerUpdate }) {
   const billboardRef = useRef()
   const time = useRef(0)
   const ws = useRef(null)
+  
+  // Memoize textures
+  const textures = useMemo(() => ({
+    woodLight: createCanvasTexture('wood', '#d4a574', '#8b7355'),
+    woodDark: createCanvasTexture('wood', '#a0663d', '#6b4423'),
+    brick: createCanvasTexture('brick', '#c74a49', '#a0372f'),
+    brickLight: createCanvasTexture('brick', '#d4a574', '#b89968'),
+    stucco: createCanvasTexture('stucco', '#fef3d0', '#e6d9b0'),
+    cobblestone: createCanvasTexture('cobblestone', '#8a8a8a', '#5a5a5a'),
+  }), [])
 
   // Connect to multiplayer server
   useEffect(() => {
@@ -224,11 +316,20 @@ export default function CityScene({ onMultiplayerUpdate }) {
         <meshBasicMaterial color={ANIME.sunsetOrange} transparent opacity={0.3} />
       </mesh>
 
-      {/* Ground - anime digital style */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
+      {/* Ground - cobblestone street with Ghibli texture */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[300, 300]} />
-        <meshStandardMaterial color="#f0f8ff" metalness={0.1} roughness={0.9} />
+        <meshStandardMaterial 
+          map={textures.cobblestone}
+          color="#9a9a9a"
+          metalness={0.1}
+          roughness={0.9}
+          fog={true}
+        />
       </mesh>
+
+      {/* Atmospheric fog (Ghibli style soft feeling) */}
+      <fog attach="fog" args={['#87ceeb', 50, 300]} />
 
       {/* Glowing grid lines - anime style (vibrant) */}
       {useMemo(() => {
@@ -265,43 +366,88 @@ export default function CityScene({ onMultiplayerUpdate }) {
           const lightColor = [ANIME.sakuraPink, ANIME.goldYellow, ANIME.vibrantPurple, ANIME.limeGreen][idx % 4]
           lights.push(
             <group key={`light-${idx}`} position={pos}>
-              {/* Lantern pole */}
-              <mesh position={[0, 0.5, 0]}>
-                <cylinderGeometry args={[0.25, 0.25, 1, 8]} />
-                <meshStandardMaterial color="#8b7355" />
+              {/* Lantern pole with weathered wood texture */}
+              <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+                <cylinderGeometry args={[0.25, 0.3, 1, 8]} />
+                <meshStandardMaterial 
+                  map={textures.woodDark}
+                  color="#6b4423"
+                  metalness={0.1}
+                  roughness={0.8}
+                />
               </mesh>
-              {/* Lantern bulb */}
-              <mesh position={[0, 1.5, 0]}>
+              {/* Lantern base metal ring */}
+              <mesh position={[0, 1.3, 0]}>
+                <cylinderGeometry args={[0.5, 0.45, 0.15, 8]} />
+                <meshStandardMaterial color="#8b7355" metalness={0.6} roughness={0.3} />
+              </mesh>
+              {/* Lantern bulb with glow */}
+              <mesh position={[0, 1.5, 0]} castShadow>
                 <sphereGeometry args={[0.4, 16, 16]} />
-                <meshStandardMaterial color={lightColor} emissive={lightColor} emissiveIntensity={3} />
+                <meshStandardMaterial color={lightColor} emissive={lightColor} emissiveIntensity={3} metalness={0.2} roughness={0.4} />
               </mesh>
-              <pointLight position={[0, 1.5, 0]} intensity={2.5} distance={70} color={lightColor} />
+              {/* Lantern paper shade (paper texture effect) */}
+              <mesh position={[0, 1.5, 0]}>
+                <sphereGeometry args={[0.42, 16, 16]} />
+                <meshStandardMaterial 
+                  color="#fefaf0"
+                  transparent={true}
+                  opacity={0.3}
+                  emissive={lightColor}
+                  emissiveIntensity={2}
+                  side={THREE.BackSide}
+                />
+              </mesh>
+              <pointLight position={[0, 1.5, 0]} intensity={2.5} distance={70} color={lightColor} castShadow />
             </group>
           )
         })
         return lights
       }, [])}
 
-      {/* Vibrant anime buildings with bold outlines */}
+      {/* Vibrant anime buildings with Ghibli textures */}
       {[
-        { pos: [-50, 0, -60], scale: [30, 45, 25], color: ANIME.hotPink, outline: ANIME.brightRed, windows: ANIME.goldYellow },
-        { pos: [50, 0, -60], scale: [35, 55, 28], color: ANIME.vibrantPurple, outline: ANIME.lavender, windows: ANIME.brightCyan },
-        { pos: [-60, 0, 30], scale: [28, 42, 32], color: ANIME.aquaMarine, outline: ANIME.brightCyan, windows: ANIME.sakuraPink },
-        { pos: [60, 0, 30], scale: [32, 50, 26], color: ANIME.limeGreen, outline: ANIME.goldYellow, windows: ANIME.hotPink },
-        { pos: [-30, 0, -40], scale: [25, 35, 30], color: ANIME.skyBlue, outline: ANIME.deepBlue, windows: ANIME.sunsetOrange },
-        { pos: [30, 0, -40], scale: [26, 40, 28], color: ANIME.sunsetOrange, outline: ANIME.hotPink, windows: ANIME.sakuraPink },
-        { pos: [0, 0, 50], scale: [45, 65, 35], color: ANIME.vibrantPurple, outline: ANIME.lavender, windows: ANIME.brightCyan },
+        { pos: [-50, 0, -60], scale: [30, 45, 25], color: ANIME.hotPink, outline: ANIME.brightRed, windows: ANIME.goldYellow, texture: textures.stucco, texColor: '#fef3d0' },
+        { pos: [50, 0, -60], scale: [35, 55, 28], color: ANIME.vibrantPurple, outline: ANIME.lavender, windows: ANIME.brightCyan, texture: textures.brick, texColor: '#c74a49' },
+        { pos: [-60, 0, 30], scale: [28, 42, 32], color: ANIME.aquaMarine, outline: ANIME.brightCyan, windows: ANIME.sakuraPink, texture: textures.woodDark, texColor: '#8a6b4a' },
+        { pos: [60, 0, 30], scale: [32, 50, 26], color: ANIME.limeGreen, outline: ANIME.goldYellow, windows: ANIME.hotPink, texture: textures.brickLight, texColor: '#d4a574' },
+        { pos: [-30, 0, -40], scale: [25, 35, 30], color: ANIME.skyBlue, outline: ANIME.deepBlue, windows: ANIME.sunsetOrange, texture: textures.woodLight, texColor: '#d4a574' },
+        { pos: [30, 0, -40], scale: [26, 40, 28], color: ANIME.sunsetOrange, outline: ANIME.hotPink, windows: ANIME.sakuraPink, texture: textures.stucco, texColor: '#fef3d0' },
+        { pos: [0, 0, 50], scale: [45, 65, 35], color: ANIME.vibrantPurple, outline: ANIME.lavender, windows: ANIME.brightCyan, texture: textures.brick, texColor: '#a0372f' },
       ].map((bld, i) => (
         <group key={`bld-${i}`} position={[bld.pos[0], 0, bld.pos[2]]}>
-          {/* Building body */}
-          <mesh position={[0, bld.scale[1] / 2, 0]}>
+          {/* Building body with Ghibli texture */}
+          <mesh position={[0, bld.scale[1] / 2, 0]} castShadow receiveShadow>
             <boxGeometry args={bld.scale} />
             <meshStandardMaterial 
-              color={bld.color} 
+              map={bld.texture}
+              color={bld.texColor}
               emissive={bld.color} 
-              emissiveIntensity={0.4}
-              metalness={0.3}
-              roughness={0.6}
+              emissiveIntensity={0.25}
+              metalness={0.2}
+              roughness={0.7}
+            />
+          </mesh>
+
+          {/* Building roof detail with weathered wood */}
+          <mesh position={[0, bld.scale[1] + 0.5, 0]} castShadow receiveShadow>
+            <boxGeometry args={[bld.scale[0] + 2, 1, bld.scale[2] + 2]} />
+            <meshStandardMaterial 
+              map={textures.woodDark}
+              color="#6b4423"
+              metalness={0.15}
+              roughness={0.8}
+            />
+          </mesh>
+
+          {/* Side details (weathered corners) */}
+          <mesh position={[bld.scale[0] / 2 + 0.3, bld.scale[1] / 2, 0]} castShadow>
+            <boxGeometry args={[0.6, bld.scale[1], bld.scale[2]]} />
+            <meshStandardMaterial 
+              map={bld.texture}
+              color={bld.texColor}
+              metalness={0.1}
+              roughness={0.8}
             />
           </mesh>
 
@@ -315,7 +461,7 @@ export default function CityScene({ onMultiplayerUpdate }) {
                 -bld.scale[0]/2, bld.scale[1]/2, -bld.scale[2]/2, -bld.scale[0]/2, -bld.scale[1]/2, -bld.scale[2]/2,
               ])} itemSize={3} />
             </bufferGeometry>
-            <lineBasicMaterial color={bld.outline} linewidth={2} fog={false} />
+            <lineBasicMaterial color={bld.outline} linewidth={3} fog={false} />
           </lineSegments>
 
           {/* Vibrant animated windows */}
@@ -324,16 +470,32 @@ export default function CityScene({ onMultiplayerUpdate }) {
               const seed = fx + fy * 100 + i * 1000
               const lightOn = Math.sin(time.current * 0.6 + seed) > 0.1
               return (
-                <mesh key={`win-${i}-${fx}-${fy}`} position={[(fx - Math.floor(bld.scale[0] / 8)) * 4 + 2, bld.scale[1] / 2 - fy * 4 - 2, bld.scale[2] / 2 + 0.1]}>
+                <mesh key={`win-${i}-${fx}-${fy}`} position={[(fx - Math.floor(bld.scale[0] / 8)) * 4 + 2, bld.scale[1] / 2 - fy * 4 - 2, bld.scale[2] / 2 + 0.15]} castShadow>
                   <planeGeometry args={[2.5, 2.5]} />
                   <meshStandardMaterial 
                     emissive={lightOn ? bld.windows : '#cccccc'} 
-                    emissiveIntensity={lightOn ? 2 : 0.2}
-                    color={lightOn ? bld.windows : '#ffffff'}
+                    emissiveIntensity={lightOn ? 2.5 : 0.3}
+                    color={lightOn ? bld.windows : '#e8e8e8'}
+                    metalness={0.1}
+                    roughness={0.3}
                   />
                 </mesh>
               )
             })
+          ))}
+
+          {/* Window frames (shadow detail) */}
+          {Array.from({ length: Math.floor(bld.scale[1] / 4) }).map((_, fy) => (
+            Array.from({ length: Math.floor(bld.scale[0] / 4) }).map((_, fx) => (
+              <mesh key={`frame-${i}-${fx}-${fy}`} position={[(fx - Math.floor(bld.scale[0] / 8)) * 4 + 2, bld.scale[1] / 2 - fy * 4 - 2, bld.scale[2] / 2 + 0.2]}>
+                <planeGeometry args={[2.8, 2.8]} />
+                <meshStandardMaterial 
+                  color="#333333"
+                  emissive="#000000"
+                  emissiveIntensity={0.1}
+                />
+              </mesh>
+            ))
           ))}
         </group>
       ))}
@@ -466,13 +628,41 @@ export default function CityScene({ onMultiplayerUpdate }) {
         </mesh>
       ))}
 
-      {/* Vibrant anime fountain */}
+      {/* Vibrant anime fountain with Ghibli details */}
       <group position={[0, 0, 0]}>
-        <mesh>
+        {/* Fountain base ring - stone texture */}
+        <mesh castShadow receiveShadow>
           <cylinderGeometry args={[10, 10, 0.5, 16]} />
-          <meshStandardMaterial emissive={ANIME.vibrantPurple} emissiveIntensity={2} color={ANIME.skyBlue} />
+          <meshStandardMaterial 
+            map={textures.cobblestone}
+            color="#8a8a8a"
+            metalness={0.05}
+            roughness={0.95}
+          />
         </mesh>
-        <pointLight position={[0, 3, 0]} intensity={2.5} distance={50} color={ANIME.vibrantPurple} />
+        {/* Fountain inner basin - weathered stone */}
+        <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[9.5, 9.5, 1, 16]} />
+          <meshStandardMaterial 
+            map={textures.cobblestone}
+            color="#7a7a7a"
+            metalness={0.08}
+            roughness={0.9}
+          />
+        </mesh>
+        {/* Center fountain structure */}
+        <mesh position={[0, 1.2, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[2, 2.5, 0.8, 8]} />
+          <meshStandardMaterial 
+            color={ANIME.skyBlue}
+            emissive={ANIME.vibrantPurple}
+            emissiveIntensity={1.5}
+            metalness={0.3}
+            roughness={0.5}
+          />
+        </mesh>
+        <pointLight position={[0, 3, 0]} intensity={2.5} distance={50} color={ANIME.vibrantPurple} castShadow />
+        {/* Animated water - enhanced with glow */}
         {Array.from({ length: 12 }).map((_, i) => {
           const angle = (i / 12) * Math.PI * 2
           const height = 3 + Math.sin(time.current * 4 + i) * 2
