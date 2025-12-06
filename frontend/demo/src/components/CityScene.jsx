@@ -3,6 +3,136 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import * as THREE from 'three'
 
+// Audio synthesis for atmospheric game music
+class AudioSynthesizer {
+  constructor() {
+    this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+    this.masterGain = this.audioContext.createGain()
+    this.masterGain.gain.value = 0.3 // Start at 30% volume
+    this.masterGain.connect(this.audioContext.destination)
+    this.oscillators = []
+    this.isPlaying = false
+    this.startTime = 0
+  }
+
+  // Create atmospheric ambient pad
+  createAmbientPad() {
+    const now = this.audioContext.currentTime
+    const notes = [220, 330, 440, 550] // A3, E4, A4, C#5
+    
+    notes.forEach((freq, i) => {
+      const osc = this.audioContext.createOscillator()
+      const gain = this.audioContext.createGain()
+      
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      
+      // Smooth envelope
+      gain.gain.setValueAtTime(0, now)
+      gain.gain.linearRampToValueAtTime(0.08, now + 2)
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 8)
+      
+      osc.connect(gain)
+      gain.connect(this.masterGain)
+      
+      osc.start(now)
+      osc.stop(now + 8)
+      
+      this.oscillators.push({ osc, gain })
+    })
+  }
+
+  // Create bass line pattern
+  createBassLine() {
+    const now = this.audioContext.currentTime
+    const bassPattern = [110, 110, 165, 147] // A2, A2, E2, D2
+    
+    bassPattern.forEach((freq, idx) => {
+      const startTime = now + idx * 1
+      const osc = this.audioContext.createOscillator()
+      const gain = this.audioContext.createGain()
+      const filter = this.audioContext.createBiquadFilter()
+      
+      osc.type = 'square'
+      osc.frequency.value = freq
+      filter.type = 'lowpass'
+      filter.frequency.value = 200
+      
+      gain.gain.setValueAtTime(0.05, startTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8)
+      
+      osc.connect(filter)
+      filter.connect(gain)
+      gain.connect(this.masterGain)
+      
+      osc.start(startTime)
+      osc.stop(startTime + 0.8)
+      
+      this.oscillators.push({ osc, gain })
+    })
+  }
+
+  // Create melodic pattern
+  createMelody() {
+    const now = this.audioContext.currentTime
+    const melody = [440, 550, 660, 550, 440, 330, 330, 392] // A4, C#5, E5, C#5, A4, E4, E4, G4
+    
+    melody.forEach((freq, idx) => {
+      const startTime = now + idx * 0.5
+      const osc = this.audioContext.createOscillator()
+      const gain = this.audioContext.createGain()
+      
+      osc.type = 'triangle'
+      osc.frequency.value = freq
+      
+      gain.gain.setValueAtTime(0, startTime)
+      gain.gain.linearRampToValueAtTime(0.04, startTime + 0.1)
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4)
+      
+      osc.connect(gain)
+      gain.connect(this.masterGain)
+      
+      osc.start(startTime)
+      osc.stop(startTime + 0.5)
+      
+      this.oscillators.push({ osc, gain })
+    })
+  }
+
+  play() {
+    if (this.isPlaying) return
+    this.isPlaying = true
+    this.startTime = this.audioContext.currentTime
+    
+    // Create layered music
+    this.createAmbientPad()
+    this.createBassLine()
+    this.createMelody()
+    
+    // Schedule next pattern in 8 seconds
+    setTimeout(() => {
+      this.oscillators = []
+      this.play()
+    }, 8000)
+  }
+
+  stop() {
+    this.isPlaying = false
+    this.oscillators.forEach(({ osc }) => {
+      try {
+        osc.stop()
+      } catch (e) {
+        // Already stopped
+      }
+    })
+    this.oscillators = []
+  }
+
+  setVolume(value) {
+    this.masterGain.gain.value = Math.max(0, Math.min(1, value))
+  }
+}
+
 // Create procedural neon city skyline texture
 const createNeonCitySkyline = () => {
   const canvas = document.createElement('canvas')
@@ -378,6 +508,7 @@ export default function CityScene({ onMultiplayerUpdate }) {
   const [playerState, setPlayerState] = useState({ playerPos: [0, 0, 0], playerRot: 0, isMoving: false, health: 100, playerId: 'local' })
   const [otherPlayers, setOtherPlayers] = useState({})
   const [attacks, setAttacks] = useState([])
+  const [sysStats, setSysStats] = useState(null)
   const [kills, setKills] = useState(0)
   const [deaths, setDeaths] = useState(0)
   const [snowParticles, setSnowParticles] = useState(() => createSnowParticles(500))
@@ -457,6 +588,46 @@ export default function CityScene({ onMultiplayerUpdate }) {
       if (ws.current) ws.current.close()
     }
   }, [playerState.playerId])
+
+  // Poll system stats (backend) every 2s. Fallback to browser info when backend unavailable.
+  useEffect(() => {
+    let alive = true
+    const fetchStats = async () => {
+      try {
+        const base = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
+        const resp = await fetch(`${base}/api/stats`, { cache: 'no-store' })
+        if (!alive) return
+        if (resp.ok) {
+          const json = await resp.json()
+          setSysStats(json)
+          return
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // Fallback: use browser-provided stats where possible
+      try {
+        const mem = navigator.deviceMemory || null
+        const perf = performance && performance.memory ? performance.memory : null
+        const fallback = {
+          cpu: { model: navigator.hardwareConcurrency ? 'Local CPU' : 'Unknown', cores: navigator.hardwareConcurrency || 0, loadavg: [0,0,0] },
+          memory: perf ? { total: perf.totalJSHeapSize, free: perf.jsHeapSizeLimit - perf.usedJSHeapSize, used: perf.usedJSHeapSize, usedPercent: Math.round((perf.usedJSHeapSize / perf.totalJSHeapSize) * 100) } : { total: mem ? mem * 1024 * 1024 * 1024 : 0, free: 0, used: 0, usedPercent: 0 },
+          uptime: 0,
+          platform: navigator.platform,
+          arch: navigator.userAgent,
+          gpu: { available: false, devices: [] }
+        }
+        setSysStats(fallback)
+      } catch (e) {
+        // final fallback
+      }
+    }
+
+    fetchStats()
+    const id = setInterval(fetchStats, 2000)
+    return () => { alive = false; clearInterval(id) }
+  }, [])
 
   // Send player state to server
   const sendPlayerState = () => {
@@ -1166,6 +1337,58 @@ export default function CityScene({ onMultiplayerUpdate }) {
       <Text position={[-70, 10, -50]} fontSize={1.8} color={ANIME.limeGreen}>
         WASD:MOVE | SPACE:ATTACK
       </Text>
+
+      {/* System Stats Panel (right HUD) */}
+      <group position={[70, 18, -45]}>
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[26, 14, 0.5]} />
+          <meshStandardMaterial color="#071228" emissive="#001122" emissiveIntensity={0.6} transparent opacity={0.95} />
+        </mesh>
+
+        <Text position={[-10, 5.5, 0.6]} fontSize={1.2} color={ANIME.brightCyan}>SYSTEM</Text>
+
+        {/* CPU */}
+        <Text position={[-10, 3.5, 0.6]} fontSize={0.9} color={ANIME.goldYellow}>CPU</Text>
+        <mesh position={[6, 3.4, 0.6]}>
+          <planeGeometry args={[12, 0.6]} />
+          <meshBasicMaterial color="#111827" />
+        </mesh>
+        {sysStats && (
+          <mesh position={[-6 + (Math.min(100, (sysStats.cpu.loadavg ? sysStats.cpu.loadavg[0] : 0) / (sysStats.cpu.cores || 1) * 100) / 2) , 3.4, 0.61]}>
+            <planeGeometry args={[Math.max(0.1, Math.min(12, (sysStats.cpu.loadavg ? (sysStats.cpu.loadavg[0] / (sysStats.cpu.cores || 1)) * 12 : 0))), 0.5]} />
+            <meshBasicMaterial color={ANIME.hotPink} transparent opacity={0.95} />
+          </mesh>
+        )}
+
+        {/* Memory */}
+        <Text position={[-10, 1.8, 0.6]} fontSize={0.9} color={ANIME.goldYellow}>RAM</Text>
+        <mesh position={[6, 1.7, 0.6]}>
+          <planeGeometry args={[12, 0.6]} />
+          <meshBasicMaterial color="#111827" />
+        </mesh>
+        {sysStats && (
+          <mesh position={[-6 + (Math.min(100, sysStats.memory.usedPercent) / 100) * 6, 1.7, 0.61]}>
+            <planeGeometry args={[Math.max(0.1, (Math.min(100, sysStats.memory.usedPercent) / 100) * 12), 0.5]} />
+            <meshBasicMaterial color={sysStats.memory.usedPercent > 80 ? ANIME.brightRed : sysStats.memory.usedPercent > 50 ? ANIME.goldYellow : ANIME.limeGreen} />
+          </mesh>
+        )}
+
+        {/* GPU */}
+        <Text position={[-10, 0.1, 0.6]} fontSize={0.9} color={ANIME.goldYellow}>GPU</Text>
+        <Text position={[-10, -1.1, 0.6]} fontSize={0.7} color={ANIME.brightCyan}>
+          {sysStats && sysStats.gpu && sysStats.gpu.available ? `${sysStats.gpu.devices.length} x ${sysStats.gpu.devices[0].name}` : 'No GPU data'}
+        </Text>
+        {sysStats && sysStats.gpu && sysStats.gpu.available && sysStats.gpu.devices[0] && (
+          <mesh position={[6, -1.1, 0.61]}>
+            <planeGeometry args={[(Math.min(100, sysStats.gpu.devices[0].utilization) / 100) * 12, 0.5]} />
+            <meshBasicMaterial color={sysStats.gpu.devices[0].utilization > 80 ? ANIME.brightRed : ANIME.brightCyan} />
+          </mesh>
+        )}
+
+        {/* FPS / Network placeholders */}
+        <Text position={[-10, -3.0, 0.6]} fontSize={0.8} color={ANIME.hotPink}>FPS: {Math.round(1 / Math.max(0.0001, (time.current || 0.016)) )}</Text>
+        <Text position={[-10, -4.2, 0.6]} fontSize={0.7} color={ANIME.brightCyan}>NET: {ws.current && ws.current.readyState === WebSocket.OPEN ? 'ONLINE' : 'OFFLINE'}</Text>
+      </group>
 
       {/* CivicWatch prompt near kiosk */}
       <Text position={[0, 12, 85]} fontSize={1.5} color={ANIME.brightCyan}>
