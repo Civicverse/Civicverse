@@ -341,6 +341,22 @@ const createArmorTexture = (color = '#ff1493') => {
   return texture
 }
 
+// Create a canvas for drawing sparklines/stats
+const createStatsCanvas = (w = 256, h = 128) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  // initial background
+  ctx.fillStyle = 'rgba(10,10,20,0.9)'
+  ctx.fillRect(0, 0, w, h)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.minFilter = THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+  texture.needsUpdate = true
+  return { canvas, ctx, texture }
+}
+
 const PlayerController = ({ onStateChange, onAttack, playerId }) => {
   const [playerPos, setPlayerPos] = useState([0, 0, 0])
   const [playerRot, setPlayerRot] = useState(0)
@@ -515,6 +531,13 @@ export default function CityScene({ onMultiplayerUpdate }) {
   const billboardRef = useRef()
   const time = useRef(0)
   const ws = useRef(null)
+  // Histories for sparklines
+  const [cpuHistory, setCpuHistory] = useState(() => Array(60).fill(0))
+  const [memHistory, setMemHistory] = useState(() => Array(60).fill(0))
+  const [gpuHistory, setGpuHistory] = useState(() => Array(60).fill(0))
+  // Canvas texture for stats sparklines
+  const statsCanvasObj = useMemo(() => createStatsCanvas(256, 128), [])
+  const statsTextureRef = useRef(statsCanvasObj.texture)
   
   // Memoize textures and neon cityscape
   const textures = useMemo(() => ({
@@ -628,6 +651,59 @@ export default function CityScene({ onMultiplayerUpdate }) {
     const id = setInterval(fetchStats, 2000)
     return () => { alive = false; clearInterval(id) }
   }, [])
+
+  // Update history arrays and draw sparklines when sysStats changes
+  useEffect(() => {
+    if (!sysStats) return
+    const cpuPercent = sysStats.cpu && sysStats.cpu.loadavg && sysStats.cpu.cores ? Math.min(100, (sysStats.cpu.loadavg[0] / sysStats.cpu.cores) * 100) : 0
+    const memPercent = sysStats.memory && sysStats.memory.usedPercent ? Math.min(100, sysStats.memory.usedPercent) : 0
+    const gpuPercent = (sysStats.gpu && sysStats.gpu.available && sysStats.gpu.devices[0]) ? Math.min(100, sysStats.gpu.devices[0].utilization) : 0
+
+    setCpuHistory(prev => { const next = prev.slice(); next.push(cpuPercent); if (next.length > 120) next.shift(); return next })
+    setMemHistory(prev => { const next = prev.slice(); next.push(memPercent); if (next.length > 120) next.shift(); return next })
+    setGpuHistory(prev => { const next = prev.slice(); next.push(gpuPercent); if (next.length > 120) next.shift(); return next })
+
+    // Draw to canvas
+    try {
+      const { canvas, ctx, texture } = statsCanvasObj
+      const w = canvas.width
+      const h = canvas.height
+      // background
+      ctx.clearRect(0,0,w,h)
+      ctx.fillStyle = 'rgba(6,10,18,0.95)'
+      ctx.fillRect(0,0,w,h)
+
+      // draw labels
+      ctx.fillStyle = '#88f0ff'
+      ctx.font = '14px monospace'
+      ctx.fillText(`CPU ${cpuPercent.toFixed(0)}%`, 8, 18)
+      ctx.fillText(`RAM ${memPercent.toFixed(0)}%`, 8, 36)
+      ctx.fillText(`GPU ${gpuPercent.toFixed(0)}%`, 8, 54)
+
+      // helper to draw sparkline
+      const drawSpark = (data, x, y, warea, harea, color) => {
+        const len = data.length
+        ctx.beginPath()
+        for (let i = 0; i < len; i++) {
+          const vx = x + (i / Math.max(1, len-1)) * warea
+          const vy = y + harea - (data[i] / 100) * harea
+          if (i === 0) ctx.moveTo(vx, vy)
+          else ctx.lineTo(vx, vy)
+        }
+        ctx.strokeStyle = color
+        ctx.lineWidth = 2
+        ctx.stroke()
+      }
+
+      drawSpark(cpuHistory.slice(-60), 8, 60, w-16, 24, '#ff6b9d')
+      drawSpark(memHistory.slice(-60), 8, 88, w-16, 24, '#ffd700')
+      drawSpark(gpuHistory.slice(-60), 8, 116, w-16, 12, '#00ffff')
+
+      texture.needsUpdate = true
+    } catch (e) {
+      // ignore
+    }
+  }, [sysStats])
 
   // Send player state to server
   const sendPlayerState = () => {
@@ -1359,6 +1435,12 @@ export default function CityScene({ onMultiplayerUpdate }) {
             <meshBasicMaterial color={ANIME.hotPink} transparent opacity={0.95} />
           </mesh>
         )}
+
+        {/* Sparkline canvas preview */}
+        <mesh position={[0, -3.5, 0.61]}>
+          <planeGeometry args={[22, 6]} />
+          <meshBasicMaterial map={statsCanvasObj.texture} toneMapped={false} />
+        </mesh>
 
         {/* Memory */}
         <Text position={[-10, 1.8, 0.6]} fontSize={0.9} color={ANIME.goldYellow}>RAM</Text>
