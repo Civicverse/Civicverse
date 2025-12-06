@@ -14,6 +14,10 @@ export default function App(){
     <div className="app-root">
       <div className="left-sidebar">
         <h1>CIVICVERSE</h1>
+        <div className="controls-info">
+          <div className="control-label">WASD / Arrows</div>
+          <div className="control-hint">Move around city</div>
+        </div>
         <div className="module-menu">
           {['dashboard','voting','dex','marketplace','social','onboarding','zk','character','wallet','miner','governance','ubi','news','education'].map(m=>(
             <button
@@ -42,7 +46,7 @@ export default function App(){
             <Suspense fallback={null}>
               <CityScene kills={kills} />
             </Suspense>
-            <OrbitControls enablePan={true} enableZoom={true} />
+            <OrbitControls enablePan={false} enableZoom={false} autoRotate={false} />
           </Canvas>
           <HUD hp={hp} kills={kills} />
         </div>

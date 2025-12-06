@@ -34,6 +34,27 @@ body, html, #root {
   letter-spacing: 2px;
 }
 
+.controls-info {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 136, 0.05));
+  border: 1px solid #00ff88;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 11px;
+}
+
+.control-label {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 6px #00ffff;
+  margin-bottom: 4px;
+}
+
+.control-hint {
+  color: #00ff88;
+  font-size: 10px;
+}
+
 .module-menu {
   display: flex;
   flex-direction: column;
