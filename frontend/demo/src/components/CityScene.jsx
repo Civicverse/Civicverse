@@ -3,6 +3,75 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import * as THREE from 'three'
 
+// Create procedural neon city skyline texture
+const createNeonCitySkyline = () => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1024
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')
+  
+  // Dark background
+  ctx.fillStyle = '#0a0a15'
+  ctx.fillRect(0, 0, 1024, 512)
+  
+  // Generate random building silhouettes
+  let x = 0
+  while (x < 1024) {
+    const buildingWidth = 40 + Math.random() * 100
+    const buildingHeight = 150 + Math.random() * 300
+    const buildingColor = ['#ff1493', '#00ffff', '#ffff00', '#00ff00', '#ff00ff', '#ff6b35'][Math.floor(Math.random() * 6)]
+    
+    // Building outline (neon glow effect)
+    ctx.strokeStyle = buildingColor
+    ctx.lineWidth = 2
+    ctx.strokeRect(x, 512 - buildingHeight, buildingWidth, buildingHeight)
+    
+    // Building with slight transparency tint
+    ctx.fillStyle = buildingColor
+    ctx.globalAlpha = 0.2
+    ctx.fillRect(x, 512 - buildingHeight, buildingWidth, buildingHeight)
+    ctx.globalAlpha = 1
+    
+    // Windows (neon lights)
+    for (let wy = 512 - buildingHeight + 20; wy < 512; wy += 25) {
+      for (let wx = x + 8; wx < x + buildingWidth; wx += 18) {
+        if (Math.random() > 0.3) {
+          const windowColor = ['#ff1493', '#00ffff', '#ffff00', '#00ff00'][Math.floor(Math.random() * 4)]
+          ctx.fillStyle = windowColor
+          ctx.globalAlpha = 0.7 + Math.random() * 0.3
+          ctx.fillRect(wx, wy, 8, 10)
+          ctx.globalAlpha = 1
+        }
+      }
+    }
+    
+    x += buildingWidth + 5
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.magFilter = THREE.LinearFilter
+  texture.minFilter = THREE.LinearFilter
+  return texture
+}
+
+// Create animated snow particles
+const createSnowParticles = (count = 500) => {
+  const particles = []
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: (Math.random() - 0.5) * 400,
+      y: Math.random() * 200 - 50,
+      z: (Math.random() - 0.5) * 400,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: -0.1 - Math.random() * 0.3,
+      vz: (Math.random() - 0.5) * 0.3,
+      size: 0.3 + Math.random() * 0.7,
+      opacity: 0.3 + Math.random() * 0.5,
+    })
+  }
+  return particles
+}
+
 const PlayerController = ({ onStateChange, onAttack, playerId }) => {
   const [playerPos, setPlayerPos] = useState([0, 0, 0])
   const [playerRot, setPlayerRot] = useState(0)
@@ -172,11 +241,12 @@ export default function CityScene({ onMultiplayerUpdate }) {
   const [attacks, setAttacks] = useState([])
   const [kills, setKills] = useState(0)
   const [deaths, setDeaths] = useState(0)
+  const [snowParticles, setSnowParticles] = useState(() => createSnowParticles(500))
   const billboardRef = useRef()
   const time = useRef(0)
   const ws = useRef(null)
   
-  // Memoize textures
+  // Memoize textures and neon cityscape
   const textures = useMemo(() => ({
     woodLight: createCanvasTexture('wood', '#d4a574', '#8b7355'),
     woodDark: createCanvasTexture('wood', '#a0663d', '#6b4423'),
@@ -184,6 +254,7 @@ export default function CityScene({ onMultiplayerUpdate }) {
     brickLight: createCanvasTexture('brick', '#d4a574', '#b89968'),
     stucco: createCanvasTexture('stucco', '#fef3d0', '#e6d9b0'),
     cobblestone: createCanvasTexture('cobblestone', '#8a8a8a', '#5a5a5a'),
+    neonSkyline: createNeonCitySkyline(),
   }), [])
 
   // Connect to multiplayer server
@@ -296,6 +367,31 @@ export default function CityScene({ onMultiplayerUpdate }) {
     time.current += delta
     if (billboardRef.current) billboardRef.current.rotation.y += delta * 0.15
     setAttacks(prev => prev.filter(a => Date.now() - a.timestamp < 300))
+    
+    // Animate snow particles
+    setSnowParticles(prev => prev.map(particle => {
+      let newY = particle.y + particle.vy
+      let newX = particle.x + particle.vx
+      let newZ = particle.z + particle.vz
+      
+      // Reset particles that fall too low or drift too far
+      if (newY < -100 || Math.abs(newX) > 250 || Math.abs(newZ) > 250) {
+        return {
+          ...particle,
+          x: (Math.random() - 0.5) * 400,
+          y: 150,
+          z: (Math.random() - 0.5) * 400,
+        }
+      }
+      
+      return {
+        ...particle,
+        x: newX,
+        y: newY,
+        z: newZ,
+      }
+    }))
+    
     sendPlayerState()
     if (onMultiplayerUpdate) onMultiplayerUpdate(playerState)
   })
@@ -303,6 +399,42 @@ export default function CityScene({ onMultiplayerUpdate }) {
   return (
     <group>
       <PlayerController onStateChange={setPlayerState} onAttack={handleAttack} playerId={playerState.playerId} />
+
+      {/* Neon city skyline live wallpaper background - far layer */}
+      <mesh position={[0, 80, -400]} scale={[600, 300, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial map={textures.neonSkyline} />
+      </mesh>
+
+      {/* Animated neon city skyline - second layer (parallax) */}
+      <mesh position={[0, 60, -350]} scale={[500, 200, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial map={textures.neonSkyline} transparent opacity={0.6} />
+      </mesh>
+
+      {/* Dark gradient overlay for depth */}
+      <mesh position={[0, 60, -360]}>
+        <boxGeometry args={[600, 300, 20]} />
+        <meshBasicMaterial 
+          color="#000000"
+          transparent
+          opacity={0.3}
+        />
+      </mesh>
+
+      {/* Animated falling snow particles with neon glow */}
+      {snowParticles.map((particle, idx) => (
+        <mesh key={`snow-${idx}`} position={[particle.x, particle.y, particle.z]}>
+          <sphereGeometry args={[particle.size, 8, 8]} />
+          <meshStandardMaterial 
+            color="#ffffff"
+            emissive="#00ffff"
+            emissiveIntensity={0.8}
+            transparent
+            opacity={particle.opacity}
+          />
+        </mesh>
+      ))}
 
       {/* Anime vibrant gradient sky */}
       <mesh position={[0, 30, 0]} scale={200}>
