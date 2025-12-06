@@ -5,7 +5,7 @@ export default function NewsPanel() {
     'New player joined arena',
     'DEX trading volume up 120%',
     'Governance vote passed',
-    'Treasury increased to 2M KAS'
+    'Treasury increased to 2M CVT'
   ])
 
   return (

@@ -12,7 +12,7 @@ export default function MarketplacePanel() {
       <h3>MARKETPLACE</h3>
       {items.map(item => (
         <div key={item.name} className="item-row">
-          {item.name}: {item.price} KAS <button className="small-btn">Buy</button>
+          {item.name}: {item.price} CVT <button className="small-btn">Buy</button>
         </div>
       ))}
     </div>

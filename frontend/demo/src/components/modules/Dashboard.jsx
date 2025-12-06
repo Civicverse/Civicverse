@@ -4,7 +4,7 @@ export default function Dashboard() {
   const [status] = useState({
     players: 12,
     voted: 87,
-    treasuryKas: 524.3,
+    treasuryCVT: 524.3,
     onlineNow: 5
   })
 
@@ -14,7 +14,7 @@ export default function Dashboard() {
       <div className="stat-row">Online: {status.onlineNow}</div>
       <div className="stat-row">Players: {status.players}</div>
       <div className="stat-row">Voted: {status.voted}%</div>
-      <div className="stat-row">Treasury: {status.treasuryKas} KAS</div>
+      <div className="stat-row">Treasury: {status.treasuryCVT} CVT</div>
       <button className="action-btn">Sync status</button>
     </div>
   )

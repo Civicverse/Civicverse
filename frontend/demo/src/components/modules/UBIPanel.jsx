@@ -8,7 +8,7 @@ export default function UBIPanel() {
     <div className="panel">
       <h3>UBI</h3>
       <p>Universal Basic Income</p>
-      <div className="stat-row">Account: {balance} KAS</div>
+      <div className="stat-row">Account: {balance} CVT</div>
       <div className="stat-row">Monthly: 50 KAS</div>
       {claim && (
         <button className="action-btn" style={{ background: '#00ff88' }}>

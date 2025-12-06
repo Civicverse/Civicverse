@@ -10,7 +10,7 @@ export default function MinerDashboard() {
       <h3>MINER</h3>
       <div className="stat-row">Status: {mining ? '🟢 Mining' : '⚫ Idle'}</div>
       <div className="stat-row">Hashrate: {hashrate} MH/s</div>
-      <div className="stat-row">Earned: {earned} KAS</div>
+      <div className="stat-row">Earned: {earned} CVT</div>
       <button className="action-btn">{mining ? 'Stop' : 'Start'}</button>
     </div>
   )

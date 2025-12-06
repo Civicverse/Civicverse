@@ -13,7 +13,7 @@ export default function WalletConfig() {
         className="input-field"
         placeholder="Wallet address"
       />
-      <div className="stat-row">Balance: 1500 KAS</div>
+      <div className="stat-row">Balance: 1500 CVT</div>
       <button className="action-btn">Connect</button>
       <button className="action-btn">Verify</button>
     </div>

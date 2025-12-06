@@ -186,10 +186,10 @@ export default function CityScene({ kills = 0 }) {
           />
         </mesh>
         <Text position={[0, 5, 1]} fontSize={3} color="#00ffff">
-          KAS ${Math.floor(Math.random() * 1000)}
+          CVT ${Math.floor(Math.random() * 1000)}
         </Text>
         <Text position={[0, -5, 1]} fontSize={3} color="#ff0088">
-          XMR ${Math.floor(Math.random() * 500)}
+          PXL ${Math.floor(Math.random() * 500)}
         </Text>
       </group>
 

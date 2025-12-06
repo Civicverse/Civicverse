@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Civicverse Demo</title>
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Helvetica,Arial;background:#0b1020;color:#e6f0ff;margin:0;padding:20px}
+    .card{background:linear-gradient(135deg,#0f1724 0%,#0b1220 100%);padding:20px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.6);max-width:760px}
+    h1{margin:0 0 8px;color:#7be0ff}
+    .status{margin-top:12px}
+    code{background:#031126;padding:4px 6px;border-radius:4px}
+    a.button{display:inline-block;margin-top:12px;padding:8px 12px;background:#7be0ff;color:#021426;border-radius:6px;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Civicverse Demo</h1>
+    <p>Frontend placeholder served from container. The original demo uses a built React app under <code>frontend/demo</code>. For now this status page confirms backend & node stubs.</p>
+
+    <div class="status">
+      <strong>Backend:</strong> <span id="backend">loading...</span><br/>
+      <strong>Kaspa node:</strong> <span id="kaspa">loading...</span><br/>
+      <strong>Monero node:</strong> <span id="monero">loading...</span><br/>
+      <strong>Craig watcher:</strong> <span id="craig">running (check logs)</span>
+    </div>
+
+    <a class="button" href="/" id="refresh">Refresh status</a>
+    <pre id="raw" style="margin-top:12px;background:#001123;padding:10px;border-radius:6px;color:#bfefff;display:none"></pre>
+  </div>
+
+  <script>
+    async function q(id, url) {
+      try {
+        const res = await fetch(url, {cache:'no-store'});
+        const j = await res.json();
+        document.getElementById(id).textContent = JSON.stringify(j);
+      } catch(e) {
+        document.getElementById(id).textContent = 'error: '+e.message;
+      }
+    }
+    q('backend','http://localhost:3001/api/backend');
+    q('kaspa','http://localhost:16110/');
+    q('monero','http://localhost:18081/');
+    document.getElementById('refresh').addEventListener('click', (e)=>{e.preventDefault(); location.reload()});
+  </script>
+</body>
+</html>
