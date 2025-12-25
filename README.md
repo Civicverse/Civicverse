@@ -430,7 +430,7 @@ Redundancy: Works even if crypto markets fail because infrastructure and nodes a
 
 5️⃣ Accelerated Bootstrap with Initial Funding
 
-$75k - $100k “chump change” grant could fund the first small-scale solar-powered node farm tomorrow
+$75k - $150k “chump change” grant could fund the first small-scale solar-powered node farm tomorrow
 
 Rapidly deploy Dockerized modules, CivicWatch missions, and Foyer interactions
 
@@ -454,7 +454,7 @@ Mining + 1% ecosystem microtax are the financial backbone, funding UBI, infrastr
 
 Human accountability layer ensures all operations remain ethical and auditable.
 
-Small upfront funding ($1k–$3k) can accelerate deployment dramatically, creating working infrastructure and proving the model in months instead of decades.
+Small upfront funding can accelerate deployment dramatically, creating working infrastructure and proving the model in months instead of decades.
 
 System remains redundant and resilient, even if crypto markets fail, because the nodes, CivicWatch, and Foyer are human-governed and decentralized.
 
