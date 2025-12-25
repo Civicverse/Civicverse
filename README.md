@@ -751,7 +751,8 @@ Community Notes / Human Accountability: Every action is verified to ensure ethic
 CivicVerse is fully civilian-owned, human-governed, and legally compliant.
 
 🐳 Dockerized Deployment
-git clone https://github.com/civicverse/civicverse.git
+git clone https://github.com/civicverse/Foyer.git
+Install dependencies 
 cd civicverse
 chmod +x setup.sh
 ./setup.sh      # generates keys + .env
@@ -835,7 +836,7 @@ Global Civilian Ecosystem: Human-governed, ethically-aligned, economically self-
 
 💡 Takeaways
 
-CivicVerse is not just a demo — it is a modular, fully civilian-owned metaverse
+CivicVerse is not just a demo — it is a modular, fully civilian-owned metaverse framework that belongs to the people 
 
 Dockerized setup enables immediate hands-on testing and incremental expansion
 
