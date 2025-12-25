@@ -439,7 +439,7 @@ Mining + microtax immediately fund expansion
 Example:
 
 Metric	Value
-Initial Funding	$3,000
+Initial Funding	$150k
 Hardware Deployed	5–10 Dockerized nodes, solar-powered
 First UBI/CivicWatch Tests	Immediate
 Expansion Timeline	1–3 years to MW-scale farm vs 10+ years organically
