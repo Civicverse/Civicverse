@@ -5,14 +5,6 @@ Status: Active Development | Updated: December 2025
 
 CivicVerse is a standards-aware civic infrastructure layer that uses immersive game systems to coordinate governance, education, commerce, and verified public participation in real time.
 
-🚀 Quick Start — Deploy a CivicVerse Node
-git clone https://github.com/civicverse/Foyer.git
-cd civicverse
-chmod +x setup.sh
-./setup.sh          # generates keys + .env
-# ← edit .env with your real Kaspa / Monero addresses
-docker compose up -d --build
-
 🧭 What Is CivicVerse?
 
 CivicVerse is a protocol-first civic operating system rendered through a persistent MMORPG environment.
@@ -639,7 +631,114 @@ Redundant solar infrastructure: Ensures continuity and sustainability
 
 Human accountability: Community Notes ensures auditability and ethical compliance
 
-Trillion-dollar growth potential: Driven by global adoption, CivicWatch missions, Foyer commerce, NFTs, P2P engagement, and staking
+Trillion-dollar growth potential: Driven by global adoption, CivicWatch missions, Foyer commerce, NFTs, P2P engagement, and staking.
+
+🌐 CivicVerse: Dockerized Modular Metaverse
+
+CivicVerse is America’s first civilian-owned, AI-ethical governance metaverse, currently deployed as a Dockerized ecosystem for rapid experimentation and replication.
+
+It integrates:
+
+Foyer: Real-time interactive hub for commerce, news, and education
+
+CivicWatch: Real-world MMORPG inside the game, providing purposeful UBI
+
+Community Notes / Human Accountability: Every action is verified to ensure ethics, transparency, and auditability
+
+CivicVerse is fully civilian-owned, human-governed, and legally compliant.
+
+🐳 Dockerized Deployment
+git clone https://github.com/civicverse/civicverse.git
+cd civicverse
+chmod +x setup.sh
+./setup.sh      # generates keys + .env
+# ← edit .env with real Kaspa/Monero addresses
+docker compose up -d --build
+
+
+Provides a working demo with placeholder features
+
+Supports Foyer, CivicWatch missions, and governance simulations
+
+Nodes can be run individually, allowing modular expansion and testing
+
+🏗️ Modular System Design
+
+Each module can be run independently:
+
+CivicID verification
+
+Foyer commerce & content
+
+CivicWatch mission engine
+
+Mining & staking nodes
+
+Community Notes human verification
+
+Entire system can be scaled from a single Docker node to full infrastructure deployment
+
+Hardware Requirements:
+
+Runs on modern servers or dated hardware for redundancy
+
+Optimized for low-spec PCs, Raspberry Pi, or mesh network nodes
+
+Can operate offline and sync when online
+
+⛏️ Mining & Economic Layer (Integrated)
+
+Dual-Chain Mining: Kaspa (speed) + Monero (privacy)
+
+Expandable: Future multi-chain integration (Bitcoin, Ethereum, Solana, Polygon, L2s)
+
+Voluntary Civic Mining: Nodes contribute compute for rewards
+
+1% Ecosystem-Wide Microtax: Applies to all Foyer, CivicWatch, governance, and P2P interactions
+
+Funding Flows:
+
+Solar-powered redundant data centers
+
+UBI/community wallet
+
+CivicWatch & module operations
+
+Human oversight via Community Notes
+
+🔑 Key Principles
+
+Fully Modular: Modules can run independently or together
+
+Low-Spec Friendly: Designed to operate on dated hardware if needed
+
+Civilian-Owned: No corporate or government control
+
+Human Governance First: Community Notes ensures ethics and accountability
+
+Expandable Infrastructure: Dockerized demo now, full-scale solar/mesh infrastructure planned
+
+Purposeful Play: CivicWatch rewards users with real-world UBI
+
+📡 Expansion Path
+
+Dockerized Demo: Current phase — rapid experimentation, individual modules, low-spec deployment
+
+Full Client Modules: Each module can be scaled independently, deployed across mesh networks or local servers
+
+Redundant Infrastructure: Solar-powered data centers, multi-chain mining nodes
+
+Global Civilian Ecosystem: Human-governed, ethically-aligned, economically self-sustaining
+
+💡 Takeaways
+
+CivicVerse is not just a demo — it is a modular, fully civilian-owned metaverse
+
+Dockerized setup enables immediate hands-on testing and incremental expansion
+
+Designed for durability, redundancy, and accessibility
+
+Community Notes + mining + microtax ensure the system is resilient and economically sustainable
 
 🛰️ Network Status
 
