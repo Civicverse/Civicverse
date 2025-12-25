@@ -6,7 +6,7 @@ Status: Active Development | Updated: December 2025
 CivicVerse is a standards-aware civic infrastructure layer that uses immersive game systems to coordinate governance, education, commerce, and verified public participation in real time.
 
 🚀 Quick Start — Deploy a CivicVerse Node
-git clone https://github.com/civicverse/civicverse.git
+git clone https://github.com/civicverse/Foyer.git
 cd civicverse
 chmod +x setup.sh
 ./setup.sh          # generates keys + .env
