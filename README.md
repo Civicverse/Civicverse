@@ -123,7 +123,7 @@ Fund or support local contributors
 
 View reputation, outcomes, and impact metrics in real time
 
-The Foyer is where news, education, governance, commerce, and CivicWatch converge.
+The Foyer is where news, education, governance, commerce, traditional open world gameplay in immersive worlds your Avatar explores, and CivicWatch converge.
 
 🕹️ CivicWatch — A Real-World MMORPG Inside the Game
 
