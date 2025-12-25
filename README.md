@@ -430,7 +430,7 @@ Redundancy: Works even if crypto markets fail because infrastructure and nodes a
 
 5️⃣ Accelerated Bootstrap with Initial Funding
 
-$1,000–$3,000 “chump change” grant could fund the first small-scale solar-powered node farm tomorrow
+$75k - $100k “chump change” grant could fund the first small-scale solar-powered node farm tomorrow
 
 Rapidly deploy Dockerized modules, CivicWatch missions, and Foyer interactions
 
