@@ -844,18 +844,6 @@ Designed for durability, redundancy, and accessibility
 
 Community Notes + mining + microtax ensure the system is resilient and economically sustainable
 
-🛰️ Network Status
-
-Node VANTA-1
-Tier: Public Engagement
-Status: Operational
-
-Node Alpha-3
-Tier: Engagement & Protocol Enforcement
-Status: Operational
-
-(Locations intentionally undisclosed)
-
 🤝 Contributing
 
 CivicVerse welcomes:
