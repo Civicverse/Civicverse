@@ -1,6 +1,6 @@
 🌐 CivicVerse
 
-A Civilian-First Protocol for Ethical AI, Digital Governance, and Resilient Public Infrastructure
+A Civilian-First Protocol for Ethical AI, Privacy, Digital Governance, and Resilient Public Infrastructure
 Status: Active Development | Updated: December 2025
 
 CivicVerse is a standards-aware civic infrastructure layer that uses immersive game systems to coordinate governance, education, commerce, and verified public participation in real time.
