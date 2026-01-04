@@ -44,5 +44,18 @@ app.post('/checkout', async (req, res) => {
   }
 })
 
+// Proxy to retrieve ledger entry status by id
+app.get('/entry/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    const r = await axios.get(`${LEDGER_URL}/transaction/${id}`)
+    res.json(r.data)
+  } catch (e) {
+    console.error('entry fetch error', e.message)
+    if (e.response && e.response.status) return res.status(e.response.status).json(e.response.data || { error: e.message })
+    res.status(500).json({ error: e.message })
+  }
+})
+
 const port = process.env.PORT || 4001
 app.listen(port, () => console.log('Gateway listening on', port))

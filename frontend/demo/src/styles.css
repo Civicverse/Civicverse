@@ -81,17 +81,6 @@ body::after { content: ''; pointer-events: none; position: fixed; inset:0; backg
 /* Small utilities */
 .muted { color: rgba(255,255,255,0.6); }
 
-/* End theme */
-  border: 2px solid #00ffff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: bold;
-  text-shadow: 0 0 8px #00ffff;
-  z-index: 100;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-}
-
 .hud-item {
   margin: 4px 0;
   display: flex;

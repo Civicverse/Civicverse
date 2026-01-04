@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5000"
+    "preview": "vite preview --port 5000",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "react": "18.2.0",
@@ -17,6 +19,9 @@
   },
   "devDependencies": {
     "vite": "5.1.1",
-    "@vitejs/plugin-react": "^4.0.0"
+    "@vitejs/plugin-react": "^4.0.0",
+    "@storybook/react": "^7.0.0",
+    "@storybook/addon-essentials": "^7.0.0",
+    "storybook-builder-vite": "^0.4.0"
   }
 }

@@ -54,6 +54,18 @@ app.get('/transactions', async (req, res) => {
   res.json(r.rows)
 })
 
+app.get('/transaction/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    const r = await pool.query('SELECT * FROM transactions WHERE id=$1', [id])
+    if (r.rows.length === 0) return res.status(404).json({ error: 'not_found' })
+    res.json(r.rows[0])
+  } catch (e) {
+    console.error('transaction fetch error', e)
+    res.status(500).json({ error: e.message })
+  }
+})
+
 init().then(() => {
   const port = process.env.PORT || 4000
   app.listen(port, () => console.log('Ledger listening on', port))

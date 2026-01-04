@@ -4,6 +4,13 @@ import { OrbitControls } from '@react-three/drei'
 import CityScene from './components/CityScene'
 import HUD from './components/HUD'
 import ModuleRouter from './components/ModuleRouter'
+import './theme/anime-theme.css'
+import TopNav from './components/TopNav'
+import LeftPanel from './components/LeftPanel'
+import RightPanel from './components/RightPanel'
+import Hub from './components/Hub'
+import FAB from './components/FAB'
+import FooterPanel from './components/FooterPanel'
 
 export default function App(){
   const [activeModule, setActiveModule] = useState('dashboard')
@@ -12,6 +19,7 @@ export default function App(){
 
   return (
     <div className="app-root">
+      <TopNav />
       <div className="left-sidebar">
         <h1>CIVICVERSE</h1>
         <div className="controls-info">
@@ -36,6 +44,7 @@ export default function App(){
 
       <div className="main-view">
         <div className="canvas-container">
+          <Hub />
           <Canvas 
             camera={{ position: [0, 3, 12], fov: 45 }}
             gl={{ antialias: true, alpha: false }}
@@ -49,8 +58,11 @@ export default function App(){
             <OrbitControls enablePan={false} enableZoom={false} autoRotate={false} />
           </Canvas>
           <HUD hp={hp} kills={kills} setActiveModule={setActiveModule} />
+          <FAB />
+          <RightPanel />
         </div>
       </div>
+      <FooterPanel />
     </div>
   )
 }

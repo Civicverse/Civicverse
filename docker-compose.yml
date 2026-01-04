@@ -40,8 +40,10 @@ services:
       - "3000:80"
     depends_on:
       - multiplayer-server
+      - gateway
     environment:
       - VITE_WS_URL=ws://localhost:8080/ws
+      - VITE_API_URL=http://gateway:4001
     restart: unless-stopped
 
   craig-watcher:
