@@ -1,9 +1,9 @@
-import React, { Suspense, useState } from 'react'
+import React, { Suspense, useState, lazy } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import CityScene from './components/CityScene'
+const CityScene = lazy(() => import('./components/CityScene'))
+const ModuleRouter = lazy(() => import('./components/ModuleRouter'))
 import HUD from './components/HUD'
-import ModuleRouter from './components/ModuleRouter'
 import './theme/anime-theme.css'
 import TopNav from './components/TopNav'
 import LeftPanel from './components/LeftPanel'
@@ -38,7 +38,9 @@ export default function App(){
           ))}
         </div>
         <div className="sidebar-content">
-          <ModuleRouter module={activeModule} />
+          <Suspense fallback={<div className="panel">Loading…</div>}>
+            <ModuleRouter module={activeModule} />
+          </Suspense>
         </div>
       </div>
 
@@ -58,6 +60,11 @@ export default function App(){
             <OrbitControls enablePan={false} enableZoom={false} autoRotate={false} />
           </Canvas>
           <HUD hp={hp} kills={kills} setActiveModule={setActiveModule} />
+          <div style={{display:'none'}}>
+            <Suspense fallback={<div/>}>
+              <ModuleRouter module={'dashboard'} />
+            </Suspense>
+          </div>
           <FAB />
           <RightPanel />
         </div>
