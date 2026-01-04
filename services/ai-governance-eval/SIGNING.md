@@ -27,3 +27,13 @@ node index.js
 Notes
 - `SIGNING_MODE=kms` will currently log a warning and fall back to ephemeral unless integrated with a real KMS. Replace the KMS stub in `lib/signing.js` with an implementation for AWS KMS, Google KMS, or Vault in production.
 - Keep private keys secure; `SIGNING_KEY_FILE` should be read-protected and managed by your secret manager in production.
+
+Quick key generation (dev):
+
+```bash
+node services/ai-governance-eval/tools/generate_signing_key.js
+export SIGNING_MODE=file
+export SIGNING_KEY_FILE=services/ai-governance-eval/data/signing_key.pem
+node services/ai-governance-eval/index.js
+```
+

@@ -55,11 +55,19 @@ function makeAttestation(decisionId, modelId, decisionType, textSummary, scores,
     model_id: modelId,
     timestamp: new Date().toISOString(),
     decision_type: decisionType,
-    text_summary: textSummary,
+    text_summary: redactPII(textSummary),
     scores: scores,
     policy_version: policyVersion
   };
   return att;
+}
+
+function redactPII(text){
+  if(!text) return text;
+  // simple email and phone redaction
+  let out = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[REDACTED_EMAIL]');
+  out = out.replace(/\+?\d[\d\-\s]{7,}\d/g, '[REDACTED_PHONE]');
+  return out;
 }
 
 async function appendLedger(attestation, outPath){
