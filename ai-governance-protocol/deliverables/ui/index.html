@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AI Governance — Attestations Admin</title>
+  <style>body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:20px}button{margin:4px}</style>
+</head>
+<body>
+  <h2>Attestations</h2>
+  <div>
+    <label>Ledger URL: <input id="ledgerUrl" value="http://localhost:4000" style="width:320px"/></label>
+    <button id="load">Load</button>
+  </div>
+  <pre id="out" style="height:300px;overflow:auto;background:#f8f8f8;padding:10px;border:1px solid #eee"></pre>
+
+  <h3>Human Override</h3>
+  <div>
+    <label>Human ID: <input id="humanId" value="admin:1"/></label>
+    <label>Decision ID: <input id="decisionId"/></label>
+    <label>Override Type: <input id="overrideType" value="endorsement"/></label>
+    <br/>
+    <label>Note: <input id="note" style="width:420px"/></label>
+    <button id="override">Send Override</button>
+  </div>
+
+  <h3>Escalate</h3>
+  <div>
+    <label>Reason: <input id="reason" style="width:420px"/></label>
+    <button id="escalate">Create Escalation</button>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

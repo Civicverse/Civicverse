@@ -20,3 +20,9 @@ jobs:
         run: |
           node tests/test_evaluator.js
           node tests/test_simulation.js || true
+          node tests/test_simulation_more.js || true
+          node tools/checklist_check.js
+      - name: Run integration test (optional)
+        working-directory: ./services/ai-governance-eval
+        run: |
+          node tests/test_integration.js || true

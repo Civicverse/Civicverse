@@ -7,7 +7,9 @@
     "start": "node index.js",
     "test": "node tests/test_evaluator.js",
     "sim": "node tests/test_simulation.js",
-    "integration": "node tests/test_integration.js"
+    "sim-more": "node tests/test_simulation_more.js",
+    "integration": "node tests/test_integration.js",
+    "checklist": "node tools/checklist_check.js"
   },
   "engines": { "node": ">=16" }
 }
