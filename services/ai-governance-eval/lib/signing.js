@@ -29,16 +29,26 @@ function init(){
 
   if(MODE === 'kms'){
     // In prod this would call out to KMS. Here we keep ephemeral and log a warning.
-    console.warn('SIGNING_MODE=kms requested but KMS integration not configured. Using ephemeral fallback.');
+    console.warn('SIGNING_MODE=kms requested but KMS integration not configured. Using ephemeral fallback. Consider SIGNING_MODE=local-signer for local signing.');
   }
 }
 
 function getPublicKey(){ return _publicPem; }
 
 function signPayload(payload){
-  if(MODE === 'kms'){
-    // TODO: integrate with KMS (AWS KMS, Google KMS, HashiCorp Vault)
-    throw new Error('KMS signing not implemented in this environment');
+  if(MODE === 'local-signer'){
+    // POST to local signer service
+    const signerUrl = process.env.LOCAL_SIGNER_URL || 'http://localhost:4330/sign';
+    const u = new URL(signerUrl);
+    const https = u.protocol === 'https:' ? require('https') : require('http');
+    const body = JSON.stringify({ payload });
+    const opts = { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'Authorization': 'Bearer ' + (process.env.GOV_SECRET || '') } };
+    return new Promise((resolve,reject)=>{
+      const req = https.request(u, opts, res => { let b=''; res.on('data', c=>b+=c); res.on('end', ()=>{ try{ const j = JSON.parse(b); if(j.signature) resolve(j.signature); else reject(new Error('no signature')); }catch(e){ reject(e); } }); });
+      req.on('error', reject); req.write(body); req.end();
+      // add timeout
+      req.setTimeout(3000, ()=>{ req.destroy(new Error('signer timeout')); });
+    });
   }
   const sign = crypto.createSign('SHA256');
   sign.update(payload);

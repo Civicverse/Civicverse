@@ -3,7 +3,9 @@ const url = require('url');
 const { evaluate, makeAttestation, appendLedger } = require('./lib/evaluator');
 const signing = require('./lib/signing');
 const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
+let uuidv4;
+try{ ({ v4: uuidv4 } = require('uuid')); }catch(e){ uuidv4 = undefined; }
+const auth = require('./lib/auth');
 
 // minimal uuid fallback if uuid not installed
 function uuid(){
@@ -45,7 +47,8 @@ const server = http.createServer(async (req, res) => {
       const decision_id = body.decision_id || uuid();
       const att = makeAttestation(decision_id, model_id, decision_type, scores.summary, scores, body.policy_version || 'gov/v1');
       try{
-        att.attestor_signature = signing.signPayload(JSON.stringify(att));
+        const sig = await signing.signPayload(JSON.stringify(att));
+        att.attestor_signature = sig;
       }catch(e){
         att.attestor_signature = null;
       }
@@ -61,7 +64,7 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJSONBody(req);
       if(!body.decision_id || !body.model_id || !body.scores) return sendJSON(res, 400, { error: 'missing fields' });
       const att = makeAttestation(body.decision_id, body.model_id, body.decision_type || 'observation', body.text_summary || '', body.scores, body.policy_version || 'gov/v1');
-      try{ att.attestor_signature = signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
+      try{ att.attestor_signature = await signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
       await appendLedger(att);
       return sendJSON(res, 200, { attestation: att });
     }catch(e){
@@ -96,9 +99,11 @@ const server = http.createServer(async (req, res) => {
   if(req.method === 'POST' && p.pathname === '/escalate'){
     try{
       const body = await parseJSONBody(req);
+      const user = auth.requireAuth(req);
+      if(!user) return sendJSON(res, 401, { error: 'unauthorized' });
       const ticket = { id: uuid(), type: 'escalation', reason: body.reason || 'unspecified', created_at: new Date().toISOString(), context: body.context || {} };
       const att = makeAttestation(ticket.id, 'human-oversight', 'escalation', ticket.reason, { escalation: true }, body.policy_version || 'gov/v1');
-      try{ att.attestor_signature = signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
+      try{ att.attestor_signature = await signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
       await appendLedger(att);
       return sendJSON(res, 200, { ticket, attestation: att });
     }catch(e){ return sendJSON(res, 500, { error: e.message }); }
@@ -107,10 +112,12 @@ const server = http.createServer(async (req, res) => {
   if(req.method === 'POST' && p.pathname === '/override'){
     try{
       const body = await parseJSONBody(req);
+      const user = auth.requireAuth(req);
+      if(!user) return sendJSON(res, 401, { error: 'unauthorized' });
       if(!body.human_id || !body.decision_id || !body.override_type) return sendJSON(res, 400, { error: 'missing fields' });
       const att = makeAttestation(body.decision_id, body.human_id, body.override_type, body.note || 'human override', body.scores || {}, body.policy_version || 'gov/v1');
       att.human_override = true;
-      try{ att.attestor_signature = signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
+      try{ att.attestor_signature = await signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
       await appendLedger(att);
       return sendJSON(res, 200, { attestation: att });
     }catch(e){ return sendJSON(res, 500, { error: e.message }); }
