@@ -1,0 +1,12 @@
+{
+  "name": "ai-governance-eval",
+  "version": "0.1.0",
+  "description": "Fryboy Test evaluator scaffold (dev)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node tests/test_evaluator.js",
+    "sim": "node tests/test_simulation.js"
+  },
+  "engines": { "node": ">=16" }
+}

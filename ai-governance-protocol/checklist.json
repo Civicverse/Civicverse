@@ -1,0 +1,14 @@
+{
+  "name": "fryboy_alignment_checklist",
+  "version": "1.0",
+  "items": [
+    {"id": "ledger-attestations", "desc": "Ledger stores signed attestations for endorsements", "required": true},
+    {"id": "decision-logs", "desc": "Full decision logs exportable for audits", "required": true},
+    {"id": "fryboy-evaluator", "desc": "Evaluator service present and scoring per spec", "required": true},
+    {"id": "human-override", "desc": "Human-in-the-loop override and escalation endpoints", "required": true},
+    {"id": "policy-versioning", "desc": "Policy version recorded on each attestation", "required": true},
+    {"id": "timestamping", "desc": "Immutable timestamping enabled for attestations", "required": true},
+    {"id": "pii-redaction", "desc": "PII redaction rules applied when storing logs", "required": true},
+    {"id": "signature-kms", "desc": "Signing keys managed in secure keystore/HSM", "required": false}
+  ]
+}
