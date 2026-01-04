@@ -17,6 +17,8 @@ const REWARDS_DIR = path.join(__dirname, '..', 'data', 'rewards')
 try { fs.mkdirSync(ACCOUNTS_DIR, { recursive: true }) } catch(e) {}
 try { fs.mkdirSync(ACTIONS_DIR, { recursive: true }) } catch(e) {}
 try { fs.mkdirSync(REWARDS_DIR, { recursive: true }) } catch(e) {}
+const GUILDS_DIR = path.join(__dirname, '..', 'data', 'guilds')
+try { fs.mkdirSync(GUILDS_DIR, { recursive: true }) } catch(e) {}
 
 // Ensure data directory exists
 try {
@@ -237,4 +239,87 @@ app.get('/api/rewards/:ath', (req, res) => {
 
 app.listen(port, () => {
   console.log(`Civicverse backend stub listening on port ${port}`)
+})
+
+// Startup sanitization: remove any privateKey fields from persisted accounts
+;(function sanitizeAccounts() {
+  try {
+    const files = fs.readdirSync(ACCOUNTS_DIR)
+    files.forEach(f => {
+      try {
+        const p = path.join(ACCOUNTS_DIR, f)
+        const obj = JSON.parse(fs.readFileSync(p, 'utf8'))
+        if (obj.privateKey) {
+          delete obj.privateKey
+          fs.writeFileSync(p, JSON.stringify(obj, null, 2))
+          console.log('Sanitized privateKey from', f)
+        }
+      } catch (e) {}
+    })
+  } catch (e) {}
+})()
+
+// Guild invite endpoint: sponsors sign an invite for a new ATH
+app.post('/api/guild/invite', express.json(), (req, res) => {
+  try {
+    const { ath_new, sponsors, signatures, timestamp } = req.body
+    if (!ath_new || !Array.isArray(sponsors) || !Array.isArray(signatures) || sponsors.length < 3) return res.status(400).json({ error: 'invalid_request' })
+    const ts = timestamp || Date.now()
+    const inviteInput = { ath_new, sponsors, timestamp: ts }
+    const inviteHash = crypto.createHash('sha256').update(trust.stableStringify(inviteInput)).digest('hex')
+
+    // Verify each sponsor signature
+    for (let i = 0; i < sponsors.length; i++) {
+      const s = sponsors[i]
+      const sig = signatures[i]
+      const acctPath = path.join(ACCOUNTS_DIR, `${s}.json`)
+      if (!fs.existsSync(acctPath)) return res.status(404).json({ error: 'sponsor_not_found', sponsor: s })
+      const acct = JSON.parse(fs.readFileSync(acctPath, 'utf8'))
+      const ok = trust.verifySignatureECDSA(acct.publicKey, trust.stableStringify(inviteInput), sig)
+      if (!ok) return res.status(400).json({ error: 'invalid_sponsor_signature', sponsor: s })
+    }
+
+    const invitePath = path.join(GUILDS_DIR, `${inviteHash}.json`)
+    const inviteObj = { inviteHash, ath_new, sponsors, timestamp: ts, createdAt: Date.now() }
+    fs.writeFileSync(invitePath, JSON.stringify(inviteObj, null, 2))
+
+    // If new account exists, mark as invited and record sponsor list
+    const newAcctPath = path.join(ACCOUNTS_DIR, `${ath_new}.json`)
+    if (fs.existsSync(newAcctPath)) {
+      const acct = JSON.parse(fs.readFileSync(newAcctPath, 'utf8'))
+      acct.guildInvite = { inviteHash, sponsors, invitedAt: Date.now() }
+      fs.writeFileSync(newAcctPath, JSON.stringify(acct, null, 2))
+    }
+
+    res.json({ inviteHash, stored: true })
+  } catch (e) {
+    res.status(500).json({ error: 'invite_failed', message: e.message })
+  }
+})
+
+// Compute and distribute rewards (manual/triggered run for demo)
+app.post('/api/rewards/compute', express.json(), (req, res) => {
+  try {
+    // For each account with actions, compute credits and write to rewards dir
+    const acctFiles = fs.readdirSync(ACCOUNTS_DIR).filter(Boolean)
+    const results = []
+    acctFiles.forEach(f => {
+      try {
+        const ath = path.basename(f, '.json')
+        const actionsLog = path.join(ACTIONS_DIR, `${ath}.log`)
+        if (!fs.existsSync(actionsLog)) return
+        const lines = fs.readFileSync(actionsLog, 'utf8').trim().split('\n').filter(Boolean)
+        const { karmaBand } = computeKarmaAndLevel(ath)
+        const base = lines.length * 1
+        const multiplier = { none: 0.2, bronze: 0.6, silver: 1, gold: 1.5, platinum: 2 }[karmaBand] || 0.5
+        const credits = Math.floor(base * multiplier)
+        const out = { ath, credits, base, multiplier, karmaBand, computedAt: Date.now() }
+        fs.writeFileSync(path.join(REWARDS_DIR, `${ath}.json`), JSON.stringify(out, null, 2))
+        results.push(out)
+      } catch (e) {}
+    })
+    res.json({ distributed: results.length, results })
+  } catch (e) {
+    res.status(500).json({ error: 'compute_failed', message: e.message })
+  }
 })
