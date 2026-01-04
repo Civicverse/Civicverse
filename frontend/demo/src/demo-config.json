@@ -1,0 +1,19 @@
+{
+  "wallets": {
+    "demo": {
+      "address": "cv_demo_wallet_address",
+      "privateKey": "demo_private_key"
+    }
+  },
+  "miner": {
+    "default": {
+      "mode": "low_power",
+      "kaspa": { "enabled": true, "threads": 1 },
+      "monero": { "enabled": true, "threads": 1 }
+    }
+  },
+  "treasury": {
+    "address": "cv_treasury_address",
+    "balance": 12345.67
+  }
+}

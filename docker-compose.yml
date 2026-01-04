@@ -25,7 +25,7 @@ services:
 
   multiplayer-server:
     build: ./backend
-    working_dir: /app/backend
+    working_dir: /app
     command: node multiplayer-server.js
     ports:
       - "8080:8080"

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node multiplayer-server.js",
     "dev": "node multiplayer-server.js",
-    "server": "node multiplayer-server.js"
+    "server": "node multiplayer-server.js",
+    "test": "jest --runInBand"
   },
   "keywords": [
     "civicverse",
@@ -19,5 +20,9 @@
     "express": "^4.18.2",
     "ws": "^8.14.2",
     "cors": "^2.8.5"
+  }
+  ,
+  "devDependencies": {
+    "jest": "^29.0.0"
   }
 }

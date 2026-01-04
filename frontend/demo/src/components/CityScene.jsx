@@ -184,23 +184,7 @@ const createNeonCitySkyline = () => {
   return texture
 }
 
-// Create animated snow particles
-const createSnowParticles = (count = 500) => {
-  const particles = []
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x: (Math.random() - 0.5) * 400,
-      y: Math.random() * 200 - 50,
-      z: (Math.random() - 0.5) * 400,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: -0.1 - Math.random() * 0.3,
-      vz: (Math.random() - 0.5) * 0.3,
-      size: 0.3 + Math.random() * 0.7,
-      opacity: 0.3 + Math.random() * 0.5,
-    })
-  }
-  return particles
-}
+// Snow effect removed for neon city reskin (kept out for performance)
 
 // Create CivicWatch LCD screen texture with animated display
 const createCivicWatchScreen = (timeValue) => {
@@ -527,7 +511,6 @@ export default function CityScene({ onMultiplayerUpdate }) {
   const [sysStats, setSysStats] = useState(null)
   const [kills, setKills] = useState(0)
   const [deaths, setDeaths] = useState(0)
-  const [snowParticles, setSnowParticles] = useState(() => createSnowParticles(500))
   const billboardRef = useRef()
   const time = useRef(0)
   const ws = useRef(null)
@@ -865,29 +848,7 @@ export default function CityScene({ onMultiplayerUpdate }) {
     if (billboardRef.current) billboardRef.current.rotation.y += delta * 0.15
     setAttacks(prev => prev.filter(a => Date.now() - a.timestamp < 300))
     
-    // Animate snow particles
-    setSnowParticles(prev => prev.map(particle => {
-      let newY = particle.y + particle.vy
-      let newX = particle.x + particle.vx
-      let newZ = particle.z + particle.vz
-      
-      // Reset particles that fall too low or drift too far
-      if (newY < -100 || Math.abs(newX) > 250 || Math.abs(newZ) > 250) {
-        return {
-          ...particle,
-          x: (Math.random() - 0.5) * 400,
-          y: 150,
-          z: (Math.random() - 0.5) * 400,
-        }
-      }
-      
-      return {
-        ...particle,
-        x: newX,
-        y: newY,
-        z: newZ,
-      }
-    }))
+    // Snow animation removed for neon city reskin (no-op)
     
     sendPlayerState()
     if (onMultiplayerUpdate) onMultiplayerUpdate(playerState)
@@ -919,19 +880,11 @@ export default function CityScene({ onMultiplayerUpdate }) {
         />
       </mesh>
 
-      {/* Animated falling snow particles with neon glow */}
-      {snowParticles.map((particle, idx) => (
-        <mesh key={`snow-${idx}`} position={[particle.x, particle.y, particle.z]}>
-          <sphereGeometry args={[particle.size, 8, 8]} />
-          <meshStandardMaterial 
-            color="#ffffff"
-            emissive="#00ffff"
-            emissiveIntensity={0.8}
-            transparent
-            opacity={particle.opacity}
-          />
-        </mesh>
-      ))}
+      {/* Neon skyline background (replaces snow) */}
+      <mesh position={[0, 60, -300]} rotation={[0, 0, 0]}> 
+        <planeGeometry args={[1200, 400]} />
+        <meshBasicMaterial map={textures.neonSkyline} toneMapped={false} />
+      </mesh>
 
       {/* Anime vibrant gradient sky */}
       <mesh position={[0, 30, 0]} scale={200}>

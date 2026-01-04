@@ -14,6 +14,12 @@ app.use(express.json());
 const players = new Map(); // playerId -> playerState
 let playerIdCounter = 0;
 
+// Wallets and matches (simulated CVT token)
+const wallets = new Map(); // playerId -> balance (number)
+let communityWallet = 0;
+const matches = new Map(); // matchId -> { id, owner, participants: Set, bets: Map(playerId->amount), status }
+let matchIdCounter = 0;
+
 // Combat constants
 const DAMAGE_PER_HIT = 25;
 const ATTACK_RANGE = 3;
@@ -29,6 +35,8 @@ class Player {
     this.deaths = 0;
     this.lastAttackTime = 0;
     this.isAlive = true;
+    this.matchId = null;
+    this.matchKills = 0;
   }
 
   toJSON() {
@@ -94,6 +102,10 @@ function handleAttack(attacker, targetId) {
         target.health = 0;
         target.isAlive = false;
         attacker.kills++;
+        // match-scoped kill
+        if (attacker.matchId) {
+          attacker.matchKills = (attacker.matchKills || 0) + 1;
+        }
         target.deaths++;
         
         // Schedule respawn
@@ -133,6 +145,9 @@ function respawnPlayer(playerId) {
   }
 }
 
+// map of playerId -> ws
+const wsByPlayerId = new Map();
+
 // WebSocket connection handler
 wss.on('connection', (ws) => {
   const playerId = ++playerIdCounter;
@@ -146,6 +161,13 @@ wss.on('connection', (ws) => {
   };
   
   players.set(playerId, player);
+
+  // initialize simulated wallet for player (if not present)
+  if (!wallets.has(playerId)) wallets.set(playerId, 1000); // start with 1000 CVT
+
+  // store ws for potential direct messages
+  ws.playerId = playerId;
+  wsByPlayerId.set(playerId, ws);
 
   console.log(`Player ${playerId} connected. Total players: ${players.size}`);
 
@@ -222,6 +244,136 @@ app.get('/api/players', (req, res) => {
     players: playerList,
   });
 });
+
+// Create a royal deathmatch (simulated)
+app.post('/api/match/create', (req, res) => {
+  const owner = req.body.owner || null;
+  const id = ++matchIdCounter;
+  const match = {
+    id,
+    owner,
+    participants: new Set(),
+    bets: new Map(),
+    status: 'open', // open, running, finished
+    createdAt: Date.now(),
+  };
+  matches.set(id, match);
+  res.json({ matchId: id });
+});
+
+app.post('/api/match/join', (req, res) => {
+  const { matchId, playerId } = req.body;
+  const match = matches.get(Number(matchId));
+  const player = players.get(Number(playerId));
+  if (!match) return res.status(404).json({ error: 'match not found' });
+  if (!player) return res.status(404).json({ error: 'player not found' });
+  match.participants.add(Number(playerId));
+  player.matchId = match.id;
+  player.matchKills = 0;
+  res.json({ ok: true, matchId });
+});
+
+app.post('/api/match/place_bet', (req, res) => {
+  const { matchId, playerId, amount } = req.body;
+  const match = matches.get(Number(matchId));
+  const pid = Number(playerId);
+  const amt = Number(amount) || 0;
+  if (!match) return res.status(404).json({ error: 'match not found' });
+  if (!players.has(pid)) return res.status(404).json({ error: 'player not found' });
+  const balance = wallets.get(pid) || 0;
+  if (amt <= 0 || balance < amt) return res.status(400).json({ error: 'insufficient funds' });
+  // deduct immediately (escrow)
+  wallets.set(pid, balance - amt);
+  match.bets.set(pid, (match.bets.get(pid) || 0) + amt);
+  res.json({ ok: true, balance: wallets.get(pid), bet: match.bets.get(pid) });
+});
+
+app.post('/api/match/start', (req, res) => {
+  const { matchId } = req.body;
+  const match = matches.get(Number(matchId));
+  if (!match) return res.status(404).json({ error: 'match not found' });
+  match.status = 'running';
+  // reset matchKills for participants
+  match.participants.forEach(pid => {
+    const p = players.get(pid);
+    if (p) p.matchKills = 0;
+  });
+  // broadcast match state
+  const msg = JSON.stringify({ type: 'match_update', match: serializeMatch(match) });
+  wss.clients.forEach(c => c.readyState === WebSocket.OPEN && c.send(msg));
+  res.json({ ok: true });
+});
+
+// Force end and resolve match (for testing or when time expires)
+app.post('/api/match/end', (req, res) => {
+  const { matchId } = req.body;
+  const match = matches.get(Number(matchId));
+  if (!match) return res.status(404).json({ error: 'match not found' });
+  const result = resolveMatch(match.id);
+  res.json({ ok: true, result });
+});
+
+app.get('/api/match/:id', (req, res) => {
+  const match = matches.get(Number(req.params.id));
+  if (!match) return res.status(404).json({ error: 'match not found' });
+  res.json(serializeMatch(match));
+});
+
+app.get('/api/wallet/:playerId', (req, res) => {
+  const pid = Number(req.params.playerId);
+  res.json({ balance: wallets.get(pid) || 0 });
+});
+
+app.get('/api/community_wallet', (req, res) => {
+  res.json({ community: communityWallet });
+});
+
+function serializeMatch(match) {
+  return {
+    id: match.id,
+    owner: match.owner,
+    participants: Array.from(match.participants),
+    bets: Array.from(match.bets.entries()),
+    status: match.status,
+    createdAt: match.createdAt,
+  };
+}
+
+function resolveMatch(matchId) {
+  const match = matches.get(Number(matchId));
+  if (!match) return null;
+  // determine winner by highest matchKills
+  let topKills = -1;
+  let winners = [];
+  match.participants.forEach(pid => {
+    const p = players.get(pid);
+    const mk = (p && p.matchKills) || 0;
+    if (mk > topKills) { topKills = mk; winners = [pid]; }
+    else if (mk === topKills) winners.push(pid);
+  });
+  if (winners.length === 0) {
+    match.status = 'finished';
+    return { winners: [], distributed: 0 };
+  }
+  const winner = winners[Math.floor(Math.random() * winners.length)];
+  // sum bets
+  let total = 0;
+  match.bets.forEach(v => total += v);
+  const fee = total * 0.01;
+  const payout = total - fee;
+  communityWallet += fee;
+  wallets.set(winner, (wallets.get(winner) || 0) + payout);
+  match.status = 'finished';
+  // clear participants' matchId
+  match.participants.forEach(pid => {
+    const p = players.get(pid);
+    if (p) { p.matchId = null; p.matchKills = 0; }
+  });
+  // broadcast match result
+  const msg = JSON.stringify({ type: 'match_result', matchId: match.id, winner, payout, fee });
+  wss.clients.forEach(c => c.readyState === WebSocket.OPEN && c.send(msg));
+  return { winner, payout, fee };
+}
 
 app.post('/api/reset', (req, res) => {
   players.clear();

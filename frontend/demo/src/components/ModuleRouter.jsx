@@ -13,10 +13,14 @@ import UBIPanel from './modules/UBIPanel'
 import NewsPanel from './modules/NewsPanel'
 import EducationPanel from './modules/EducationPanel'
 import Dashboard from './modules/Dashboard'
+import Treasury from './modules/Treasury'
+import RoyalMatchPanel from './modules/RoyalMatchPanel'
+import CraigPanel from './modules/CraigPanel'
 
 export default function ModuleRouter({ module }) {
   const panels = {
     dashboard: <Dashboard />,
+    treasury: <Treasury />,
     voting: <VotingPanel />,
     dex: <DexPanel />,
     marketplace: <MarketplacePanel />,
@@ -29,7 +33,9 @@ export default function ModuleRouter({ module }) {
     governance: <GovernancePanel />,
     ubi: <UBIPanel />,
     news: <NewsPanel />,
-    education: <EducationPanel />
+    education: <EducationPanel />,
+    craig: <CraigPanel />,
+    royal: <RoyalMatchPanel />
   }
 
   return <div className="module-view">{panels[module] || <div>Module not found</div>}</div>

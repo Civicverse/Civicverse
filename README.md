@@ -760,7 +760,399 @@ chmod +x setup.sh
 docker compose up -d --build
 
 
+<<<<<<< HEAD
 Provides a working demo with placeholder features
+=======
+A Civilian-First Protocol for Ethical AI, Privacy, Digital Governance, and Resilient Public Infrastructure
+-----------------------------------------------------------------
+
+**Status:** Active Development (Demo / Prototype)
+
+**Last Updated:** December 2025
+
+CivicVerse is a civilian-owned civic infrastructure protocol rendered through immersive, game-like systems.
+
+It looks like a game.
+It behaves like infrastructure.
+
+CivicVerse exists to coordinate governance, education, journalism, commerce, and real-world civic participation in a way that is:
+
+- Human-governed
+- Auditable
+- Privacy-preserving
+- Economically self-sustaining
+- Resilient even if financial markets or crypto speculation collapse
+
+🧭 What Is CivicVerse?
+
+CivicVerse is a protocol-first civic operating system, visualized through a persistent interactive world.
+
+Under the hood, it is:
+
+- A civilian-owned governance framework
+- A runtime ethical-AI enforcement layer
+- A privacy-preserving identity and voting system
+- A real-world participation and verification engine
+- A purposeful economic system (UBI via verified contribution)
+- A resilient digital commons capable of operating online, offline, and across jurisdictions
+
+CivicVerse is civilian-first.
+
+Institutions, governments, universities, NGOs, brands, and researchers may participate —
+but they do not own the protocol, the identity layer, or the economic flows.
+
+🎮 Game Architecture — Civic Infrastructure Disguised as Play
+
+CivicVerse uses game mechanics as civic UX.
+
+This allows complex systems — governance, economics, verification, education — to exist inside a single continuous environment instead of fragmented apps, portals, and dashboards.
+
+This is not escapism.
+This is participatory infrastructure.
+
+Game mechanics are used to:
+
+- Reduce friction
+- Make systems legible
+- Encourage voluntary participation
+- Surface accountability through action, not paperwork
+
+🏛️ The Foyer — The Civic Interface Layer
+
+The Foyer is the central persistent world of CivicVerse.
+
+It is:
+
+- Not a menu
+- Not just a lobby
+- Not “the game itself”
+
+It is the routing and coordination layer where all modules connect.
+
+Everything flows through the Foyer:
+
+- News and reporting
+- Education and credentialing
+- Governance and deliberation
+- Commerce
+- CivicWatch missions
+- Economic activity
+
+Think of it as a living civic dashboard rendered spatially.
+
+🕹️ CivicWatch — Real-World Participation Engine
+
+CivicWatch is a real-world MMORPG inside CivicVerse.
+
+Instead of grinding fictional enemies, participants:
+
+- Identify real infrastructure or community issues
+- Document conditions on the ground
+- Verify information as citizen journalists
+- Coordinate responses and solutions
+- Complete missions with measurable, auditable outcomes
+
+CivicWatch functions as:
+
+- A public-service engine
+- A civilian verification layer
+- A journalism and transparency system
+
+The primary driver of Purposeful UBI
+
+💰 Purposeful UBI (Not Welfare, Not Surveillance)
+
+CivicVerse enables income through verified civic contribution.
+
+Missions are reputation-weighted
+Outcomes are peer-verified
+Fraud is discouraged through human accountability
+Results are logged on a transparent Civic Ledger
+
+This is not surveillance labor.
+This is voluntary civic participation with clear rewards.
+
+🎯 Optional Peer-to-Peer Outcome Staking (Not Gambling)
+
+CivicVerse supports opt-in, peer-to-peer outcome staking tied to civic activity.
+
+Examples include:
+
+- Mission completion deadlines
+- Project milestones
+- Governance proposals
+- Skill-based challenges
+
+Hard constraints:
+
+- CivicVerse never acts as a house or counterparty
+- No odds-setting or pooled betting
+- No chance-based games (slots, dice, loot boxes, etc.)
+
+All stakes are civilian-to-civilian
+
+Outcomes are verified by humans via Community Notes
+
+Participation is optional and reputation-weighted
+
+This exists to improve accountability and signal, not to extract value or promote addiction.
+
+⛏️ Mining as Civic Infrastructure (Foundational)
+
+Mining is not a side feature.
+It is core infrastructure.
+
+CivicVerse treats mining as:
+
+- Funding
+- Settlement
+- Redundancy
+- Physical resilience
+
+🔒 Privacy Chains (Sovereignty Layer)
+
+Monero
+
+Privacy-preserving transactions
+
+Protects civic participation from surveillance
+
+Enables UBI and civic payments without identity exposure
+
+Ensures censorship resistance
+
+⚡ Speed & Throughput Chains (Interaction Layer)
+
+Kaspa
+
+High-throughput, low-latency settlement
+
+Powers real-time:
+
+- Foyer commerce
+- CivicWatch missions
+- Governance actions
+
+🧱 Store-of-Value & Settlement Chains (Stability Layer)
+
+Bitcoin
+
+Long-term store of value
+
+Infrastructure-grade settlement
+
+Global neutrality
+
+🧠 Smart Contract & Programmability Chains (Modular Layer)
+
+Ethereum + L2s / other chains
+
+Optional smart contracts
+
+NFTs (optional, non-required)
+
+Advanced governance tooling
+
+Modular expansion
+
+CivicVerse is chain-agnostic.
+Any chain can be integrated if it meets:
+
+- Auditability
+- Replaceability
+- Community governance requirements
+
+💸 The 1% Ecosystem-Wide Microtax
+
+A flat 1% microtransaction tax applies across everything in CivicVerse:
+
+- Foyer commerce
+- CivicWatch missions
+- Governance actions
+- Education modules
+- Peer-to-peer outcome staking
+- NFT or digital asset transfers (if enabled)
+
+Any value flow inside the ecosystem
+
+There are no carve-outs.
+
+Funds go to a community-controlled treasury used for:
+
+- Infrastructure maintenance
+- Node operation
+- Human verification & accountability
+- Purposeful UBI distribution
+- Expansion of civic capacity
+
+CivicVerse does not extract profit.
+It sustains infrastructure.
+
+🔁 The Economic Flywheel (How This Sustains Itself)
+
+Phase 1 — Shared Mining Wallet
+
+Early participants mine across supported chains
+
+Rewards flow to a shared community wallet
+
+Funds hosting, nodes, development, and testing
+
+Phase 2 — Solar-Powered Mining Infrastructure
+
+Community wallet funds small solar mining deployments
+
+Those deployments mine continuously
+
+Revenue funds:
+
+- More solar nodes
+- Redundant infrastructure
+- Early UBI pilots
+
+Phase 3 — Mining + Microtax
+
+As activity grows, the 1% microtax activates
+
+Mining becomes supplemental, not primary
+
+Infrastructure becomes self-funding
+
+UBI stabilizes
+
+Phase 4 — Full Civic Economy
+
+Commerce, education, governance, participation
+
+Mining + microtax fund:
+
+- Infrastructure
+- UBI
+- Verification
+
+System no longer depends on crypto price speculation
+
+🧠 Why CivicVerse Survives Even If Crypto Markets Collapse
+
+Even if:
+
+- Token prices crash
+- Speculative markets disappear
+- Certain chains fail or fade
+
+CivicVerse continues operating because:
+
+- Nodes are civilian-owned
+- Infrastructure is physical (solar + compute)
+- Mining provides baseline funding
+- The microtax funds operations
+- Human verification governs outcomes
+
+The foundation is:
+
+- Human participation
+- Physical infrastructure
+- Shared ownership
+- Verifiable contribution
+
+🧱 Core Modules
+Module	Function
+🧬 CivicID	Privacy-preserving decentralized identity
+🏛️ Governance Nodes	Voting, proposals, execution
+🧠 AI Ethics Layer	Runtime alignment & audit
+🔗 Civic Ledger	Transparent civic records
+⛏️ Community Mining	Infrastructure funding
+🕹️ CivicWatch	Real-world missions + UBI
+
+🧪 Development Status (Honest)
+
+CivicVerse currently exists as a working demo / prototype.
+
+The demo demonstrates:
+
+- Architectural flow
+- Module boundaries
+- Economic logic
+- Participation mechanics
+
+It does not claim:
+
+- Production-grade security
+- Finished governance
+- Deployed UBI at scale
+
+This requires a real, multidisciplinary team.
+
+🛠️ How This Gets Built (Realistically)
+
+Small Civilian Network (≈100 people)
+
+Low-spec nodes
+
+Shared mining wallet
+
+Proof-of-concept UBI
+
+Infrastructure Seeding
+
+First solar mining deployment
+
+Redundant nodes
+
+CivicWatch pilot missions
+
+Expansion
+
+More nodes
+
+More missions
+
+Microtax stabilizes funding
+
+Scale
+
+Regional hubs
+
+Multi-MW solar infrastructure
+
+Millions of participants
+
+Trillion-dollar civic infrastructure over decades
+
+This is infrastructure building, not a startup exit.
+
+🧠 Design Philosophy
+
+Freedom is not preserved by intent.
+It is preserved by architecture that rewards contribution and accountability.
+
+CivicVerse replaces:
+
+- Passive consumption → Active participation
+- Opaque systems → Auditable systems
+- Extraction → Shared infrastructure
+
+🕊️ Closing
+
+CivicVerse is not a platform.
+It is civilian-owned civic infrastructure rendered as a playable world.
+
+A world where:
+
+- Mining funds the commons
+- Commerce sustains infrastructure
+- Participation earns dignity
+- Governance is visible
+- AI is constrained
+- Power is accountable
+
+Built by civilians.
+Governed by humans.
+Sustained by infrastructure.
+
+🔗 https://joincivicverse.typedream.app/
+### A Protocol for Freedom, Post-Collapse Governance & Ethical AI  
+>>>>>>> f85d41e (feat(onboarding+trust): add ATH/APH primitives, client-side signing, onboarding UI, anti-sybil heuristics, tests and CI; update README)
 
 Supports Foyer, CivicWatch missions, and governance simulations
 
