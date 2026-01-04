@@ -1,4 +1,5 @@
 import React from 'react'
+import RewardBurst from './RewardBurst'
 
 function Card({title,children}){
   return (
@@ -15,7 +16,7 @@ export default function Hub(){
       <div style={{display:'flex',gap:14,flexWrap:'wrap',pointerEvents:'none'}}>
         <div style={{pointerEvents:'auto'}}><Card title="Daily Quest">Collect 10 samples • <span className="muted">2/10</span></Card></div>
         <div style={{pointerEvents:'auto'}}><Card title="Recent Post">Welcome to the Civicverse demo — share your story!</Card></div>
-        <div style={{pointerEvents:'auto'}}><Card title="Rewards">You earned <strong>50 CVT</strong></Card></div>
+        <div style={{pointerEvents:'auto'}}><Card title="Rewards">You earned <strong>50 CVT</strong> <span style={{marginLeft:8,verticalAlign:'middle'}}><RewardBurst size={28} /></span></Card></div>
       </div>
     </div>
   )

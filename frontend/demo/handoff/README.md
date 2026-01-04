@@ -18,3 +18,14 @@ How to use
 1. Developers: copy CSS tokens from `src/theme/anime-theme.css` into your design system and implement components following `components-spec.md`.
 2. Designers: open `components-spec.md` for recommended art sizes, animation durations, and export formats (SVG + Lottie). Replace placeholder assets in `public/assets/ui/` with high-fidelity exports.
 3. QA: run Lighthouse and visual regression tests against the running site at http://localhost:3000.
+
+Branches & PR
+- Branch with the visual redesign: `ui-visual-redesign` (pushed to origin).
+- Create a PR at: https://github.com/Civicverse/Civicverse/pull/new/ui-visual-redesign
+
+Local QA
+- Preview the running demo: http://localhost:3000
+- Run Lighthouse locally:
+	```bash
+	npx lighthouse http://localhost:3000 --output html --output-path=lighthouse-report.html
+	```
