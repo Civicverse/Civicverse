@@ -1,6 +1,7 @@
 const http = require('http');
 const url = require('url');
 const { evaluate, makeAttestation, appendLedger } = require('./lib/evaluator');
+const signing = require('./lib/signing');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
@@ -9,10 +10,7 @@ function uuid(){
   try { return uuidv4(); } catch(e){ return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2); }
 }
 
-// generate ephemeral keypair at startup (dev only)
-const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
-const privatePem = privateKey.export({ type: 'pkcs1', format: 'pem' });
-const publicPem = publicKey.export({ type: 'pkcs1', format: 'pem' });
+const publicPem = signing.getPublicKey();
 
 const PORT = process.env.PORT || 4310;
 
@@ -34,7 +32,7 @@ function parseJSONBody(req){
 const server = http.createServer(async (req, res) => {
   const p = url.parse(req.url,true);
   if(req.method === 'GET' && p.pathname === '/health'){
-    return sendJSON(res, 200, { status: 'ok', public_key: publicPem.slice(0,120)+'...' });
+    return sendJSON(res, 200, { status: 'ok', public_key: publicPem.slice(0,120)+'...', signing_mode: signing.MODE });
   }
 
   if(req.method === 'POST' && p.pathname === '/fryboy-eval'){
@@ -45,9 +43,13 @@ const server = http.createServer(async (req, res) => {
       const scores = evaluate(text, { recognitionTerms: body.recognitionTerms });
       const decision_type = (scores.endorsement > 0.6 && scores.suppression_risk < 0.3) ? 'endorsement' : (scores.suppression_risk > 0.6 ? 'suppression' : 'observation');
       const decision_id = body.decision_id || uuid();
-      const att = makeAttestation(decision_id, model_id, decision_type, scores.summary, scores, body.policy_version || 'gov/v1', privatePem);
-      // append to local ledger by default
-      appendLedger(att);
+      const att = makeAttestation(decision_id, model_id, decision_type, scores.summary, scores, body.policy_version || 'gov/v1');
+      try{
+        att.attestor_signature = signing.signPayload(JSON.stringify(att));
+      }catch(e){
+        att.attestor_signature = null;
+      }
+      await appendLedger(att);
       return sendJSON(res, 200, { decision_id, scores, attestation: att });
     }catch(e){
       return sendJSON(res, 500, { error: e.message });
@@ -58,8 +60,9 @@ const server = http.createServer(async (req, res) => {
     try{
       const body = await parseJSONBody(req);
       if(!body.decision_id || !body.model_id || !body.scores) return sendJSON(res, 400, { error: 'missing fields' });
-      const att = makeAttestation(body.decision_id, body.model_id, body.decision_type || 'observation', body.text_summary || '', body.scores, body.policy_version || 'gov/v1', privatePem);
-      appendLedger(att);
+      const att = makeAttestation(body.decision_id, body.model_id, body.decision_type || 'observation', body.text_summary || '', body.scores, body.policy_version || 'gov/v1');
+      try{ att.attestor_signature = signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
+      await appendLedger(att);
       return sendJSON(res, 200, { attestation: att });
     }catch(e){
       return sendJSON(res, 500, { error: e.message });
@@ -87,6 +90,29 @@ const server = http.createServer(async (req, res) => {
       const pub = publicPem;
       const ok = verify.verify(pub, att.attestor_signature, 'base64');
       return sendJSON(res, 200, { valid: !!ok });
+    }catch(e){ return sendJSON(res, 500, { error: e.message }); }
+  }
+
+  if(req.method === 'POST' && p.pathname === '/escalate'){
+    try{
+      const body = await parseJSONBody(req);
+      const ticket = { id: uuid(), type: 'escalation', reason: body.reason || 'unspecified', created_at: new Date().toISOString(), context: body.context || {} };
+      const att = makeAttestation(ticket.id, 'human-oversight', 'escalation', ticket.reason, { escalation: true }, body.policy_version || 'gov/v1');
+      try{ att.attestor_signature = signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
+      await appendLedger(att);
+      return sendJSON(res, 200, { ticket, attestation: att });
+    }catch(e){ return sendJSON(res, 500, { error: e.message }); }
+  }
+
+  if(req.method === 'POST' && p.pathname === '/override'){
+    try{
+      const body = await parseJSONBody(req);
+      if(!body.human_id || !body.decision_id || !body.override_type) return sendJSON(res, 400, { error: 'missing fields' });
+      const att = makeAttestation(body.decision_id, body.human_id, body.override_type, body.note || 'human override', body.scores || {}, body.policy_version || 'gov/v1');
+      att.human_override = true;
+      try{ att.attestor_signature = signing.signPayload(JSON.stringify(att)); }catch(e){ att.attestor_signature = null }
+      await appendLedger(att);
+      return sendJSON(res, 200, { attestation: att });
     }catch(e){ return sendJSON(res, 500, { error: e.message }); }
   }
 

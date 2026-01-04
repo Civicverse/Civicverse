@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const signing = require('./signing');
 const FS = require('fs');
 const path = require('path');
 
@@ -48,7 +49,7 @@ function evaluate(text, opts={}){
   };
 }
 
-function makeAttestation(decisionId, modelId, decisionType, textSummary, scores, policyVersion, privateKeyPem){
+function makeAttestation(decisionId, modelId, decisionType, textSummary, scores, policyVersion){
   const att = {
     decision_id: decisionId,
     model_id: modelId,
@@ -58,12 +59,6 @@ function makeAttestation(decisionId, modelId, decisionType, textSummary, scores,
     scores: scores,
     policy_version: policyVersion
   };
-
-  const sign = crypto.createSign('SHA256');
-  sign.update(JSON.stringify(att));
-  sign.end();
-  const sig = sign.sign(privateKeyPem, 'base64');
-  att.attestor_signature = sig;
   return att;
 }
 

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "test": "node tests/test_evaluator.js",
-    "sim": "node tests/test_simulation.js"
+    "sim": "node tests/test_simulation.js",
+    "integration": "node tests/test_integration.js"
   },
   "engines": { "node": ">=16" }
 }
