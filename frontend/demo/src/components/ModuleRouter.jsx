@@ -16,6 +16,7 @@ import Dashboard from './modules/Dashboard'
 import Treasury from './modules/Treasury'
 import RoyalMatchPanel from './modules/RoyalMatchPanel'
 import CraigPanel from './modules/CraigPanel'
+import TDMPanel from './modules/TDMPanel'
 
 export default function ModuleRouter({ module }) {
   const panels = {
@@ -35,7 +36,8 @@ export default function ModuleRouter({ module }) {
     news: <NewsPanel />,
     education: <EducationPanel />,
     craig: <CraigPanel />,
-    royal: <RoyalMatchPanel />
+    royal: <RoyalMatchPanel />,
+    tdm: <TDMPanel />
   }
 
   return <div className="module-view">{panels[module] || <div>Module not found</div>}</div>

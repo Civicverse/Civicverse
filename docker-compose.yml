@@ -91,6 +91,22 @@ services:
       - wallet-router
     restart: unless-stopped
 
+  tdm-arena:
+    build: ./services/tdm-arena
+    environment:
+      - LEDGER_URL=http://ledger:4000
+    ports:
+      - "4100:4100"
+    depends_on:
+      - ledger
+    restart: unless-stopped
+
+  ai-copilot:
+    build: ./services/ai-copilot
+    ports:
+      - "4200:4200"
+    restart: unless-stopped
+
 
 volumes:
   kaspa-data:
