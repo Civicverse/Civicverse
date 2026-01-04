@@ -10,6 +10,8 @@
   <div>
     <label>Ledger URL: <input id="ledgerUrl" value="http://localhost:4000" style="width:320px"/></label>
     <button id="load">Load</button>
+    <label style="margin-left:12px">Admin Token: <input id="adminToken" style="width:320px" placeholder="paste admin JWT"/></label>
+    <button id="saveToken">Save Token</button>
   </div>
   <pre id="out" style="height:300px;overflow:auto;background:#f8f8f8;padding:10px;border:1px solid #eee"></pre>
 
@@ -27,6 +29,12 @@
   <div>
     <label>Reason: <input id="reason" style="width:420px"/></label>
     <button id="escalate">Create Escalation</button>
+  </div>
+
+  <h3>Attestation History</h3>
+  <div>
+    <button id="refreshHistory">Refresh</button>
+    <ul id="historyList" style="max-height:240px;overflow:auto;background:#fff;border:1px solid #eee;padding:8px;list-style:none"></ul>
   </div>
 
   <script src="main.js"></script>
