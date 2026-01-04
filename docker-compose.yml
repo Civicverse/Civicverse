@@ -51,6 +51,45 @@ services:
       - civicverse-backend
     restart: unless-stopped
 
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: civicverse
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  ledger:
+    build: ./services/ledger
+    environment:
+      - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/civicverse
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  wallet-router:
+    build: ./services/wallet-router
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  gateway:
+    build: ./services/gateway
+    environment:
+      - LEDGER_URL=http://ledger:4000
+      - WALLET_URL=http://wallet-router:5000
+    ports:
+      - "4001:4001"
+    depends_on:
+      - ledger
+      - wallet-router
+    restart: unless-stopped
+
 
 volumes:
   kaspa-data:
+  postgres-data:
