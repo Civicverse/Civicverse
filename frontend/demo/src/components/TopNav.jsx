@@ -14,7 +14,7 @@ export default function TopNav(){
         ))}
       </div>
       <div className="search">
-        <input placeholder="Search quests, players, listings..." style={{background:'transparent',border:'none',color:'#fff',outline:'none',width:'100%'}} />
+        <input aria-label="Search" role="searchbox" placeholder="Search quests, players, listings..." style={{background:'transparent',border:'none',color:'var(--panel-text)',outline:'none',width:'100%'}} />
       </div>
     </header>
   )

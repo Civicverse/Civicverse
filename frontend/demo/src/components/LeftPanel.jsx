@@ -4,7 +4,7 @@ export default function LeftPanel(){
   return (
     <aside className="left-sidebar" aria-hidden="false">
       <div style={{display:'flex',alignItems:'center',gap:10}}>
-        <div style={{width:56,height:56,borderRadius:12,background:'linear-gradient(135deg,var(--neon-blue),var(--neon-magenta))'}} />
+        <div role="img" aria-label="player avatar" style={{width:56,height:56,borderRadius:12,background:'linear-gradient(135deg,var(--neon-blue),var(--neon-magenta))'}} />
         <div>
           <div style={{fontWeight:700}}>PlayerName</div>
           <div className="muted">Level 7 • Guardian</div>

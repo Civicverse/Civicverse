@@ -4,8 +4,9 @@
   --neon-magenta: #FF4ECF;
   --electric-purple: #7C4DFF;
   --neon-green: #00FFAA;
-  --panel-glass: rgba(255,255,255,0.04);
-  --panel-border: rgba(78,225,255,0.12);
+  --panel-glass: rgba(255,255,255,0.05);
+  --panel-border: rgba(78,225,255,0.16);
+  --panel-text: #e6f7ff;
   --edge-glow: 0 0 18px rgba(78,225,255,0.12);
   --ease-pop: cubic-bezier(.16,.84,.44,1);
   --anim-short: 160ms;
@@ -14,7 +15,7 @@
 }
 
 body,html,#root{height:100%;}
-.app-root{background:linear-gradient(180deg,var(--bg-900),#0b1530);color:#fff;min-height:100vh;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+.app-root{background:linear-gradient(180deg,var(--bg-900),#0b1530);color:var(--panel-text);min-height:100vh;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
 
 /* Top nav */
 .topnav{position:fixed;left:0;right:0;top:0;height:64px;display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));backdrop-filter: blur(6px);border-bottom:1px solid var(--panel-border);z-index:1200}
