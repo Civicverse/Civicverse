@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5000"
+    "preview": "vite preview --port 5000",
+    "headless-capture": "node ./tools/headless_capture.js"
   },
   "dependencies": {
     "react": "18.2.0",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "vite": "5.1.1",
-    "@vitejs/plugin-react": "^4.0.0"
+    "@vitejs/plugin-react": "^4.0.0",
+    "puppeteer": "^21.4.0"
   }
 }

@@ -96,3 +96,65 @@ body::after { content: ''; pointer-events: none; position: fixed; inset:0; backg
 .module-view {
   width: 100%;
 }
+
+/* World-anchored panel styling (frosted glass) */
+.world-panel{
+  min-width:200px;
+  max-width:320px;
+  background: rgba(10,10,20,0.45);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 10px;
+  border-radius: 8px;
+  color: #fff;
+  backdrop-filter: blur(6px) saturate(120%);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6), 0 0 18px rgba(0,200,255,0.06) inset;
+}
+.wp-title{ font-weight:800; color:#ffccff; margin-bottom:6px; font-size:14px; }
+.wp-row{ padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.03); font-size:13px }
+.wp-actions{ display:flex; gap:8px; margin-top:8px }
+.wp-btn{ background:linear-gradient(90deg,#ff6fd6,#00ffd0); border:none; color:#001; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:700 }
+.wp-btn.ghost{ background:transparent; border:1px solid rgba(255,255,255,0.06); color:#fff }
+
+/* Notification center toasts */
+.notifs{ position: fixed; right: 20px; top: 20px; display:flex; flex-direction:column; gap:10px; z-index:10050 }
+.notif{ background: linear-gradient(90deg,#001 0%, #0b0020 100%); border:1px solid rgba(255,0,200,0.12); color:#fff; padding:10px 14px; border-radius:8px; box-shadow: 0 6px 18px rgba(0,0,0,0.6); font-size:12px; min-width:180px; max-width:320px; opacity:0.98 }
+
+.notif::before{ content:''; display:inline-block; width:8px; height:8px; background:#00ffd0; border-radius:50%; margin-right:8px; vertical-align:middle }
+
+/* Futuristic HUD styles */
+.fhud-root{ position: absolute; left: 22px; top: 18px; display:flex; gap:18px; align-items:flex-start; z-index:1000 }
+.fhud-left, .fhud-center, .fhud-right{ display:flex; align-items:center }
+.fhud-player-card{ background: linear-gradient(180deg,#080818,#0b0022); border:1px solid rgba(0,255,200,0.06); padding:8px; border-radius:8px; display:flex; gap:8px; align-items:center; box-shadow: 0 8px 24px rgba(0,0,0,0.6) }
+.pc-avatar{ width:48px; height:48px; border-radius:8px; background: linear-gradient(90deg,#ff6fd6,#00ffd0); display:flex; align-items:center; justify-content:center; font-weight:900; color:#001; box-shadow: 0 6px 16px rgba(0,0,0,0.6) }
+.pc-stats{ display:flex; flex-direction:column; gap:6px }
+.pc-row{ display:flex; gap:8px; justify-content:space-between; min-width:120px }
+.pc-label{ color:#aaffff; font-weight:800; font-size:11px }
+.pc-val{ color:#00ff88; font-weight:900 }
+.action-bar{ display:flex; gap:8px }
+.action{ background:linear-gradient(90deg,#001 0%, #0b0030 100%); border:1px solid rgba(0,255,200,0.08); padding:8px 12px; color:#fff; border-radius:6px; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.6) }
+.fhud-quick{ background: rgba(0,0,0,0.35); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.04); }
+
+/* Minimap enhancements */
+.minimap{ width:140px; height:120px; border-radius:8px; overflow:hidden; border:1px solid rgba(0,255,200,0.06); box-shadow: 0 6px 16px rgba(0,0,0,0.6); background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(10,10,20,0.35)); padding:6px }
+.minimap svg{ width:100%; height:100%; display:block }
+.minimap circle{ transform-origin:50% 50%; animation: ping 1.6s infinite ease-in-out }
+
+@keyframes ping{
+  0%{ transform: scale(1); opacity:1 }
+  70%{ transform: scale(1.6); opacity:0.45 }
+  100%{ transform: scale(2); opacity:0 }
+}
+
+/* small HUD micro-interaction */
+.pc-val{ transition: transform 180ms linear }
+.pc-val.pulse{ transform: scale(1.08); color:#fff }
+
+/* Social overlay styles */
+.social-overlay{ position: fixed; left: 22px; bottom: 22px; width:260px; max-height: 360px; background: linear-gradient(180deg, rgba(4,4,10,0.6), rgba(0,0,0,0.4)); border:1px solid rgba(0,255,200,0.06); padding:10px; border-radius:8px; z-index:2000; box-shadow: 0 8px 30px rgba(0,0,0,0.6) }
+.so-header{ font-weight:900; color:#00ffd0; margin-bottom:8px; font-size:12px }
+.so-list{ display:flex; flex-direction:column; gap:8px; overflow:auto; max-height:300px }
+.so-item{ display:flex; gap:8px; align-items:flex-start; padding:6px; border-radius:6px; background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.02) }
+.so-author{ color:#ff77ff; font-weight:800; font-size:12px }
+.so-text{ color:#fff; font-size:12px; opacity:0.95 }
+
+

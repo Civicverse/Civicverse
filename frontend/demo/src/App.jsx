@@ -1,7 +1,7 @@
 import React, { Suspense, useState, lazy } from 'react'
 const ThreeContainer = lazy(() => import('./components/ThreeContainer'))
 const ModuleRouter = lazy(() => import('./components/ModuleRouter'))
-import HUD from './components/HUD'
+import FuturisticHUD from './components/FuturisticHUD'
 import './theme/anime-theme.css'
 import TopNav from './components/TopNav'
 import LeftPanel from './components/LeftPanel'
@@ -9,11 +9,18 @@ import RightPanel from './components/RightPanel'
 import Hub from './components/Hub'
 import FAB from './components/FAB'
 import FooterPanel from './components/FooterPanel'
+import NotificationCenter, { notify } from './components/NotificationCenter'
+import SocialOverlay from './components/SocialOverlay'
+import { useEffect } from 'react'
 
 export default function App(){
   const [activeModule, setActiveModule] = useState('dashboard')
   const [kills, setKills] = useState(0)
   const [hp, setHp] = useState(100)
+
+  useEffect(()=>{
+    notify(`Module: ${activeModule}`)
+  },[activeModule])
 
   return (
     <div className="app-root">
@@ -46,9 +53,9 @@ export default function App(){
         <div className="canvas-container">
           <Hub />
           <Suspense fallback={null}>
-            <ThreeContainer kills={kills} />
+            <ThreeContainer kills={kills} activeModule={activeModule} />
           </Suspense>
-          <HUD hp={hp} kills={kills} setActiveModule={setActiveModule} />
+          <FuturisticHUD hp={hp} kills={kills} setActiveModule={setActiveModule} />
           <div style={{display:'none'}}>
             <Suspense fallback={<div/>}>
               <ModuleRouter module={'dashboard'} />
@@ -59,6 +66,8 @@ export default function App(){
         </div>
       </div>
       <FooterPanel />
+      <NotificationCenter />
+      <SocialOverlay />
     </div>
   )
 }

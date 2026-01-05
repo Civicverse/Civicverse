@@ -1,0 +1,7 @@
+FROM node:20-bullseye-slim
+RUN apt-get update && apt-get install -y wget ca-certificates libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libx11-xcb1 libxdamage1 libxrandr2 libxfixes3 libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0 --no-install-recommends && rm -rf /var/lib/apt/lists/*
+WORKDIR /workspace
+COPY package.json package-lock.json* /workspace/
+RUN npm ci --no-audit --no-fund || true
+COPY . /workspace
+CMD ["node","tools/capture_ui_console.js"]

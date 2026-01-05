@@ -1,0 +1,52 @@
+{
+  "console": [
+    {
+      "type": "pageerror",
+      "text": "Cannot read properties of undefined (reading 'useLayoutEffect')"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "network": [
+    {
+      "url": "http://localhost:3000/",
+      "status": 200,
+      "type": "text/html"
+    },
+    {
+      "url": "http://localhost:3000/assets/index-CboeAbJr.css",
+      "status": 200,
+      "type": "text/css"
+    },
+    {
+      "url": "http://localhost:3000/assets/index-DCYwARpy.js",
+      "status": 200,
+      "type": "application/javascript"
+    },
+    {
+      "url": "http://localhost:3000/assets/vendor-CKu4BdmA.js",
+      "status": 200,
+      "type": "application/javascript"
+    },
+    {
+      "url": "http://localhost:3000/assets/react-vendor-VFhvKQR3.js",
+      "status": 200,
+      "type": "application/javascript"
+    },
+    {
+      "url": "http://localhost:3000/assets/three-vendor-ZjXuO5qE.js",
+      "status": 200,
+      "type": "application/javascript"
+    },
+    {
+      "url": "http://localhost:3000/favicon.ico",
+      "status": 404,
+      "type": "text/html"
+    }
+  ],
+  "dom": {
+    "inner": ""
+  }
+}

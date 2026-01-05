@@ -25,12 +25,14 @@ const puppeteer = require('puppeteer');
     }catch(e){/* ignore */}
   });
 
-  await page.goto('http://localhost:4320', { waitUntil: 'networkidle2', timeout: 15000 }).catch(e=>{
+  const target = process.env.TARGET_URL || 'http://localhost:4320';
+  await page.goto(target, { waitUntil: 'networkidle2', timeout: 15000 }).catch(e=>{
     out.console.push({type:'goto-error', text: e.message});
   });
 
-  // wait a bit for any async scripts
-  await page.waitForTimeout(1000);
+  // wait a bit for any async scripts (use a portable sleep)
+  const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+  await sleep(1000);
 
   // dump DOM size and a bit of body
   const bodyHtml = await page.evaluate(()=>({inner: document.body ? document.body.innerText.slice(0,800) : ''})).catch(()=>({}));
