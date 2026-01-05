@@ -11,5 +11,13 @@
     "integration": "node tests/test_integration.js",
     "checklist": "node tools/checklist_check.js"
   },
-  "engines": { "node": ">=16" }
+  "dependencies": {
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6"
+  },
+  "bin": {
+    "ai-eval-proxy": "ui-proxy.js",
+    "ai-local-signer": "local-signer.js"
+  }
+  ,"engines": { "node": ">=16" }
 }

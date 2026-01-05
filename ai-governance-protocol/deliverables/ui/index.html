@@ -6,6 +6,21 @@
   <style>body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:20px}button{margin:4px}</style>
 </head>
 <body>
+  <div id="debugBanner" style="position:fixed;left:12px;top:12px;padding:8px 12px;background:#222;color:#fff;border-radius:6px;z-index:9999;font-family:system-ui;box-shadow:0 2px 8px rgba(0,0,0,.2)">JS: initializing...</div>
+  <script>
+    (function(){
+      try{
+        const b = document.getElementById('debugBanner');
+        const set = (s)=>{ if(b) b.textContent = 'JS: '+s; };
+        set('loaded-inline');
+        window.addEventListener('error', e=> set('error:'+ (e && e.message ? e.message : 'unknown')) );
+        window.addEventListener('unhandledrejection', e=> set('unhandled:'+ (e && e.reason && e.reason.message ? e.reason.message : 'rej')) );
+        document.addEventListener('DOMContentLoaded', ()=> set('dom-ready') );
+        // final marker after a short delay
+        setTimeout(()=> set('running'), 500);
+      }catch(e){/* ignore */}
+    })();
+  </script>
   <h2>Attestations</h2>
   <div>
     <label>Ledger URL: <input id="ledgerUrl" value="http://localhost:4000" style="width:320px"/></label>
@@ -38,5 +53,21 @@
   </div>
 
   <script src="main.js"></script>
+  <script>
+    // Client-side logger: forwards console messages and errors to the UI proxy for debugging
+    (function(){
+      try{
+        const send = (level, msg) => {
+          try{ navigator.sendBeacon && navigator.sendBeacon('/__client_log', JSON.stringify({ level, msg })); }catch(e){ fetch('/__client_log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level,msg})}).catch(()=>{}); }
+        };
+        const oldLog = console.log; console.log = function(...args){ send('log', args.join(' ')); oldLog.apply(console, args); };
+        const oldErr = console.error; console.error = function(...args){ send('error', args.join(' ')); oldErr.apply(console, args); };
+        window.addEventListener('error', e=>{ send('error', e.message + ' @' + (e.filename||'') + ':' + (e.lineno||'') ); });
+        window.addEventListener('unhandledrejection', e=>{ send('error', 'unhandledrejection: '+ (e.reason && e.reason.message) ); });
+        // notify ready
+        send('info','client-loaded');
+      }catch(e){/* ignore */}
+    })();
+  </script>
 </body>
 </html>

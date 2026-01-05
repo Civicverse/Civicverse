@@ -107,6 +107,60 @@ services:
       - "4200:4200"
     restart: unless-stopped
 
+  ai-governance-eval:
+    build:
+      context: ./services/ai-governance-eval
+      dockerfile: Dockerfile
+    environment:
+      - LEDGER_URL=http://ledger:4000
+      - SIGNING_MODE=${SIGNING_MODE:-file}
+      - SIGNING_KEY_FILE=${SIGNING_KEY_FILE:-/data/signing_key.pem}
+      - GOV_SECRET=${GOV_SECRET:-devsecret}
+    ports:
+      - "4310:4310"
+    depends_on:
+      - ledger
+    volumes:
+      - ./services/ai-governance-eval/data:/data:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4310/health"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  ai-governance-local-signer:
+    build:
+      context: ./services/ai-governance-eval
+      dockerfile: Dockerfile
+    command: node local-signer.js
+    environment:
+      - GOV_SECRET=${GOV_SECRET:-devsecret}
+      - SIGNING_KEY_FILE=${SIGNING_KEY_FILE:-/data/signing_key.pem}
+    ports:
+      - "4330:4330"
+    depends_on:
+      - ai-governance-eval
+    volumes:
+      - ./services/ai-governance-eval/data:/data:rw
+    restart: unless-stopped
+
+  ai-governance-ui-proxy:
+    build:
+      context: ./services/ai-governance-eval
+      dockerfile: Dockerfile
+    command: node ui-proxy.js
+    environment:
+      - GOV_SECRET=${GOV_SECRET:-devsecret}
+      - EVAL_URL=http://ai-governance-eval:4310
+    ports:
+      - "4320:4320"
+    depends_on:
+      - ai-governance-eval
+    volumes:
+      - ./ai-governance-protocol/deliverables/ui:/ui:ro
+      # do not mount the app directory here (it hides installed node_modules)
+    restart: unless-stopped
+
 
 volumes:
   kaspa-data:
