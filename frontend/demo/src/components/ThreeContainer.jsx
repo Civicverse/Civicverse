@@ -4,7 +4,7 @@ const Canvas = lazy(() => import('@react-three/fiber').then(mod => ({ default: m
 const OrbitControls = lazy(() => import('@react-three/drei').then(mod => ({ default: mod.OrbitControls })))
 const CityScene = lazy(() => import('./CityScene'))
 
-export default function ThreeContainer({ kills, activeModule }){
+export default function ThreeContainer({ kills, activeModule, avatarAppearance }){
   return (
     <Suspense fallback={null}>
       <Canvas
@@ -15,7 +15,7 @@ export default function ThreeContainer({ kills, activeModule }){
         <directionalLight position={[10,15,8]} intensity={1.2} />
         <pointLight position={[-5,5,-5]} intensity={0.6} color="#ff006f" />
         <Suspense fallback={null}>
-          <CityScene kills={kills} activeModule={activeModule} />
+          <CityScene kills={kills} activeModule={activeModule} avatarAppearance={avatarAppearance} />
         </Suspense>
         <OrbitControls enablePan={false} enableZoom={false} autoRotate={false} />
       </Canvas>

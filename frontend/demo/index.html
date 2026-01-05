@@ -5,8 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Civicverse Demo</title>
   </head>
-  <body>
+  <body class="overlay-visible">
     <div id="root"></div>
+    <div id="overlay-root"></div>
+    <!-- Overlay lock: ensure the onboarding overlay remains visible until
+         the user explicitly unlocks it by calling `window.__civic_unlock()`.
+         This prevents early removal of the class by other scripts or hydration
+         races which caused the UI to flash behind the canvas. -->
+    <script>
+      (function(){
+        window.__civic_overlay_locked = true;
+        function enforce(){
+          try{
+            if (window.__civic_overlay_locked) {
+              if (!document.body.classList.contains('overlay-visible')) document.body.classList.add('overlay-visible')
+            }
+          }catch(e){}
+        }
+        const mo = new MutationObserver(()=>enforce());
+        if (document.body) { enforce(); mo.observe(document.body, { attributes: true, attributeFilter: ['class'] }) }
+        window.__civic_unlock = function(){ window.__civic_overlay_locked = false; try{ mo.disconnect(); document.body.classList.remove('overlay-visible') }catch(e){} }
+      })();
+    </script>
+
+    <!-- Ambient synthwave audio (muted by default). HUD will control playback/volume. -->
+    <audio id="synth-audio" loop preload="auto" crossorigin="anonymous" muted>
+      <source src="/assets/audio/synthwave-loop.mp3" type="audio/mpeg">
+    </audio>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

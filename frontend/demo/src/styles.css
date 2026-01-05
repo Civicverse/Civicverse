@@ -73,7 +73,7 @@ body {
 .neon { color:#ff77ff; text-shadow: 0 0 6px #ff00c8, 0 0 18px rgba(0,255,200,0.06); }
 
 /* CRT / pixel overlay */
-body::after { content: ''; pointer-events: none; position: fixed; inset:0; background-image: linear-gradient(rgba(0,0,0,0.02), rgba(0,0,0,0.02)), repeating-linear-gradient(0deg, rgba(255,255,255,0.01) 0 1px, transparent 1px 3px); mix-blend-mode: overlay; z-index:9999; }
+body::after { content: ''; pointer-events: none; position: fixed; inset:0; background-image: linear-gradient(rgba(0,0,0,0.02), rgba(0,0,0,0.02)), repeating-linear-gradient(0deg, rgba(255,255,255,0.01) 0 1px, transparent 1px 3px); mix-blend-mode: overlay; z-index: 10; }
 
 /* Responsive tweak */
 @media (max-width: 900px) { .left-sidebar { display:none; } }
@@ -122,7 +122,7 @@ body::after { content: ''; pointer-events: none; position: fixed; inset:0; backg
 .notif::before{ content:''; display:inline-block; width:8px; height:8px; background:#00ffd0; border-radius:50%; margin-right:8px; vertical-align:middle }
 
 /* Futuristic HUD styles */
-.fhud-root{ position: absolute; left: 22px; top: 18px; display:flex; gap:18px; align-items:flex-start; z-index:1000 }
+.fhud-root{ position: absolute; left: 22px; top: 18px; display:flex; gap:18px; align-items:flex-start; z-index:10050 }
 .fhud-left, .fhud-center, .fhud-right{ display:flex; align-items:center }
 .fhud-player-card{ background: linear-gradient(180deg,#080818,#0b0022); border:1px solid rgba(0,255,200,0.06); padding:8px; border-radius:8px; display:flex; gap:8px; align-items:center; box-shadow: 0 8px 24px rgba(0,0,0,0.6) }
 .pc-avatar{ width:48px; height:48px; border-radius:8px; background: linear-gradient(90deg,#ff6fd6,#00ffd0); display:flex; align-items:center; justify-content:center; font-weight:900; color:#001; box-shadow: 0 6px 16px rgba(0,0,0,0.6) }
@@ -150,11 +150,118 @@ body::after { content: ''; pointer-events: none; position: fixed; inset:0; backg
 .pc-val.pulse{ transform: scale(1.08); color:#fff }
 
 /* Social overlay styles */
-.social-overlay{ position: fixed; left: 22px; bottom: 22px; width:260px; max-height: 360px; background: linear-gradient(180deg, rgba(4,4,10,0.6), rgba(0,0,0,0.4)); border:1px solid rgba(0,255,200,0.06); padding:10px; border-radius:8px; z-index:2000; box-shadow: 0 8px 30px rgba(0,0,0,0.6) }
+.social-overlay{ position: fixed; left: 22px; bottom: 22px; width:260px; max-height: 360px; background: linear-gradient(180deg, rgba(4,4,10,0.6), rgba(0,0,0,0.4)); border:1px solid rgba(0,255,200,0.06); padding:10px; border-radius:8px; z-index:10060; box-shadow: 0 8px 30px rgba(0,0,0,0.6) }
 .so-header{ font-weight:900; color:#00ffd0; margin-bottom:8px; font-size:12px }
 .so-list{ display:flex; flex-direction:column; gap:8px; overflow:auto; max-height:300px }
 .so-item{ display:flex; gap:8px; align-items:flex-start; padding:6px; border-radius:6px; background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.02) }
 .so-author{ color:#ff77ff; font-weight:800; font-size:12px }
 .so-text{ color:#fff; font-size:12px; opacity:0.95 }
+
+/* Enter world overlay to prevent immediate auto-mount of heavy scene */
+.enter-overlay{ position: fixed !important; inset: 0; display:flex; align-items:center; justify-content:center; z-index:2147483647 !important; pointer-events:auto }
+.enter-card{ width:420px; max-width:90%; background: linear-gradient(180deg, rgba(2,2,10,0.92), rgba(6,4,20,0.96)); border:1px solid rgba(0,255,200,0.08); padding:22px; border-radius:12px; box-shadow: 0 18px 60px rgba(0,0,0,0.8); color:#fff }
+.enter-card h2{ font-size:20px; color:#00ffd0; margin-bottom:8px }
+.enter-card p{ color: rgba(255,255,255,0.88); margin-bottom:14px }
+.enter-actions{ display:flex; gap:12px; justify-content:flex-end }
+.enter-btn, .enter-continue{ background: linear-gradient(90deg,#ff6fd6,#00ffd0); border:none; padding:10px 14px; border-radius:8px; font-weight:800; cursor:pointer }
+.enter-continue{ background: transparent; border:1px solid rgba(255,255,255,0.06); color:#fff }
+
+/* Login card specific tweaks */
+.login-card { width: 480px; max-width: 92%; }
+.login-form { display:flex; flex-direction:column; gap:8px; margin-top:6px }
+.login-form label { color:#aaffff; font-weight:800; font-size:12px }
+.login-form .input-field { padding:8px; font-size:14px }
+.auth-error { color:#ff7788; font-weight:800; margin-top:6px }
+
+/* Slight dimming of canvas when overlay is present */
+.canvas-container::before{ content:''; position:absolute; inset:0; pointer-events:none }
+.canvas-container .enter-overlay ~ * { filter: none }
+
+/* When the app is in its initial state before the user explicitly enters
+   the world, hide the three.js canvas at the global level so inline styles
+   set by the renderer cannot make it visible above overlays. The
+   `overlay-visible` class is added to the <body> by default in
+   `index.html` and toggled by React in `App.jsx`. */
+body.overlay-visible canvas {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+body.overlay-visible .enter-overlay {
+  z-index: 2147483647;
+}
+
+/* Also hide the react-three wrapper/container so any div wrappers
+   created by R3F do not cover overlays. Keeps animated-city and HUD visible. */
+body.overlay-visible .canvas-container .three-wrapper {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Defensive: hide any top-level r3f autogenerated wrappers */
+body.overlay-visible .canvas-container > div[class*="r3f"],
+body.overlay-visible .canvas-container > div[class*="react-three"],
+body.overlay-visible .canvas-container > div[role="presentation"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Floating panel common look to make UI feel in-world */
+.floating-panel{
+  background: linear-gradient(180deg, rgba(2,2,10,0.6), rgba(6,4,20,0.7));
+  border: 1px solid rgba(0,255,200,0.06);
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 0 24px rgba(0,255,200,0.02);
+  backdrop-filter: blur(6px) saturate(120%);
+  transform: rotateX(6deg) translateZ(0);
+}
+
+/* Avatar preview inside HUD */
+.avatar-preview{ width:48px; height:48px; border-radius:8px; background-size:cover; background-position:center; box-shadow: 0 6px 18px rgba(0,0,0,0.6) }
+
+/* Breathing and blink micro-animations for avatar preview */
+.avatar-preview.breath { animation: avatarBreath 3200ms ease-in-out infinite; transform-origin: center; }
+.avatar-preview.blink { transition: transform 120ms ease-in-out; }
+@keyframes avatarBreath { 0% { transform: scale(1) } 50% { transform: scale(1.06) } 100% { transform: scale(1) } }
+
+
+/* Avatar micro-animations: breathing (scale) and blink (top overlay) */
+.avatar-preview.breath { animation: avatarBreath 4.5s ease-in-out infinite; transform-origin: 50% 50%; }
+.avatar-preview.blink::after{ content:''; position:absolute; inset:0; border-radius:8px; background: linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.0)); pointer-events:none; }
+.avatar-preview.blink { animation: avatarBlink 0.18s steps(1, end) 1; }
+.avatar-preview { position: relative; overflow: hidden }
+
+@keyframes avatarBreath { 0%{ transform: scale(1) } 50%{ transform: scale(1.06) } 100%{ transform: scale(1) } }
+@keyframes avatarBlink { 0%{ transform: scaleY(1) } 50%{ transform: scaleY(0.02) } 100%{ transform: scaleY(1) } }
+
+/* Audio control layout */
+.audio-control{ display:flex; gap:8px; align-items:center; margin-top:10px }
+
+/* Subtle floating animation for panels */
+@keyframes floatSlow { 0% { transform: translateY(0) } 50% { transform: translateY(-4px) } 100% { transform: translateY(0) } }
+.floating-panel { animation: floatSlow 6s ease-in-out infinite; }
+
+/* Animated city background layer (looped GIF / sprite fallback) */
+.animated-city{
+  position: absolute; inset:0; z-index: 0; pointer-events: none; background-repeat: no-repeat; background-size: cover; opacity: 0.95; transform: translateZ(-1px) scale(1.02);
+  /* slow horizontal parallax */
+  animation: cityPan 40s linear infinite;
+}
+@keyframes cityPan { from { background-position: 0% 50% } to { background-position: 100% 50% } }
+
+/* Ensure animated city sits behind everything but above page bg */
+.canvas-container .animated-city{ z-index: 1 }
+
+/* Ensure overlay-root sits above canvas/scene wrappers and is interactive */
+#overlay-root{ position: fixed; inset: 0; pointer-events: none; z-index: 9999999; }
+#overlay-root .enter-overlay{ position: fixed !important; inset: 0; display:flex; align-items:center; justify-content:center; z-index: 10000000 !important; pointer-events: auto !important }
+#overlay-root .enter-card{ pointer-events: auto }
+
+/* Defensive: ensure canvas cannot cover overlays created in #overlay-root */
+canvas[style] { z-index: 0 !important }
+
 
 

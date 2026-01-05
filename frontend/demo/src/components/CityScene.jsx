@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import * as THREE from 'three'
 import WorldPanel from './WorldPanel'
+import CharacterAvatar from './CharacterAvatar'
 
 const PlayerController = ({ onStateChange, onAttack, playerId }) => {
   const [playerPos, setPlayerPos] = useState([0, 0, 0])
@@ -92,6 +93,31 @@ try {
   }
 } catch (e) {
   console.warn('patching computeBoundingSphere failed', e)
+}
+
+// Also sanitize computeBoundingBox to catch other NaN sources
+try {
+  const _origComputeBox = THREE.BufferGeometry.prototype.computeBoundingBox
+  THREE.BufferGeometry.prototype.computeBoundingBox = function () {
+    try {
+      const pos = this.attributes && this.attributes.position
+      if (pos && pos.array) {
+        for (let i = 0; i < pos.array.length; i++) {
+          const v = pos.array[i]
+          if (!Number.isFinite(v)) pos.array[i] = 0
+        }
+      }
+    } catch (e) {
+      console.warn('sanitizing position attribute for bbox failed', e)
+    }
+    try {
+      return _origComputeBox.apply(this, arguments)
+    } catch (e) {
+      console.warn('computeBoundingBox failed after sanitize', e)
+    }
+  }
+} catch (e) {
+  console.warn('patching computeBoundingBox failed', e)
 }
 
 // Patch setAttribute to sanitize position arrays early
@@ -227,7 +253,7 @@ const createCanvasTexture = (pattern, baseColor, accentColor) => {
   return texture
 }
 
-export default function CityScene({ onMultiplayerUpdate, activeModule }) {
+export default function CityScene({ onMultiplayerUpdate, activeModule, avatarAppearance }) {
   const [playerState, setPlayerState] = useState({ playerPos: [0, 0, 0], playerRot: 0, isMoving: false, health: 100, playerId: 'local' })
   const [otherPlayers, setOtherPlayers] = useState({})
   const [attacks, setAttacks] = useState([])
@@ -714,32 +740,9 @@ export default function CityScene({ onMultiplayerUpdate, activeModule }) {
         return blossoms
       }, [])}
 
-      {/* Anime player - vibrant with cell shading feel */}
+      {/* Player avatar (GLB if available, fallback placeholder) */}
       <group position={playerState.playerPos}>
-        <group rotation={[0, playerState.playerRot, 0]}>
-          <mesh position={[0, 1, 0]}>
-            <boxGeometry args={[0.5, 0.8, 0.3]} />
-            <meshStandardMaterial color={ANIME.hotPink} emissive={ANIME.hotPink} emissiveIntensity={1.2} />
-          </mesh>
-          <mesh position={[0, 1.8, 0]}>
-            <sphereGeometry args={[0.35, 16, 16]} />
-            <meshStandardMaterial color={ANIME.goldYellow} emissive={ANIME.goldYellow} emissiveIntensity={1.2} />
-          </mesh>
-          <mesh position={[-0.4, 1.4, 0]} rotation={[playerState.isMoving ? Math.sin(time.current * 8) * 0.3 : 0, 0, -0.2]}>
-            <boxGeometry args={[0.2, 0.6, 0.2]} />
-            <meshStandardMaterial color={ANIME.brightCyan} emissive={ANIME.brightCyan} emissiveIntensity={1} />
-          </mesh>
-          <mesh position={[0.4, 1.4, 0]} rotation={[playerState.isMoving ? -Math.sin(time.current * 8) * 0.3 : 0, 0, 0.2]}>
-            <boxGeometry args={[0.2, 0.6, 0.2]} />
-            <meshStandardMaterial color={ANIME.brightCyan} emissive={ANIME.brightCyan} emissiveIntensity={1} />
-          </mesh>
-
-          {/* Vibrant anime katana */}
-          <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
-            <boxGeometry args={[0.15, 1.5, 0.08]} />
-            <meshStandardMaterial color={ANIME.limeGreen} emissive={ANIME.limeGreen} emissiveIntensity={2} metalness={0.9} />
-          </mesh>
-        </group>
+        <CharacterAvatar position={[0,0,0]} rotation={[0, playerState.playerRot, 0]} colors={{ body: ANIME.hotPink, head: ANIME.goldYellow, outfit: ANIME.brightCyan, hair: '#222', sword: ANIME.limeGreen }} outfit={avatarAppearance?.outfit || 0} hair={avatarAppearance?.hair || 0} name={'YOU'} health={playerState.health} />
 
         {/* Health bar - anime style */}
         <mesh position={[0, 2.8, 0]}>
@@ -768,20 +771,8 @@ export default function CityScene({ onMultiplayerUpdate, activeModule }) {
         const colors = playerColors[Math.abs(player.id) % playerColors.length]
         return (
           <group key={playerId} position={[player.position?.x || 0, player.position?.y || 0, player.position?.z || 0]}>
-            <group rotation={[0, player.rotation?.y || 0, 0]}>
-              <mesh position={[0, 1, 0]}>
-                <boxGeometry args={[0.5, 0.8, 0.3]} />
-                <meshStandardMaterial color={colors.body} emissive={colors.body} emissiveIntensity={1.2} />
-              </mesh>
-              <mesh position={[0, 1.8, 0]}>
-                <sphereGeometry args={[0.35, 16, 16]} />
-                <meshStandardMaterial color={colors.head} emissive={colors.head} emissiveIntensity={1.2} />
-              </mesh>
-              <mesh position={[0.6, 1.5, -0.2]} rotation={[0, 0, -Math.PI / 4]}>
-                <boxGeometry args={[0.15, 1.5, 0.08]} />
-                <meshStandardMaterial color={colors.sword} emissive={colors.sword} emissiveIntensity={2} metalness={0.9} />
-              </mesh>
-            </group>
+            <CharacterAvatar position={[0,0,0]} rotation={[0, player.rotation?.y || 0, 0]} colors={colors} name={`P${player.id}`} health={player.health} />
+
             <mesh position={[0, 2.8, 0]}>
               <planeGeometry args={[1, 0.15]} />
               <meshBasicMaterial color="#333333" />
