@@ -1,0 +1,2 @@
+# Override attempts will be logged here by CRAIG
+# Format: [Timestamp] [Action] [Origin] [Triangulation Result]

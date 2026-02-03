@@ -1,0 +1,21 @@
+const { ethers } = require("hardhat");
+
+async function main() {
+    const [deployer] = await ethers.getSigners();
+
+    console.log("Deploying CRAIG with account:", deployer.address);
+
+    const CRAIG = await ethers.getContractFactory("CRAIGEnforcement");
+    const contract = await CRAIG.deploy(deployer.address);
+
+    await contract.deployed();
+
+    console.log("CRAIGEnforcement deployed to:", contract.address);
+}
+
+main()
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });

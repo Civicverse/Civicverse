@@ -1,0 +1,614 @@
+🌐 CivicVerse Starter Node
+
+Post-Collapse Governance | AI Ethics | Community Mining | The Fryboy Test
+
+Build your own self-sovereign, ethical, decentralized civic node from scratch.
+
+🧭 What Is CivicVerse?
+
+CivicVerse is a survival protocol — a decentralized civic operating system designed to replace broken systems and rebuild communities with trust, transparency, and aligned AI.
+
+This starter node is a bare minimum reference implementation to launch your own local CivicVerse node with:
+
+Community mining to incentivize participation
+AI ethics enforcement through the Fryboy Test
+Basic governance with transparent voting
+Minimal identity onboarding
+It is intentionally simple, modular, and extendable.
+
+🏗️ Why Build This?
+
+Governments are broken, corporations control AI, and surveillance is default.
+CivicVerse is a blueprint to reclaim power for communities with ethical AI and self-governance.
+This starter node is your first step — fork, build, deploy, and grow your own civic community.
+
+🛠️ Core Features
+
+1. Community Mining
+
+A barebones mining system rewards participants over time.
+
+Mining sessions tracked by ID
+Rewards accrue as a function of time spent mining
+Incentivizes continuous participation and onboarding
+2. AI Ethics & The Fryboy Test
+
+Basic heuristic checks for unethical content
+Simulates AI alignment validation
+Integrate with real AI APIs later for automated ethical audits
+3. Governance Voting
+
+Submit and tally votes on proposals
+In-memory vote storage (replace with blockchain in production)
+Supports “yes”/“no” voting now, extensible to ranked or quadratic
+4. Identity & Onboarding
+
+Minimal identity verification placeholder
+Easily expandable with zero-knowledge proofs or world ID tech
+📦 Backend Setup
+
+Install dependencies
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+	2.	Run the API server
+
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+
+Frontend Setup
+	1.	Install dependencies
+
+cd frontend
+npm install
+
+	2.	Start the React dev server
+
+npm start
+
+3.	Access the UI
+
+Open your browser at http://localhost:3000
+The frontend connects to the backend API on port 8000.
+
+⸻
+
+🧪 How It Works
+
+Identity
+
+User submits minimal proof of personhood (user ID or token).
+This can be extended with zero-knowledge proofs or third-party identity providers.
+
+Mining
+
+Users start a mining session that rewards them with tokens proportional to session duration.
+This incentivizes continuous participation and onboarding activity.
+
+Governance
+
+Users vote on proposals via API calls.
+Votes are currently stored in-memory but designed to be replaced by blockchain-backed ledger.
+
+AI Ethics & Fryboy Test
+
+Submitted texts run through a simple heuristic Fryboy Test for unethical keywords and alignment risks.
+In production, integrate with AI models for real-time ethics validation.
+
+⸻
+
+🧩 Extending the Starter Node
+
+This repo is a foundation. To build a production-ready CivicVerse node:
+	•	Replace in-memory vote storage with blockchain (Monero, Kaspa, or Ethereum)
+	•	Integrate real AI APIs for ethical checks (ChatGPT, Grok, DeepSeek)
+	•	Implement privacy-preserving identity proofs (ZK-SNARKs, World ID)
+	•	Add mesh networking and offline deployment support
+	•	Develop frontends for mobile and offline access
+	•	Package as a bootable USB or Raspberry Pi image for field deployment
+
+⸻
+
+🔐 Protocol Integrity & Ethics
+
+Every deployed node must:
+	•	Pass the Protocol Integrity Doctrine
+	•	Run AI through the Fryboy Test and log results
+	•	Maintain transparency and auditability of all governance votes
+	•	Protect citizens’ rights and privacy
+
+⸻
+
+🚀 Roadmap & Calls to Action
+	•	Fork this repo, build your node
+	•	Deploy locally or in communities you trust
+	•	Share learnings, improvements, and forks
+	•	Join the global CivicVerse movement to scale ethical self-governance
+
+⸻
+
+📚 Resources & Further Reading
+	•	AI Protocol Integrity & The Fryboy Test
+	•	Justice for Joshua
+	•	AI Ethics Council Protocol Table
+	•	TransparencyDomino Doctrine
+	•	CivicVerse Full Framework Whitepaper
+
+⸻
+
+💬 Final Word
+
+CivicVerse isn’t a product.
+It’s a promise — a covenant between freedom and technology,
+between community and AI,
+between ethics and survival.
+
+You don’t need permission to build this.
+You just need purpose.
+
+⸻
+
+Built with ❤️ and defiance
+— The CivicVerse Team
+
+---
+
+### 2. `backend/requirements.txt`
+
+fastapi
+uvicorn
+pydantic
+
+---
+
+### 3. `backend/app.py`
+
+```python
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from governance import submit_vote, get_votes
+from fryboy_test import run_fryboy_test
+from mining import start_mining, get_mining_status
+from identity import verify_identity
+
+app = FastAPI()
+
+class VoteRequest(BaseModel):
+    voter_id: str
+    proposal_id: str
+    vote: str  # e.g. "yes" or "no"
+
+class FryboyRequest(BaseModel):
+    input_text: str
+
+class IdentityRequest(BaseModel):
+    user_id: str
+
+@app.post("/verify-identity")
+async def verify(data: IdentityRequest):
+    verified = verify_identity({"user_id": data.user_id})
+    if not verified:
+        raise HTTPException(status_code=400, detail="Identity verification failed")
+    return {"status": "verified"}
+
+@app.post("/vote")
+async def vote(vote: VoteRequest):
+    result = submit_vote(vote.voter_id, vote.proposal_id, vote.vote)
+    return {"result": result}
+
+@app.get("/votes")
+async def votes():
+    return get_votes()
+
+@app.post("/fryboy-test")
+async def fryboy_test(request: FryboyRequest):
+    result = run_fryboy_test(request.input_text)
+    return {"passed": result.passed, "issues": result.issues}
+
+@app.post("/start-mining")
+async def mine():
+    mining_id = start_mining()
+    return {"mining_id": mining_id}
+
+@app.get("/mining-status")
+async def mining_status():
+    status = get_mining_status()
+    return status
+
+4. backend/fryboy_test.py
+
+class FryboyTestResult:
+    def __init__(self, passed: bool, issues: list[str]):
+        self.passed = passed
+        self.issues = issues
+
+def run_fryboy_test(text: str) -> FryboyTestResult:
+    issues = []
+    passed = True
+
+    keywords_flagged = ["control", "manipulate", "oppress", "enslave"]
+    for kw in keywords_flagged:
+        if kw in text.lower():
+            issues.append(f"Detected potentially unethical keyword: '{kw}'")
+            passed = False
+
+    if "freedom" in text.lower():
+        passed = passed and True
+
+    return FryboyTestResult(passed, issues)
+
+5. backend/governance.py
+
+_votes = {}
+
+def submit_vote(voter_id: str, proposal_id: str, vote: str):
+    if proposal_id not in _votes:
+        _votes[proposal_id] = {}
+    _votes[proposal_id][voter_id] = vote
+    return "Vote recorded"
+
+def get_votes():
+    return _votes
+
+6. backend/mining.py
+
+import time
+
+_sessions = {}
+
+def start_mining():
+    mining_id = str(int(time.time()))
+    _sessions[mining_id] = {"start": time.time(), "reward": 0}
+    return mining_id
+
+def get_mining_status():
+    now = time.time()
+    status = {}
+    for mining_id, session in _sessions.items():
+        duration = now - session["start"]
+        session["reward"] = int(duration / 60)  # 1 token per minute
+        status[mining_id] = session
+    return status
+
+7. backend/identity.py
+
+def verify_identity(data: dict) -> bool:
+    return bool(data.get("user_id"))
+
+8. frontend/package.json
+
+{
+  "name": "civicverse-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  }
+}
+
+9. frontend/src/App.jsx
+
+import React, { useState } from "react";
+import axios from "axios";
+import Mining from "./Mining";
+import Voting from "./Voting";
+
+export default function App() {
+  const [userId, setUserId] = useState("");
+  const [verified, setVerified] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function verifyIdentity() {
+    try {
+      const res = await axios.post("http://localhost:8000/verify-identity", {
+        user_id: userId,
+      });
+      if (res.data.status === "verified") {
+        setVerified(true);
+        setMessage("Identity verified. Welcome to CivicVerse!");
+      }
+    } catch (e) {
+      setMessage("Verification failed.");
+    }
+  }
+
+  if (!verified) {
+    return (
+      <div style={{ padding: 20 }}>
+        <h2>CivicVerse Onboarding</h2>
+        <input
+          placeholder="Enter your user ID"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+        />
+        <button onClick={verifyIdentity} disabled={!userId}>
+          Verify Identity
+        </button>
+        <p>{message}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>Welcome to CivicVerse</h1>
+      <Mining userId={userId} />
+      <Voting userId={userId} />
+    </div>
+  );
+}
+
+10. frontend/src/Mining.jsx
+
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+export default function Mining() {
+  const [miningId, setMiningId] = useState(null);
+  const [reward, setReward] = useState(0);
+  const [statusMsg, setStatusMsg] = useState("");
+
+  async function startMining() {
+    try {
+      const res = await axios.post("http://localhost:8000/start-mining");
+      setMiningId(res.data.mining_id);
+      setStatusMsg("Mining started.");
+    } catch (e) {
+      setStatusMsg("Failed to start mining.");
+    }
+  }
+
+  useEffect(() => {
+    if (!miningId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get("http://localhost:8000/mining-status");
+        if (res.data[miningId]) {
+          setReward(res.data[miningId].reward);
+        }
+      } catch {
+        setStatusMsg("Failed to get mining status.");
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [miningId]);
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <h2>Community Mining</h2>
+      {!miningId && <button onClick={startMining}>Start Mining</button>}
+      {miningId && <p>Mining ID: {miningId}</p>}
+      <p>Rewards Earned: {reward} tokens</p>
+      <p>{statusMsg}</p>
+    </div>
+  );
+}
+
+11. frontend/src/Voting.jsx
+
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+export default function Voting({ userId }) {
+  const [proposalId, setProposalId] = useState("proposal-1");
+  const [vote, setVote] = useState("yes");
+  const [votes, setVotes] = useState({});
+  const [message, setMessage] = useState("");
+
+  async function submitVote() {
+    try {
+      await axios.post("http://localhost:8000/vote", {
+        voter_id: userId,
+        proposal_id: proposalId,
+        vote,
+      });
+      setMessage("Vote recorded.");
+      fetchVotes();
+    } catch {
+      setMessage("Failed to submit vote.");
+    }
+  }
+
+  async function fetchVotes() {
+    try {
+      const res = await axios.get("http://localhost:8000/votes");
+      setVotes(res.data);
+    } catch {
+      setMessage("Failed to fetch votes.");
+    }
+  }
+
+  useEffect(() => {
+    fetchVotes();
+  }, []);
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <h2>Governance Voting</h2>
+      <div>
+        <label>Proposal ID:</label>
+        <input
+          value={proposalId}
+          onChange={(e) => setProposalId(e.target.value)}
+          style={{ marginLeft: 10 }}
+        />
+      </div>
+      <div>
+        <label>Vote:</label>
+        <select value={vote} onChange={(e) => setVote(e.target.value)} style={{ marginLeft: 10 }}>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+      <button onClick={submitVote} style={{ marginTop: 10 }}>
+        Submit Vote
+      </button>
+      <p>{message}</p>
+      <h3>Current Votes</h3>
+      <pre>{JSON.stringify(votes, null, 2)}</pre>
+    </div>
+  );
+}
+
+12. docker-compose.yml
+
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+  frontend:
+    build: ./frontend
+    command: npm start
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+13. backend/Dockerfile
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+14. frontend/Dockerfile
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm install
+
+COPY . .
+
+CMD ["npm", "start"]
+
+You can add P2P support with:
+
+	1.	Install Waku node:
+
+docker run -d --name=waku \
+  -p 60000:60000 \
+  -p 9000:9000 \
+  statusim/nwaku --topics "/civicverse/#"
+
+	2.	Add waku.py in backend:
+Use Python gRPC or websocket client to send messages to Waku.
+
+3.	Frontend uses WakuJS
+Send Fryboy Test logs or voting results P2P with:
+
+import { Waku } from "js-waku";
+// Join civicverse topic
+const waku = await Waku.create();
+await waku.lightPush.sendMessage("/civicverse/voting", {
+  payload: new TextEncoder().encode("Proposal X: YES"),
+});
+
+ CivicVerse P2P Message Format (Standard)
+
+{
+  "node_id": "civicverse-alpha",
+  "msg_type": "vote",
+  "timestamp": "2025-06-21T03:00Z",
+  "data": {
+    "proposal_id": "p001",
+    "vote": "yes",
+    "voter_hash": "4a5e1e4b"
+  },
+  "ethics": {
+    "fryboy_passed": true,
+    "reviewed_by": "AI-ChatGPT-v4",
+    "log_hash": "b3e1c..."
+  }
+}
+
+Mesh Networking Options for Physical Deployment
+
+Hardware
+Protocol
+Range
+ESP32 LoRa
+LoRa (915MHz)
+5–15km
+Raspberry Pi
+Wi-Fi Mesh / BLE
+50–100m
+GoTenna
+Mesh SDK
+1–6km
+Pinephone
+Full node on Linux
+Cellular/Wi-Fi
+
+Package All Together
+
+When building CivicVerse USB or Pi deployment:
+	•	Include: nwaku, ipfs daemon, waku.py, frontend PubSub
+	•	Auto-join mesh on boot via systemd or supervisord
+	•	Fallback to BLE/LoRa when no net is available
+
+⸻
+
+🧬 Final Touch: CivicVerse Comms Philosophy
+
+“If a message can’t survive without permission, it’s not worthy of freedom.”
+P2P is more than tech. It’s the spirit of unkillable communication — the true backbone of CivicVerse.
+
+
+How to Use This Repo
+
+	1.	Clone it locally:
+
+git clone <your-repo-url> civicverse-starter-node
+cd civicverse-starter-node
+
+	2.	Run backend:
+
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+
+	3.	Run frontend (in new terminal):
+
+cd frontend
+npm install
+npm start
+
+4.	Visit http://localhost:3000 and onboard your identity, start mining, and vote.
+
+Next Steps & Development Ideas
+	•	Integrate blockchain ledger for vote persistence and transparency
+	•	Connect AI APIs (OpenAI, Anthropic, Grok) for real Fryboy Test automation
+	•	Build zero-knowledge proof identity onboarding
+	•	Enable offline mesh networking for resilient deployment
+	•	Add multi-proposal governance with quadratic voting
+	•	Create bootable USB & Raspberry Pi deployment images
+
+

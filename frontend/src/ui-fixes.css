@@ -1,0 +1,7 @@
+.left-nav h2{color:#ff7acc;text-shadow:0 2px 6px rgba(106,0,255,0.5)}
+.left-nav button{display:block;margin:8px 0;width:100%;text-align:left;padding:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:#fff}
+.left-nav button:hover{background:rgba(255,45,149,0.06)}
+
+/* compact content header */
+.content h3{margin-top:0;color:#ffd6f6}
+

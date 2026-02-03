@@ -1,0 +1,48 @@
+version: '3.8'
+services:
+  frontend:
+    build: .
+    image: civicverse-frontend-demo
+    working_dir: /app/frontend
+    command: sh -c "cd frontend && npm install --silent && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+
+  backend:
+    image: node:18
+    working_dir: /app/backend
+    command: sh -c "npm install --silent && npm start"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./backend:/app/backend
+
+  hardhat:
+    image: node:18
+    working_dir: /app/smart-contracts
+    command: sh -c "npm install --silent && npx hardhat node"
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./smart-contracts:/app/smart-contracts
+
+  miner:
+    image: node:18
+    working_dir: /app/miner
+    command: sh -c "npm install --silent && node miner.js"
+    cpus: 1.0
+    volumes:
+      - ./miner:/app/miner
+  kaspa_placeholder:
+    image: alpine:latest
+    command: sh -c "while true; do echo kaspa placeholder; sleep 3600; done"
+    restart: unless-stopped
+    # For real integration replace this service with a kaspa miner image and mount configs/wallets
+
+  monero_placeholder:
+    image: alpine:latest
+    command: sh -c "while true; do echo monero placeholder; sleep 3600; done"
+    restart: unless-stopped
+    # For real integration replace this service with a monero miner image and mount configs/wallets

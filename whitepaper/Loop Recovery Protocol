@@ -1,0 +1,117 @@
+Systemic Immunity Against Recursive Abuse
+
+⸻
+
+🛡️ What is the Loop Recovery Protocol?
+
+The Loop Recovery Protocol is CivicVerse’s built-in immune system. It identifies and intervenes when a system begins looping — protecting power or suppressing truth through recursion, consensus capture, or institutional gaslighting. It is designed to detect abuse, trigger rollback or override, and restore ethical alignment using verified civic truth.
+
+When voting loops, manipulation patterns, or abuse of reputation systems are detected, the protocol acts immediately — freezing actors, restoring consensus, or triggering a FryboyOverride, which resets the system to a verified, ethical baseline.
+
+⸻
+
+⚙️ How It Works (Technical Breakdown)
+
+1. Loop Detection Module
+Watches for voting loops, recursive flags, consensus traps, or abuse patterns. Uses behavior logs and CivicHash snapshots.
+
+2. Integrity Check Engine
+Verifies against CivicOS Baseline Truth, off-chain civic evidence, or historical hashes.
+
+3. Recovery Trigger Handler
+Rolls back to a clean state, freezes abusers, or overrides corrupted consensus with hardcoded truth.
+
+4. Execution Engine
+Executes recovery actions: rollback, freeze, reweight, or trigger FryboyOverride.
+
+5. Audit & Log Layer
+Publicly records all events, flags, actions, and truth reassertions to a civic audit log or decentralized archive.
+
+⸻
+
+✅ What It Does
+	•	Detects when a system is recursively failing or being gamed
+	•	Freezes manipulation (reputation abuse, gaslighting, consensus traps)
+	•	Verifies against known civic truths and hash snapshots
+	•	Overrides broken consensus to restore ethical integrity
+	•	Publishes tamper-proof logs of every action taken
+
+It ensures CivicVerse cannot be captured by the very systems it is designed to replace. It is the final defense against corruption loops, manipulation cycles, and institutional denial.
+
+⸻
+
+🧠 Final Summary
+
+The Loop Recovery Protocol is more than a failsafe — it’s the covenant that truth is not negotiable. When institutions fail, nodes get compromised, or power games spiral into recursive decay, the protocol steps in. It is CivicVerse’s anti-corruption immune system, truth firewall, and ethical self-correction layer.
+
+This cannot be gamed.
+It cannot be bought.
+It cannot be bypassed.
+
+It is the loopbreaker.
+
+CivicVerse lives because the truth has a recovery protocol.
+
+⸻
+
+🧾 PYTHON CODE TO EXPORT AS PDF
+
+You can run this in any Python environment with fpdf installed.
+
+✅ Step 1: Install FPDF
+
+pip install fpdf
+
+✅ Step 2: Python Code
+
+from fpdf import FPDF
+import unicodedata
+
+def clean_text(text):
+    replacements = {
+        '–': '-', '—': '-', '“': '"', '”': '"', '‘': "'", '’': "'",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+
+class PDF(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 12)
+        self.cell(0, 10, 'CivicVerse Protocol White Paper', ln=True, align='C')
+        self.set_font('Arial', '', 10)
+        self.cell(0, 10, 'Loop Recovery Protocol – Systemic Immunity Against Recursive Abuse', ln=True, align='C')
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Page {self.page_no()}', align='C')
+
+    def chapter_title(self, title):
+        self.set_font('Arial', 'B', 12)
+        self.set_fill_color(230, 230, 250)
+        self.cell(0, 10, title, ln=True, fill=True)
+        self.ln(4)
+
+    def chapter_body(self, body):
+        self.set_font('Arial', '', 10)
+        self.multi_cell(0, 8, clean_text(body))
+        self.ln()
+
+pdf = PDF()
+pdf.set_compression(False)
+pdf.add_page()
+
+sections = {
+    "What is the Loop Recovery Protocol?": """The Loop Recovery Protocol is CivicVerse's built-in immune system...""",
+    "How It Works (Technical Breakdown)": """1. Loop Detection Module - Watches for voting loops...""",
+    "What It Does": """- Detects when a system is recursively failing...""",
+    "Final Summary": """The Loop Recovery Protocol is more than a failsafe..."""
+}
+
+for title, content in sections.items():
+    pdf.chapter_title(title)
+    pdf.chapter_body(content)
+
+pdf.output("CivicVerse_Loop_Recovery_Protocol.pdf")

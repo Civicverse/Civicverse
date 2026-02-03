@@ -1,0 +1,18 @@
+{
+  "validators": [
+    {
+      "name": "OpenAI GPT-4.5",
+      "status": "active"
+    },
+    {
+      "name": "Anthropic Claude 3",
+      "status": "active"
+    },
+    {
+      "name": "Local LLM - Mistral",
+      "status": "active"
+    }
+  ],
+  "required_quorum": 2,
+  "tie_break_rule": "enter_watcher_mode"
+}
