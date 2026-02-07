@@ -2,40 +2,126 @@
 
 **Civicverse** is a protocol, not a platform. It enables the future of decentralized identity and peer-to-peer coordination at scale—where identity is truly yours: generated locally, encrypted, non-transferable, and non-recoverable.
 
-## 🚀 Quick Start
+## 🚀 Getting Started
 
 ### System Requirements
-- **Node.js**: 18+ (LTS)
-- **Docker**: 20.10+ (for containerized deployment)
-- **Git**: 2.30+
+- **Node.js**: 18+ (LTS) – [Download](https://nodejs.org/)
+- **npm**: 9+ (included with Node.js)
+- **Docker** & **Docker Compose**: 20.10+ – [Download](https://www.docker.com/products/docker-desktop)
+- **Git**: 2.30+ – [Download](https://git-scm.com/)
 - **OS**: macOS, Linux, or Windows (WSL2)
 
-### Installation & Startup (3 minutes)
+### Step-by-Step Setup (5 minutes)
+
+#### 1️⃣ Clone and Navigate
 
 ```bash
-# 1. Clone the repository
-git clone git@github.com:Civicverse/Civicverse.git
+# Clone the repository
+git clone https://github.com/CivicverseHQ/Civicverse.git
 cd Civicverse
 
-# 2. Install dependencies
-npm install --workspaces
-
-# 3. Start development environment
-npm run dev
-
-# 4. Access the app
-# Frontend: http://localhost:3000 (Vite)
-# Backend API: http://localhost:3003 (Express)
+# Verify you're in the correct directory
+pwd  # Should end with /Civicverse
 ```
 
-### Docker Deployment (Production)
+#### 2️⃣ Clean Build (Fresh Start)
 
 ```bash
-# Build and launch containerized environment
+# Remove old dependencies and build artifacts
+npm run clean
+
+# This removes:
+# - node_modules/ (root, backend, frontend)
+# - frontend/dist/
+# - package-lock.json files
+```
+
+**Note:** If `npm run clean` doesn't exist, manually run:
+```bash
+rm -rf node_modules backend/node_modules frontend/node_modules
+rm -rf frontend/dist
+rm -f package-lock.json backend/package-lock.json frontend/package-lock.json
+```
+
+#### 3️⃣ Install Dependencies
+
+```bash
+# Install packages for all workspaces (backend + frontend)
+npm install --workspaces
+
+# Verify installation
+npm list --depth=0
+```
+
+#### 4️⃣ Start Development Environment
+
+**Option A: Docker (Recommended for full-stack)**
+```bash
+# Build and start containers (frontend + backend)
 docker-compose up --build
 
-# Access at http://localhost:3000
+# Access:
+# - Frontend: http://localhost:3000
+# - Backend API: http://localhost:3003
+# 
+# Logs will stream in terminal. Press Ctrl+C to stop.
 ```
+
+**Option B: Local Development (Separate terminals)**
+
+Terminal 1 - Backend:
+```bash
+cd backend
+npm install
+npm start
+# Backend runs at http://localhost:3003
+```
+
+Terminal 2 - Frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+# Frontend runs at http://localhost:5173 (or next available port)
+```
+
+#### 5️⃣ Verify Everything Works
+
+- **Frontend**: Open http://localhost:3000 (or http://localhost:5173 for local dev)
+- **Backend**: Open http://localhost:3003 (should see Express server response)
+- **Logs**: Check terminal for errors
+
+### Cleanup & Reset
+
+If you encounter issues, perform a deep clean:
+
+```bash
+# Stop Docker containers
+docker-compose down --volumes
+docker container prune -f
+docker image prune -f
+
+# Clean file system
+rm -rf node_modules backend/node_modules frontend/node_modules
+rm -rf frontend/dist
+rm -f package-lock.json backend/package-lock.json frontend/package-lock.json
+
+# Reinstall from scratch
+npm install --workspaces
+
+# Restart
+npm run dev
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `npm error No workspaces found!` | Verify root `package.json` exists and has `"workspaces"` array |
+| Port 3000/3003 already in use | Kill process: `lsof -ti:3000 \| xargs kill -9` (macOS/Linux) |
+| Docker build fails | Run `docker-compose down --volumes` then rebuild |
+| Vite server won't start | Run `npm install` in `frontend/` directory explicitly |
+| Dependencies not installing | Delete all `node_modules/` and `package-lock.json`, then run `npm install --workspaces` |
 
 ## 📋 Tech Stack
 
@@ -134,31 +220,90 @@ civicverse/
 
 ## 🛠️ Development
 
+### For New Contributors
+
+**Already set up?** Skip to working on features.
+
+**First time?** Follow the [Getting Started](#-getting-started) guide above.
+
+**Picking up where we left off?**
+1. Run `npm install --workspaces` (in case new packages were added)
+2. Run `docker-compose up --build` (to sync with latest code)
+3. Check [CONTRIBUTING.md](CONTRIBUTING.md) for current tasks
+4. Open an issue or discussion to coordinate work
+
 ### Running Locally
 
+The monorepo is organized as workspaces for easy multi-package management:
+
 ```bash
-# Frontend development server
-cd frontend && npm install && npm run dev
-# http://localhost:5173
+# Install all packages (root, backend, frontend)
+npm install --workspaces
 
-# Backend API
-cd backend && npm install && npm start
-# http://localhost:3003
+# Run frontend dev server only
+npm run start:frontend
 
-# Full stack (containerized)
-docker-compose up --build
-# http://localhost:3000
+# Run backend server only
+npm run start:backend
+
+# Run both together (via docker-compose)
+npm run dev
+```
+
+Individual workspace tasks:
+
+```bash
+# Frontend only
+cd frontend
+npm run dev      # Vite dev server (http://localhost:5173)
+npm run build    # Production build → dist/
+npm run preview  # Preview production build
+
+# Backend only
+cd backend
+npm start        # Express server (http://localhost:3003)
 ```
 
 ### Build for Production
 
 ```bash
-# Frontend
-cd frontend && npm run build
-# Output: dist/
+# Build all packages
+npm run build --workspaces
 
-# Docker images
+# Containerized build
 docker-compose build --no-cache
+
+# Run containers
+docker-compose up
+```
+
+### Project Layout
+
+```
+Civicverse/
+├── package.json              # Root workspace config
+├── scripts/
+│   └── dev.sh                # Development startup script
+├── docker-compose.yml        # Multi-container orchestration
+├── frontend/                 # React + TypeScript frontend
+│   ├── src/
+│   │   ├── components/       # Reusable UI components
+│   │   ├── pages/            # Page components (routing)
+│   │   ├── lib/              # Utilities (crypto, mnemonics)
+│   │   ├── App.tsx           # Main component
+│   │   └── main.tsx          # Entry point
+│   ├── package.json          # Frontend dependencies
+│   ├── vite.config.js        # Vite config
+│   ├── tailwind.config.js    # Tailwind theme
+│   ├── tsconfig.json         # TypeScript config
+│   ├── Dockerfile            # Frontend container
+│   └── nginx.conf            # Production reverse proxy
+├── backend/                  # Node.js + Express backend
+│   ├── index.js              # Entry point
+│   ├── package.json          # Backend dependencies
+│   └── Dockerfile            # Backend container
+├── README.md                 # This file
+└── CONTRIBUTING.md           # Development guidelines
 ```
 
 ## 🚦 Git Workflow
