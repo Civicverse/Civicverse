@@ -49,4 +49,17 @@ app.post('/api/wallet/backup', (req, res) => {
   }
 })
 
+// Serve frontend production build if available
+const frontendDist = path.join(__dirname, '..', 'frontend', 'dist')
+const frontendIndex = path.join(frontendDist, 'index.html')
+if (fs.existsSync(frontendIndex)) {
+  app.use(express.static(frontendDist))
+
+  // Fallback to index.html for SPA routes (avoid interfering with /api/*)
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next()
+    res.sendFile(frontendIndex)
+  })
+}
+
 app.listen(port, () => console.log(`Rebuild backend listening on ${port}`))

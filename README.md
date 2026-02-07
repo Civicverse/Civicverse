@@ -6,38 +6,260 @@
 
 ### System Requirements
 - **Node.js**: 18+ (LTS)
-- **Docker**: 20.10+ (for containerized deployment)
+- **Docker**: 20.10+ (optional, for containerized deployment)
 - **Git**: 2.30+
 - **OS**: macOS, Linux, or Windows (WSL2)
 
-### Installation & Startup (3 minutes)
+### Clone & Development Setup (< 5 minutes)
 
 ```bash
-# 1. Clone the repository
+# Step 1: Clone the repository
 git clone git@github.com:Civicverse/Civicverse.git
 cd Civicverse
 
-# 2. Install dependencies
-npm install --workspaces
+# Step 2: Install all dependencies (root, backend, frontend)
+npm run install:all
 
-# 3. Start development environment
+# Step 3: Start dev servers (backend :3004 + frontend :5173 with proxy)
 npm run dev
 
-# 4. Access the app
-# Frontend: http://localhost:3000 (Vite)
-# Backend API: http://localhost:3003 (Express)
+# Step 4: Open in browser
+# Frontend (with /api proxy): http://localhost:5173/
+# Backend API: http://localhost:3004/api/status
 ```
 
-### Docker Deployment (Production)
+#### What Happens
+- **Backend** starts on port 3004 with `/api/*` endpoints
+- **Frontend** dev server starts on port 5173 with hot reload
+- `/api` calls from frontend are proxied to backend (no CORS issues)
+- Both processes run in the same terminal; press Ctrl+C to stop
+
+### Production Build & Serve (< 2 minutes)
 
 ```bash
-# Build and launch containerized environment
-docker-compose up --build
+# Step 1: Clone (if not already done)
+git clone git@github.com:Civicverse/Civicverse.git
+cd Civicverse
 
-# Access at http://localhost:3000
+# Step 2: Install dependencies once
+npm run install:all
+
+# Step 3: Build frontend to dist/
+npm run build
+
+# Step 4: Start backend serving built frontend
+npm run start:prod
+
+# Step 5: Open in browser
+# App: http://localhost:3004
 ```
 
-## 📋 Tech Stack
+#### What Happens
+- Frontend (React + Tailwind) is bundled into `frontend/dist/`
+- Backend serves static files from `dist/` + API routes at `/api/*`
+- Single process on port 3004; no dev server overhead
+
+### Docker Deployment
+
+```bash
+# Option A: Build and launch both services
+docker-compose up --build
+# Access at http://localhost (via Nginx reverse proxy)
+
+# Option B: Run in background
+docker-compose up -d
+docker-compose logs -f
+
+# Option C: Stop and clean up
+docker-compose down -v
+```
+
+## �‍💻 For Contributors & Developers
+
+### Where to Start
+
+**New to the project?**
+1. Read the [Tech Stack](#-tech-stack) below
+2. Clone & run `npm run dev` (see Quick Start)
+3. Open http://localhost:5173 in your browser
+4. Explore the file structure in `frontend/src/` and `backend/index.js`
+
+### Pick Up a Task
+
+**Frontend UI/Components** (easiest entry point)
+- File: [`frontend/src/components/`](frontend/src/components/)
+- Tasks:
+  - Fix BattleRoyaleGame 3D rendering issue (see warning in build output)
+  - Add mobile responsiveness to AnimatedCard, AnimatedButton
+  - Expand NeonText animations
+  - Add accessibility (ARIA labels, keyboard navigation)
+
+**Frontend Pages** (user flows)
+- File: [`frontend/src/pages/`](frontend/src/pages/)
+- Tasks:
+  - Add form validation & error feedback on SignupPage
+  - Add "Forgot Password" flow (recovery via mnemonic)
+  - Polish WalletPage display (balance, transactions)
+  - Add loading indicators & skeleton screens
+
+**Business Logic** (local crypto & vault)
+- Files: [`frontend/src/lib/vault.ts`](frontend/src/lib/vault.ts), [`frontend/src/lib/mnemonic.ts`](frontend/src/lib/mnemonic.ts)
+- Tasks:
+  - Audit AES-256-GCM encryption implementation
+  - Add Shamir secret sharing for mnemonic backup
+  - Implement keystore persistence (IndexedDB vs localStorage)
+  - Add zero-knowledge proofs for identity claims
+
+**Backend API** (endpoints & data)
+- File: [`backend/index.js`](backend/index.js)
+- Tasks:
+  - Add `/api/identity/list` endpoint
+  - Add `/api/wallet/list` endpoint
+  - Add input validation & rate limiting
+  - Add persistent SQLite storage (optional)
+  - Add JWT authentication if needed
+
+**Multiplayer / 3D Game**
+- File: [`frontend/src/components/BattleRoyaleGame.tsx`](frontend/src/components/BattleRoyaleGame.tsx)
+- Tasks:
+  - Fix Three.js PCFShadowShadowMap import error
+  - Improve enemy AI pathfinding
+  - Add particle effects & item pickups
+  - Add P2P multiplayer via WebRTC (advanced)
+
+**DevOps / Docker**
+- Files: [`docker-compose.yml`](docker-compose.yml), [`frontend/Dockerfile`](frontend/Dockerfile), [`backend/Dockerfile`](backend/Dockerfile)
+- Tasks:
+  - Test production build locally with Docker
+  - Add GitHub Actions CI/CD pipeline
+  - Add environment variable configuration (`.env` files)
+  - Add health checks to services
+
+### Development Workflow
+
+```bash
+# 1. Create a new feature branch
+git checkout -b feature/my-feature
+
+# 2. Make changes and test locally
+npm run dev
+
+# 3. Build & test production mode
+npm run build
+npm run start:prod
+
+# 4. Commit with conventional message
+git add .
+git commit -m "feat: add my feature"
+# Commit types: feat, fix, docs, refactor, test, chore
+
+# 5. Push and open a PR
+git push origin feature/my-feature
+# Open PR on GitHub at https://github.com/Civicverse/Civicverse/pulls
+```
+
+### Code Style & Conventions
+
+**TypeScript**
+- Strict mode enabled in `frontend/tsconfig.json`
+- Use interfaces for all data types
+- Prefer functional components + hooks
+- No `any` types
+
+**React Components**
+- Use Tailwind CSS for layout
+- Custom CSS in component file for animations
+- Prop validation with TypeScript
+- Export types alongside components
+
+**Crypto & Security**
+- All encryption happens client-side (Web Crypto API)
+- Private keys never leave the browser
+- Use `globalThis.crypto` for randomness (never `Math.random()`)
+- Backend stores encrypted data only; decryption is user's responsibility
+
+### Environment Variables
+
+Create `.env` files in `backend/` and `frontend/` if needed:
+
+**backend/.env**
+```bash
+PORT=3004
+NODE_ENV=development
+```
+
+**frontend/.env**
+```bash
+VITE_API_URL=http://localhost:3004
+```
+
+### Testing
+
+- Frontend: `npm run test` (not yet configured; TODO)
+- Backend: Add unit tests to `backend/` directory
+- E2E: Use Playwright or Cypress (TODO)
+
+### Common Issues
+
+**"Port 3004 already in use"**
+```bash
+# Kill process on port 3004
+lsof -i :3004  # List processes
+kill -9 <PID>  # Kill the process
+# Or use a different port:
+PORT=3005 npm run start:prod
+```
+
+**"Cannot GET /signup on http://localhost:3004"**
+- Don't use the backend port directly; use http://localhost:5173 for dev
+- Or build frontend first: `npm run build` and `npm run start:prod`
+
+**Frontend dev server not reloading**
+- Ensure `frontend/vite.config.js` has correct proxy configuration
+- Restart dev server: Ctrl+C, then `npm run dev`
+
+**Backend API not responding**
+- Check that backend is running: `curl http://localhost:3004/api/status`
+- Restart backend: Ctrl+C, then `PORT=3004 npm start`
+
+### What's Next (Roadmap)
+
+**Phase 1: MVP** (current state, in progress)
+- ✅ Local Civic ID generation
+- ✅ AES-256-GCM vault encryption
+- ✅ BIP-39 mnemonic backup
+- ✅ 7-page onboarding flow
+- ✅ 3D battle royale game prototype
+- 🔄 Fix Three.js import errors
+- 🔄 Add form validation & error handling
+- 🔄 Mobile responsiveness
+
+**Phase 2: Public Beta** (next milestone)
+- P2P networking (WebRTC)
+- Secure identity sharing (zero-knowledge proofs)
+- Marketplace MVP (atomic swaps, escrow)
+- DAO governance & voting
+- Persistent backend storage (SQLite)
+- Admin dashboard
+
+**Phase 3: Scale** (future)
+- Hardware wallet integration (Ledger, Trezor)
+- Desktop & mobile native apps
+- Multiplayer matchmaking
+- Shamir secret sharing (threshold recovery)
+- Blockchain settlement layer
+- Reputation & credential system
+
+### Getting Help
+
+- **Discussions**: https://github.com/Civicverse/Civicverse/discussions
+- **Issues**: https://github.com/Civicverse/Civicverse/issues
+- **Slack/Discord**: (coming soon)
+- **Twitter**: [@CivicverseHQ](https://twitter.com/CivicverseHQ)
+
+---
+
+## �📋 Tech Stack
 
 ### Frontend
 - **React 18** + **TypeScript** – Modern UI with type safety

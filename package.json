@@ -1,0 +1,12 @@
+{
+  "name": "civicverse-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "npm --prefix frontend install && npm --prefix backend install",
+    "dev": "sh ./scripts/dev.sh",
+    "build": "npm --prefix frontend run build",
+    "start:prod": "npm --prefix backend run start:prod",
+    "build-and-serve": "npm run build && npm run start:prod"
+  }
+}
