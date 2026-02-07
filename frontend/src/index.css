@@ -1,0 +1,195 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base Styles */
+* {
+  @apply box-border;
+}
+
+html, body {
+  @apply m-0 p-0 w-full h-full overflow-x-hidden;
+}
+
+body {
+  @apply bg-dark-900 text-white font-sans;
+  background: linear-gradient(135deg, #0A1428 0%, #1A1A2E 50%, #0F1E35 100%);
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 0, 110, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 0%, rgba(184, 55, 247, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  @apply relative z-10;
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-bold tracking-tight;
+}
+
+h1 {
+  @apply text-5xl md:text-6xl;
+}
+
+h2 {
+  @apply text-4xl md:text-5xl;
+}
+
+h3 {
+  @apply text-2xl md:text-3xl;
+}
+
+/* Custom Components */
+.neon-box {
+  @apply relative rounded-lg border border-neon-cyan/30 bg-dark-800/40 backdrop-blur-md;
+  box-shadow: 
+    inset 0 1px 0 rgba(0, 217, 255, 0.1),
+    0 0 20px rgba(0, 217, 255, 0.1);
+}
+
+.neon-box:hover {
+  @apply border-neon-cyan/60;
+  box-shadow: 
+    inset 0 1px 0 rgba(0, 217, 255, 0.2),
+    0 0 30px rgba(0, 217, 255, 0.2);
+}
+
+.neon-btn {
+  @apply px-6 py-3 font-semibold rounded-lg border-2 transition-all duration-200 relative overflow-hidden;
+  @apply hover:scale-105 active:scale-95;
+}
+
+.neon-btn-primary {
+  @apply neon-btn border-neon-cyan bg-gradient-to-r from-neon-cyan/90 to-neon-blue/90 text-dark-900;
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+}
+
+.neon-btn-primary:hover {
+  @apply border-neon-cyan;
+  box-shadow: 0 0 30px rgba(0, 217, 255, 0.6), 0 0 60px rgba(0, 217, 255, 0.3);
+}
+
+.neon-btn-secondary {
+  @apply neon-btn border-neon-pink bg-gradient-to-r from-neon-pink/20 to-neon-purple/20 text-neon-pink;
+  box-shadow: 0 0 15px rgba(255, 0, 110, 0.2);
+}
+
+.neon-btn-secondary:hover {
+  @apply border-neon-pink bg-gradient-to-r from-neon-pink/40 to-neon-purple/40;
+  box-shadow: 0 0 25px rgba(255, 0, 110, 0.4);
+}
+
+.neon-input {
+  @apply w-full px-4 py-3 rounded-lg bg-dark-800/60 border border-neon-cyan/20 text-white;
+  @apply placeholder-gray-500 transition-all duration-200;
+  @apply focus:outline-none focus:border-neon-cyan focus:ring-2 focus:ring-neon-cyan/30;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.neon-card {
+  @apply rounded-xl border border-neon-purple/30 bg-gradient-to-br from-dark-800/60 to-dark-900/40 p-6;
+  @apply backdrop-blur-md transition-all duration-300;
+  box-shadow: 0 0 20px rgba(184, 55, 247, 0.1);
+}
+
+.neon-card:hover {
+  @apply border-neon-purple/60;
+  box-shadow: 0 0 30px rgba(184, 55, 247, 0.2);
+  transform: translateY(-2px);
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-neon-cyan via-neon-purple to-neon-pink bg-clip-text text-transparent;
+}
+
+.glow-text {
+  @apply drop-shadow-[0_0_10px_rgba(0,217,255,0.5)];
+}
+
+/* Animations */
+@keyframes orbiting {
+  from {
+    transform: rotate(0deg) translateX(100px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(100px) rotate(-360deg);
+  }
+}
+
+.orbiting {
+  animation: orbiting 20s linear infinite;
+}
+
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanlines::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  animation: scan-line 8s linear infinite;
+  z-index: 10;
+}
+
+/* Utility Classes */
+.container {
+  @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.glass {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-lg;
+}
+
+.grid-glow {
+  background-image: 
+    linear-gradient(0deg, transparent 24%, rgba(0, 217, 255, 0.05) 0%, rgba(0, 217, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 255, 0.05) 75%, rgba(0, 217, 255, 0.05) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, rgba(0, 217, 255, 0.05) 25%, rgba(0, 217, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 255, 0.05) 75%, rgba(0, 217, 255, 0.05) 76%, transparent 77%, transparent);
+  background-size: 50px 50px;
+}
+
+/* Smooth Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-dark-800/30;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-neon-cyan/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-neon-cyan/60;
+}

@@ -1,0 +1,18 @@
+        if(page === 'welcome') return renderWelcome()
+        if(page === 'signup') return renderSignup()
+        if(page === 'wallet') return renderWallet()
+        if(page === 'foyer') return renderFoyer()
+        renderTOS()
+      }
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CivicVerse</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

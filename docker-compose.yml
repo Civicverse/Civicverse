@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: civicverse_rebuilt_backend
+    ports:
+      - 3003:3003
+    networks:
+      - civicnet
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: civicverse_rebuilt_frontend
+    ports:
+      - 3000:80
+    depends_on:
+      - backend
+    networks:
+      - civicnet
+
+networks:
+  civicnet:
+    driver: bridge
