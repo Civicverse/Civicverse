@@ -14,7 +14,7 @@
 
 ```bash
 # 1. Clone the repository
-git clone git@github.com:CivicverseHQ/Civicverse.git
+git clone git@github.com:Civicverse/Civicverse.git
 cd Civicverse
 
 # 2. Install dependencies
