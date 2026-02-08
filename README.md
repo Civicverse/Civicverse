@@ -13,7 +13,7 @@
 
 ## 🚀 Overview
 
-**Civicverse** is considered to be an **extremely conceptual**, decentralized, non-custodial, modular, **civilian-owned and governed civic metaverse** designed to be:
+**Civicverse** is considered to be an **extremely conceptual**, but grounded in real world proven tech- decentralized, non-custodial, modular, **civilian-owned and governed civic metaverse** designed to be:
 
 - 📴 Offline-first  
 - 🧱 Resilient  
