@@ -13,7 +13,11 @@
 
 ## 🚀 Overview
 
-**Civicverse** is considered to be an **extremely conceptual**, but grounded in real world proven tech- decentralized, non-custodial, modular, **civilian-owned and governed civic metaverse** designed to be:
+ The project's vision is explicitly treated as a conceptual and evolving layer, intended to guide long-term direction rather than represent a finalized or fully implemented.
+ 
+ **Civicverse** is a modular civic infrastructure built around concrete technical components, including protocols, smart contracts, backend services, and user-facing applications. Its governance and economic mechanisms are designed as operational layers derived from this foundation.
+ 
+**Civicverse** aims to be a decentralized, non-custodial, modular, **civilian-owned and governed civic metaverse** designed to be:
 
 - 📴 Offline-first  
 - 🧱 Resilient  
