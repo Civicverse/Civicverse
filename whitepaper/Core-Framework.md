@@ -132,7 +132,7 @@ Incentives: CivicPoints, crypto rewards, and public recognition
 
 5️⃣ ECONOMIC FLOWS
 
-![Economy Flow](../images/Economy.png)
+![CivicVerse System Flow](../images/mermaid-diagram.png)
 
 4.3 Micro-Tax Economy
 
@@ -232,5 +232,5 @@ Resilience against neutral or exploitative AI
 
 CivicVerse: From Scrap to System. From 1% to Perpetual Yield. From Nothing to Civilian Autonomy.
 
-![CivicVerse System Flow](../images/mermaid-diagram.png)
+![Economy Flow](../images/Economy.png)
 
