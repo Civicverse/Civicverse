@@ -54,8 +54,8 @@ It is built to **outlast legacy systems rather than replace them**, acting as a 
 - Users generate and control a **decentralized identity locally**  
 - Keys generated **client-side or offline**  
 - ❌ No platform custody  
-- ❌ No recovery, freezes, reversals, or overrides  
-- ⚠️ Loss of keys equals loss of access  
+- ❌ No freezes, reversals, or overrides ever!
+- ⚠️ Loss of keys does not mean loss of access.
 
 **Identity is portable across:**
 - 🌍 Worlds  
