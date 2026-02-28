@@ -5,9 +5,7 @@ Author: Joshua Roberts ("Fryboy")
 Status: Living Document
 Version: 2026 Ultimate Consolidated Edition
 
-📝 ABSTRACT / EXECUTIVE SUMMARY
-
-CivicVerse is a decentralized civic infrastructure and economic protocol designed to restore civilian control over digital, financial, and governance systems. It combines:
+📝 CivicVerse is a decentralized civic infrastructure and economic protocol designed to restore civilian control over digital, financial, and governance systems. It combines:
 
 All mineable cryptocurrencies (Monero for privacy, Kaspa for speed, Bitcoin, Ethereum, etc.)
 
@@ -134,6 +132,8 @@ Incentives: CivicPoints, crypto rewards, and public recognition
 
 5️⃣ ECONOMIC FLOWS
 
+![Economy Flow](images/Economy.png)
+
 4.3 Micro-Tax Economy
 
 1% voluntary contribution on commerce
@@ -231,4 +231,6 @@ Transparency & accountability
 Resilience against neutral or exploitative AI
 
 CivicVerse: From Scrap to System. From 1% to Perpetual Yield. From Nothing to Civilian Autonomy.
+
+![Node Architecture](images/mermaid-diagram.png)
 
