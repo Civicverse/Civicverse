@@ -14,35 +14,60 @@ import { GovernancePage } from './pages/GovernancePage'
 import { MainLayout } from './layouts/MainLayout'
 import { useGameStore } from './store/gameStore'
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useGameStore((state) => state.isAuthenticated);
-  if (!isAuthenticated) {
-    return <Navigate to="/welcome" replace />;
-  }
-  return <MainLayout>{children}</MainLayout>;
-}
-
 export default function App(){
-  // Enforce startup flow: TOS -> Welcome -> SignIn/SignUp -> Mnemonic (new only) -> Wallet -> Foyer
+  const initialize = useGameStore(state => state.initialize);
+  const isInitialized = useGameStore(state => state.isInitialized);
+  const tosAccepted = useGameStore(state => state.tosAccepted);
+  const isAuthenticated = useGameStore(state => state.isAuthenticated);
+
+  React.useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-cyan"></div>
+      </div>
+    );
+  }
+
   return (
     <Routes>
-      <Route path="/tos" element={<TOSPage/>} />
-      <Route path="/welcome" element={<WelcomePage/>} />
-      <Route path="/signup" element={<SignupPage/>} />
-      <Route path="/signin" element={<LoginPage/>} />
-      <Route path="/login" element={<LoginPage/>} />
-      <Route path="/mnemonic" element={<MnemonicPage/>} />
-      
-      {/* Protected Routes */}
-      <Route path="/wallet" element={<ProtectedRoute><WalletPage/></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage/></ProtectedRoute>} />
-      <Route path="/missions" element={<ProtectedRoute><MissionsPage/></ProtectedRoute>} />
-      <Route path="/civicwatch" element={<ProtectedRoute><CivicWatchPage/></ProtectedRoute>} />
-      <Route path="/governance" element={<ProtectedRoute><GovernancePage/></ProtectedRoute>} />
-      <Route path="/foyer" element={<ProtectedRoute><FoyerPage/></ProtectedRoute>} />
-      
-      <Route path="/" element={<Navigate to="/tos" replace />} />
-      <Route path="*" element={<Navigate to="/tos" replace />} />
+      {/* Route for TOS */}
+      <Route path="/tos" element={<TOSPage />} />
+
+      {/* Routes for Unauthenticated users */}
+      {!tosAccepted ? (
+        <Route path="*" element={<Navigate to="/tos" replace />} />
+      ) : !isAuthenticated ? (
+        <>
+          <Route path="/welcome" element={<WelcomePage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/signin" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/mnemonic" element={<MnemonicPage />} />
+          <Route path="*" element={<Navigate to="/welcome" replace />} />
+        </>
+      ) : (
+        /* Routes for Authenticated users */
+        <Route path="*" element={
+          <MainLayout>
+            <Routes>
+              <Route path="/wallet" element={<WalletPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/missions" element={<MissionsPage />} />
+              <Route path="/civicwatch" element={<CivicWatchPage />} />
+              <Route path="/governance" element={<GovernancePage />} />
+              <Route path="/foyer" element={<FoyerPage />} />
+              <Route path="/mnemonic" element={<MnemonicPage />} />
+              <Route path="/welcome" element={<WelcomePage />} />
+              <Route path="/" element={<Navigate to="/wallet" replace />} />
+              <Route path="*" element={<Navigate to="/wallet" replace />} />
+            </Routes>
+          </MainLayout>
+        } />
+      )}
     </Routes>
   )
 }

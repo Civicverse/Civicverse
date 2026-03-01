@@ -1,10 +1,17 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
 
 export default function TOSPage() {
   const nav = useNavigate()
+  const setTosAccepted = useGameStore(state => state.setTosAccepted)
   const [agreed, setAgreed] = React.useState(false)
+
+  const handleAccept = () => {
+    setTosAccepted(true)
+    nav('/welcome')
+  }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden">
@@ -143,7 +150,7 @@ export default function TOSPage() {
               size="lg"
               className="flex-1"
               disabled={!agreed}
-              onClick={() => nav('/welcome')}
+              onClick={handleAccept}
             >
               ✓ I Accept & Continue
             </AnimatedButton>

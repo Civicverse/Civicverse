@@ -67,8 +67,13 @@ export interface GameState {
   currentMission: Mission | null;
   demoMode: boolean;
   loading: boolean;
+  isInitialized: boolean;
+  tempMnemonic: string | null;
+  tosAccepted: boolean;
 
   // Auth
+  initialize: () => Promise<void>;
+  setTosAccepted: (accepted: boolean) => void;
   login: (civicId: string, password: string) => Promise<void>;
   signup: (username: string, civicId: string, password: string) => Promise<void>;
   logout: () => void;
@@ -128,6 +133,9 @@ export const useGameStore = create<GameState>((set) => ({
   currentMission: null,
   demoMode: true,
   loading: true,
+  isInitialized: false,
+  tempMnemonic: null,
+  tosAccepted: false,
   marketplaceHistory: [],
   sellers: {},
   proposals: [],
@@ -159,6 +167,46 @@ export const useGameStore = create<GameState>((set) => ({
   currentJobStatus: 'available',
   currentJobProgress: 0,
   selectedJob: null,
+
+  initialize: async () => {
+    try {
+      console.log('[store] initialize START');
+      const isAuth = localStorage.getItem('isAuthenticated') === '1';
+      const savedUser = localStorage.getItem('civicverse_user');
+      
+      console.log('[store] localStorage check:', { isAuth, hasUser: !!savedUser });
+
+      if (isAuth && savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          console.log('[store] rehydrating user:', parsed.user?.username);
+          set({ 
+            isAuthenticated: true, 
+            user: parsed.user, 
+            wallet: parsed.wallet, 
+            multiChainAddresses: parsed.multiChainAddresses,
+            loading: false,
+            isInitialized: true 
+          });
+          console.log('[store] rehydration SUCCESS');
+          return;
+        } catch (e) {
+          console.error('[store] Failed to parse saved user', e);
+        }
+      } else {
+        console.log('[store] No existing session found');
+      }
+    } catch (err) {
+      console.error('[store] Global initialize error:', err);
+    } finally {
+      console.log('[store] initialize FINISHED - setting isInitialized: true');
+      set({ isInitialized: true, loading: false });
+    }
+  },
+
+  setTosAccepted: (accepted: boolean) => {
+    set({ tosAccepted: accepted });
+  },
 
   login: async (civicId, password) => {
     set({ loading: true });
@@ -210,6 +258,7 @@ export const useGameStore = create<GameState>((set) => ({
         wallet,
         multiChainAddresses: multiChainAddresses && Object.keys(multiChainAddresses).length > 0 ? multiChainAddresses : null,
         loading: false,
+        isInitialized: true,
       });
 
       // Persist session flags (but keep identity encrypted)
@@ -275,7 +324,11 @@ export const useGameStore = create<GameState>((set) => ({
         wallet,
         multiChainAddresses,
         loading: false,
+        isInitialized: true,
+        tempMnemonic: civicWallet.mnemonic,
       });
+
+      console.log('Signup SUCCESS. tempMnemonic set:', !!civicWallet.mnemonic);
 
       localStorage.setItem('civicId', realCivicId);
       localStorage.setItem('isAuthenticated', '1');
@@ -308,6 +361,7 @@ export const useGameStore = create<GameState>((set) => ({
       multiChainAddresses: null,
       missions: [],
       currentMission: null,
+      tempMnemonic: null,
     });
     console.debug('[auth] logout - session and wallet cleared');
   },

@@ -1,24 +1,21 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { vault } from '../lib/vault'
 import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
 
 export default function MnemonicPage() {
   const nav = useNavigate()
+  
+  // Use individual selectors to avoid unnecessary re-renders and potential object issues
+  const tempMnemonic = useGameStore(state => state.tempMnemonic)
   const isAuthenticated = useGameStore(state => state.isAuthenticated)
+
   const [copied, setCopied] = React.useState(false)
   const [understood, setUnderstood] = React.useState(false)
   const [showMnemonic, setShowMnemonic] = React.useState(false)
 
-  const vaultData = vault.getData()
-  const mnemonic = vaultData?.mnemonic
-
-  React.useEffect(() => {
-    if (!isAuthenticated || !mnemonic) {
-      nav('/welcome')
-    }
-  }, [isAuthenticated, mnemonic, nav])
+  // Use a string default to prevent split() crashes
+  const mnemonic = typeof tempMnemonic === 'string' ? tempMnemonic : ''
 
   const copyToClip = () => {
     if (mnemonic) {
@@ -34,32 +31,41 @@ export default function MnemonicPage() {
     }
   }
 
+  // Handle case where mnemonic is lost (e.g. on refresh)
   if (!mnemonic) {
     return (
-      <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden flex items-center justify-center">
+      <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden flex items-center justify-center p-4">
         <GradientOrb delay={0} size={300} />
-        <div className="absolute inset-0 grid-glow opacity-20 pointer-events-none" />
-        <div className="relative z-10 text-center">
+        <div className="relative z-10 text-center max-w-md">
           <NeonText size="3xl" gradient={true} className="block mb-4">
-            Error
+            Security Check
           </NeonText>
-          <p className="text-gray-400">No vault data found. Starting over...</p>
-          <AnimatedButton variant="primary" className="mt-6" onClick={() => nav('/welcome')}>
-            Return Home
-          </AnimatedButton>
+          <p className="text-gray-400 mb-8 leading-relaxed">
+            For your protection, the recovery phrase is only shown during the identity creation session.
+            If you have already backed it up, you can proceed to your wallet.
+          </p>
+          <div className="space-y-4">
+            <AnimatedButton variant="primary" className="w-full" onClick={() => nav('/wallet')}>
+              Continue to Wallet
+            </AnimatedButton>
+            {!isAuthenticated && (
+              <AnimatedButton variant="secondary" className="w-full" onClick={() => nav('/welcome')}>
+                Back to Welcome
+              </AnimatedButton>
+            )}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden">
+    <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden py-8 px-4 flex flex-col justify-center">
       <GradientOrb delay={0} size={300} />
       <GradientOrb delay={2} size={200} />
-      <GradientOrb delay={4} size={250} />
       <div className="absolute inset-0 grid-glow opacity-20 pointer-events-none" />
 
-      <div className="relative z-10 container mx-auto max-w-3xl py-8 px-4 min-h-screen flex flex-col justify-center">
+      <div className="relative z-10 container mx-auto max-w-3xl">
         {/* Header */}
         <div className="text-center mb-8 animate-slide-up">
           <NeonText size="4xl" gradient={true} className="block mb-2">
@@ -70,9 +76,9 @@ export default function MnemonicPage() {
 
         <AnimatedCard delay={100} className="border-l-4 border-neon-pink">
           {/* Warning */}
-          <div className="bg-neon-pink/20 border border-neon-pink/50 rounded-lg p-4 mb-6 animate-pulse">
+          <div className="bg-neon-pink/20 border border-neon-pink/50 rounded-lg p-4 mb-6">
             <p className="text-neon-pink font-bold text-lg mb-2">⚠️ MOST IMPORTANT MESSAGE</p>
-            <p className="text-white text-sm leadingrelaxed">
+            <p className="text-white text-sm leading-relaxed">
               This is your <span className="font-bold">ONLY way</span> to recover your wallet if your device is lost, corrupted, or stolen.
             </p>
           </div>
@@ -141,10 +147,6 @@ export default function MnemonicPage() {
                 <span className="text-neon-pink font-bold">5.</span>
                 <span><strong>Lose it? Gone forever.</strong> No recovery. No exceptions. No refunds.</span>
               </li>
-              <li className="flex gap-2">
-                <span className="text-neon-pink font-bold">6.</span>
-                <span><strong>Civicverse cannot help.</strong> We do not have your mnemonic. No one does but you.</span>
-              </li>
             </ul>
           </div>
 
@@ -164,7 +166,7 @@ export default function MnemonicPage() {
                   ✓ I have securely backed up my recovery mnemonic
                 </p>
                 <p className="text-gray-400 text-xs mt-1">
-                  I understand: No password reset. No key recovery. No customer support. Civicverse cannot help me.
+                  I understand: No password reset. No key recovery. Civicverse cannot help me.
                 </p>
               </label>
             </div>

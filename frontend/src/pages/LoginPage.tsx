@@ -8,7 +8,18 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, loading } = useGameStore();
+  const { login, loading, isInitialized } = useGameStore();
+
+  const [hasLocalIdentity, setHasLocalIdentity] = useState(false);
+  const [localDid, setLocalDid] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const did = localStorage.getItem('civicverse:did');
+    if (did) {
+      setHasLocalIdentity(true);
+      setLocalDid(did);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,12 +31,36 @@ export function LoginPage() {
     }
 
     try {
-      await login('device-local', password);
+      // Use device-local as a placeholder if we have a local DID
+      await login(localDid || 'device-local', password);
       navigate('/wallet');
     } catch (err: any) {
       setError(err.message || 'Login failed. Check your password or sign up first.');
     }
   };
+
+  if (!isInitialized) return null;
+
+  if (!hasLocalIdentity) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-dark-800 border border-neon-cyan/30 p-8 rounded-2xl max-w-md w-full text-center"
+        >
+          <h2 className="text-2xl font-bold text-white mb-4">No Identity Found</h2>
+          <p className="text-gray-400 mb-8">You need to create a Civic ID on this device before you can log in.</p>
+          <button
+            onClick={() => navigate('/signup')}
+            className="w-full py-3 bg-gradient-neon-cyan-pink rounded-lg font-bold text-white hover:shadow-lg transition"
+          >
+            Create Your Identity
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-tropical flex items-center justify-center p-4 relative overflow-hidden">

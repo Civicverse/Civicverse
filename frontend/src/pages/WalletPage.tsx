@@ -5,13 +5,7 @@ import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../componen
 
 export default function WalletPage() {
   const nav = useNavigate()
-  const { user, wallet, logout, isAuthenticated } = useGameStore()
-
-  React.useEffect(() => {
-    if (!isAuthenticated) {
-      nav('/welcome')
-    }
-  }, [isAuthenticated, nav])
+  const { user, wallet, logout } = useGameStore()
 
   if (!user || !wallet) {
     return (

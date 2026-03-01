@@ -22,7 +22,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     primary: 'neon-btn-primary',
     secondary: 'neon-btn-secondary',
     danger:
-      'border-neon-pink bg-gradient-to-r from-neon-pink/20 to-orange/20 text-neon-pink hover:from-neon-pink/40 hover:to-orange/40',
+      'border-neon-pink bg-gradient-to-r from-neon-pink/20 to-neon-orange/20 text-neon-pink hover:from-neon-pink/40 hover:to-neon-orange/40',
   }
 
   const sizeClasses = {
