@@ -95,44 +95,7 @@ UE5-based character systems (planned MetaHuman integration).
 
 ---
 
-## 🧠 AI Assistant: Craig
-
-Craig is your always-on civic AI guide.
-
-- Suggests nearby missions or faction goals  
-- Routes you to educators, operators, and portals  
-- Interprets DAO proposals and protocol status  
-- Built with ethical alignment tested via the #FryboyTest
-
-Voice optional. Fully context-aware.
-
----
-
-## ⚙️ Planned Tech Stack
-
-| Layer        | Planned Tech |
-|--------------|--------------|
-| Game Engine  | **Unreal Engine 5** (Nanite, Lumen, MetaHuman, Multiplayer plugin) |
-| Frontend UI  | React.js HUD overlay + UE5 native interface |
-| Backend      | Node.js, FastAPI (Python), Ceramic, MongoDB |
-| Blockchain   | Monero (privacy mining), Kaspa (speed), Ethereum (NFTs) |
-| Streaming    | WebRTC, RTMP, Livepeer |
-| AI Layer     | GPT APIs + Craig's custom civic routing logic |
-| Offline Mesh | LoRaWAN, Bluetooth Mesh for resiliency |
-| Identity     | Soulbound NFTs, Decentralized IDs (DIDs), OAuth fallback
-
----
-
-## 🚀 Getting Started (Dev Preview)
-
-```bash
-git clone https://github.com/Civicverse/Civicverse.git
-cd civicverse/foyer
-npm install
-npm run dev
-
-UE5 client build and multiplayer world systems are in early development under /ue5/foyer.
-Indie devs, contributors, and open-world creators welcome.
+UE5 client build and Gadot world systems are in early development.
 
 🔐 CivicVerse Protocol Integrity
 All nodes, worlds, and portals must pass:
@@ -145,39 +108,10 @@ All nodes, worlds, and portals must pass:
 
 No exceptions. No backdoors.
 
-🛰️ Active Nodes
-Node VANTA-1
-Tier: Public Engagement
-Status: ✅ Online
-Location: [CLASSIFIED]
+Support Development
+Want to help build The Foyer lite version (Gadot) 
 
-Node ALPHA-3
-Tier: Protocol Enforcement
-Status: ✅ Online
-Location: [CLASSIFIED]
-
-💰 Support Development
-Want to help build The Foyer and support the UE5 rollout?
-
-Support Wallet:
-438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp
-
-All donations fund:
-
-UE5 assets + multiplayer infrastructure
-
-Educator/creator compensation
-
-Mission engine expansion + tooling
-
-✅ 100% civilian-owned
-✅ 0% corporate middlemen
-✅ Transparent forever
-
-🎯 Final Word
-The Foyer is not a menu screen.
-
-It’s the main street of the future—where decentralized identity, real-world action, and next-gen gaming collide.
+Already working a UE5 game? That would speed this up significantly!
 
 The Foyer has the potential to be a massive emmersive city with endless potential.
 
