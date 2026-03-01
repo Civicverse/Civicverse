@@ -1,0 +1,115 @@
+name: Security & Dependency Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Weekly security scan
+    - cron: '0 0 * * 0'
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-manager: [npm]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Check dependencies (frontend)
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm audit --audit-level=moderate 2>&1 | grep -i "vulnerabilities\|package\|severity" || true
+      
+      - name: Check dependencies (backend)
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm audit --audit-level=moderate 2>&1 | grep -i "vulnerabilities\|package\|severity" || true
+
+  secretscan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['typescript']
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{matrix.language}}"
+
+  license-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install license-checker
+        run: npm install -g license-checker
+      
+      - name: Check frontend licenses
+        working-directory: ./frontend
+        run: |
+          npm ci
+          license-checker --production --onlyunknown --excludePrivatePackages 2>&1 || true
+      
+      - name: Check backend licenses
+        working-directory: ./backend
+        run: |
+          npm ci
+          license-checker --production --onlyunknown --excludePrivatePackages 2>&1 || true

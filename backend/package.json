@@ -1,28 +1,12 @@
 {
-  "name": "civicverse-backend",
+  "name": "civicverse-rebuilt-backend",
   "version": "1.0.0",
-  "description": "Civicverse Backend with Multiplayer Server",
-  "main": "multiplayer-server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node multiplayer-server.js",
-    "dev": "node multiplayer-server.js",
-    "server": "node multiplayer-server.js",
-    "test": "jest --runInBand"
+    "start": "node index.js"
   },
-  "keywords": [
-    "civicverse",
-    "multiplayer",
-    "websocket"
-  ],
-  "author": "",
-  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "ws": "^8.14.2",
-    "cors": "^2.8.5"
-  }
-  ,
-  "devDependencies": {
-    "jest": "^29.0.0"
+    "body-parser": "^1.20.2"
   }
 }

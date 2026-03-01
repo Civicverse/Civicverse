@@ -1,14 +1,17 @@
+        if(page === 'welcome') return renderWelcome()
+        if(page === 'signup') return renderSignup()
+        if(page === 'wallet') return renderWallet()
+        if(page === 'foyer') return renderFoyer()
+        renderTOS()
+      }
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CivicVerse - The Real-World Game</title>
-    <meta name="description" content="CivicVerse: A decentralized game where real-world civic impact earns rewards" />
-    <meta name="theme-color" content="#0ea5e9" />
+    <title>CivicVerse</title>
   </head>
-  <body class="bg-dark-900 text-white antialiased">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,0 +1,139 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    outputs:
+      frontend-image: ${{ steps.image.outputs.frontend }}
+      backend-image: ${{ steps.image.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        run: |
+          FRONTEND_IMAGE=ghcr.io/${{ github.repository }}/frontend:${{ github.event.release.tag_name || github.sha }}
+          BACKEND_IMAGE=ghcr.io/${{ github.repository }}/backend:${{ github.event.release.tag_name || github.sha }}
+          echo "frontend=$FRONTEND_IMAGE" >> $GITHUB_OUTPUT
+          echo "backend=$BACKEND_IMAGE" >> $GITHUB_OUTPUT
+      
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.frontend }}
+            ghcr.io/${{ github.repository }}/frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.backend }}
+            ghcr.io/${{ github.repository }}/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Set outputs
+        id: image
+        run: |
+          echo "frontend=${{ steps.meta.outputs.frontend }}" >> $GITHUB_OUTPUT
+          echo "backend=${{ steps.meta.outputs.backend }}" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy notification
+        run: |
+          echo "Deploying to ${{ github.event.inputs.environment || 'production' }}"
+          echo "Frontend: ${{ needs.build-and-push.outputs.frontend-image }}"
+          echo "Backend: ${{ needs.build-and-push.outputs.backend-image }}"
+      
+      - name: SSH Deploy to Server
+        uses: appleboy/ssh-action@master
+        if: vars.DEPLOY_HOST != ''
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            cd /app/civicverse
+            docker pull ${{ needs.build-and-push.outputs.frontend-image }}
+            docker pull ${{ needs.build-and-push.outputs.backend-image }}
+            docker compose -f docker-compose.prod.yml up -d
+            docker compose logs --tail=20
+
+  notify:
+    needs: [build-and-push, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1
+        if: vars.SLACK_WEBHOOK != ''
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "Civicverse Deployment ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Deployment Status*: ${{ job.status }}\n*Environment*: ${{ github.event.inputs.environment || 'production' }}\n*Release*: ${{ github.event.release.tag_name || github.sha }}"
+                  }
+                }
+              ]
+            }
+      
+      - name: Create deployment annotation
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: '${{ github.event.inputs.environment || "production" }}',
+              description: 'Deployment of ${{ github.event.release.tag_name || github.sha }}'
+            })
