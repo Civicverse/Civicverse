@@ -113,12 +113,12 @@ export class CivicWallet {
         mnemonic = decryptedData.mnemonic;
       } else {
         // Legacy: base64-encoded data
-        const data = JSON.parse(stored) as WalletData;
-        mnemonic = atob(data.mnemonic);
+        const data = JSON.parse(stored);
+        mnemonic = atob(data.mnemonic || stored);
       }
 
       // Regenerate addresses from mnemonic
-      const addresses = generateWalletAddresses(mnemonic, 0);
+      const addresses = await generateWalletAddresses(mnemonic, 0);
       return new CivicWallet(civicId, mnemonic, addresses);
     } catch (error) {
       console.error('Failed to restore wallet:', error);
@@ -139,7 +139,7 @@ export class CivicWallet {
   getAllAddresses(): Record<string, string> {
     const result: Record<string, string> = {};
     for (const [key, addr] of Object.entries(this.addresses)) {
-      result[key] = addr.address;
+      result[key] = (addr as any).address;
     }
     return result;
   }

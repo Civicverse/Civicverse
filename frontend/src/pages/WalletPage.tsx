@@ -137,19 +137,9 @@ export default function WalletPage() {
             <span>🌐</span> Enter Civicverse Hub
           </AnimatedButton>
           <AnimatedButton
-            variant="secondary"
+            variant="danger"
             size="lg"
             className="w-full flex items-center justify-center gap-2"
-            onClick={() => nav('/dashboard')}
-          >
-            <span>📊</span> Dashboard
-          </AnimatedButton>
-        </div>
-
-        <div className="text-center">
-          <AnimatedButton
-            variant="danger"
-            className="px-8"
             onClick={() => {
               logout()
               nav('/welcome')
@@ -157,7 +147,10 @@ export default function WalletPage() {
           >
             🔒 Lock & Logout
           </AnimatedButton>
-          <p className="text-gray-500 text-xs mt-4">
+        </div>
+
+        <div className="text-center">
+          <p className="text-gray-500 text-xs">
             All data encrypted and stored locally on your device. Never transmitted to servers.
           </p>
         </div>

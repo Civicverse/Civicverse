@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
-import { Menu, X, LogOut, Home, Gamepad2, Wallet, Users } from 'lucide-react';
+import { Menu, X, LogOut, Home, Gamepad2, Wallet, Users, Landmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface MainLayoutProps {
@@ -15,11 +15,10 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { logout, user } = useGameStore();
 
   const menuItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: Home },
-    { path: '/civicwatch', label: 'CivicWatch', icon: Users }, // Replaced generic missions or added new
-    { path: '/missions', label: 'Game Missions', icon: Gamepad2 },
+    { path: '/foyer', label: '3D Foyer', icon: Home },
+    { path: '/civicwatch', label: 'CivicWatch', icon: Users },
     { path: '/wallet', label: 'Wallet', icon: Wallet },
-    { path: '/governance', label: 'Governance', icon: Users },
+    { path: '/governance', label: 'Governance', icon: Landmark },
   ];
 
   const handleLogout = () => {
@@ -49,7 +48,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         className="fixed left-0 top-0 h-screen w-64 bg-dark-800/95 backdrop-blur border-r border-dark-700 p-6 md:translate-x-0 z-40 flex flex-col"
       >
         {/* Logo */}
-        <Link to="/dashboard" className="flex items-center gap-3 mb-8">
+        <Link to="/foyer" className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-lg bg-gradient-civic flex items-center justify-center text-xl font-bold">
             ⚔️
           </div>

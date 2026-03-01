@@ -9,6 +9,7 @@ export default function TOSPage() {
   const [agreed, setAgreed] = React.useState(false)
 
   const handleAccept = () => {
+    localStorage.setItem('civicverse:tos', 'true')
     setTosAccepted(true)
     nav('/welcome')
   }

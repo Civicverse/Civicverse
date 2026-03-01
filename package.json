@@ -8,6 +8,7 @@
     "frontend"
   ],
   "scripts": {
+    "start": "npx concurrently \"npm run start:backend\" \"npm run start:frontend\"",
     "dev": "bash ./scripts/dev.sh",
     "build": "npm run build --workspaces",
     "start:backend": "npm start --workspace=backend",

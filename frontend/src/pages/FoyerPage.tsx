@@ -1,14 +1,14 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
-import { BattleRoyaleGame } from '../components/BattleRoyaleGame'
+import { Info, ShoppingBag, Users as UsersIcon, Landmark, ArrowRight, Shield, Zap } from 'lucide-react'
 
 export default function FoyerPage() {
   const nav = useNavigate()
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'marketplace' | 'governance' | 'community' | 'battle'>('overview')
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'marketplace' | 'community' | 'governance'>('overview')
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden">
+    <div className="relative min-h-screen bg-[#0a0c10] text-white overflow-hidden">
       {/* Animated background orbs */}
       <GradientOrb delay={0} size={400} />
       <GradientOrb delay={2} size={300} />
@@ -17,349 +17,221 @@ export default function FoyerPage() {
       {/* Grid background */}
       <div className="absolute inset-0 grid-glow opacity-20 pointer-events-none" />
 
-      <div className="relative z-10 container mx-auto max-w-6xl py-8 px-4">
+      <div className="relative z-10 container mx-auto max-w-6xl py-12 px-4">
         {/* Header */}
-        <div className="text-center mb-12 animate-slide-up">
-          <NeonText size="5xl" gradient={true} className="block mb-2">
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Shield className="text-blue-500 w-8 h-8" />
+            <div className="h-px w-12 bg-gray-800"></div>
+            <span className="text-xs font-bold text-blue-500 uppercase tracking-[0.3em]">Identity Sovereign</span>
+            <div className="h-px w-12 bg-gray-800"></div>
+            <Zap className="text-blue-500 w-8 h-8" />
+          </div>
+          
+          <NeonText size="6xl" gradient={true} className="block mb-4 italic tracking-tighter uppercase font-black">
             ∞ CIVICVERSE HUB
           </NeonText>
-          <p className="text-neon-cyan text-lg tracking-widest mb-4">
-            THE DECENTRALIZED IDENTITY ECOSYSTEM
+          
+          <p className="text-blue-500 text-xl tracking-[0.25em] mb-8 font-bold uppercase">
+            The Decentralized Coordination Layer
           </p>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Welcome to the future of identity. A peer-to-peer network where individuals own their data, control their narrative, and participate in governance. No intermediaries. No extraction. Pure sovereignty.
+          
+          <p className="text-gray-400 max-w-3xl mx-auto text-lg leading-relaxed font-medium">
+            A peer-to-peer ecosystem where individuals own their data, control their narrative, 
+            and coordinate through transparent, decentralized governance. No extraction. Pure sovereignty.
           </p>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 md:gap-4 justify-center mb-12 animate-slide-up" style={{ animationDelay: '100ms' }}>
+        <div className="flex flex-wrap gap-3 md:gap-4 justify-center mb-12">
           {[
-            { id: 'overview' as const, label: '🌐 Overview', icon: '🌐' },
-            { id: 'marketplace' as const, label: '🏪 Marketplace', icon: '🏪' },
-            { id: 'governance' as const, label: '🗳️ Governance', icon: '🗳️' },
-            { id: 'community' as const, label: '👥 Community', icon: '👥' },
-            { id: 'battle' as const, label: '⚔️ Battle Royale', icon: '⚔️' },
+            { id: 'overview' as const, label: 'Overview', icon: <Info className="w-5 h-5" /> },
+            { id: 'marketplace' as const, label: 'Marketplace', icon: <ShoppingBag className="w-5 h-5" /> },
+            { id: 'community' as const, label: 'Community', icon: <UsersIcon className="w-5 h-5" /> },
+            { id: 'governance' as const, label: 'Governance', icon: <Landmark className="w-5 h-5" /> },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+              className={`px-8 py-3.5 rounded-2xl font-black uppercase tracking-tight italic transition-all duration-300 border flex items-center gap-3 ${
                 activeTab === tab.id
-                  ? 'bg-neon-cyan text-dark-900 shadow-lg shadow-neon-cyan/50'
-                  : 'bg-dark-800/40 border border-neon-cyan/30 text-neon-cyan hover:border-neon-cyan/60'
+                  ? 'bg-blue-600 border-blue-500 text-white shadow-2xl shadow-blue-900/40 scale-105'
+                  : 'bg-[#161b22] border-gray-800 text-gray-500 hover:border-gray-600'
               }`}
             >
+              {tab.icon}
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Battle Royale Game */}
-        {activeTab === 'battle' && (
-          <div className="w-full h-[600px] rounded-lg overflow-hidden border-2 border-neon-pink shadow-lg shadow-neon-pink/30 mb-8">
-            <BattleRoyaleGame />
-          </div>
-        )}
-
-        {/* Content Tabs */}
-        {activeTab !== 'battle' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <>
-              <AnimatedCard delay={200}>
-                <h3 className="text-neon-cyan font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🔐</span> Zero-Custody Identity
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Your Civic ID is generated locally and encrypted on your device. No platform holds your keys. No recovery codes. Pure sovereignty.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={250}>
-                <h3 className="text-neon-pink font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🌍</span> Peer-to-Peer Network
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Connect directly with other citizens. No central authority. No surveillance. Communications encrypted end-to-end.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={300}>
-                <h3 className="text-neon-purple font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>⚡</span> Offline-First Protocol
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Works without internet. Syncs when available. Your data stays local unless you explicitly share it.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={350}>
-                <h3 className="text-neon-green font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>💎</span> Verified Credentials
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Earn cryptographic credentials. Shamir-split recovery. Reputation without tracking.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={400}>
-                <h3 className="text-tropical-coral font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🎨</span> Human-Readable Identity
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Your Civic ID is memorable. Your avatar is generative art. Your reputation is visible.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={450}>
-                <h3 className="text-neon-cyan font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>⚙️</span> Open Standards
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Built on BIP-39, AES-256-GCM, and PBKDF2. No proprietary algorithms. Auditable cryptography.
-                </p>
-              </AnimatedCard>
-            </>
-          )}
-
-          {/* Marketplace Tab */}
-          {activeTab === 'marketplace' && (
-            <>
-              <AnimatedCard delay={200}>
-                <h3 className="text-neon-orange font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🛍️</span> Peer Marketplace
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Buy and sell directly with other citizens. Services, goods, creative work. No platform fees.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={250}>
-                <h3 className="text-neon-cyan font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>✅</span> Trust Ratings
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Transparent reputation system. Your history is your credential. Spam blocked automatically.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={300}>
-                <h3 className="text-neon-pink font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>⚡</span> Instant Settlement
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Atomic swaps and escrow. No asset custody. No chargebacks or frozen accounts.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={350}>
-                <h3 className="text-neon-purple font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🎯</span> Smart Listings
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Your offers are cryptographically signed. Unique, transferable, and portable across platforms.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={400}>
-                <h3 className="text-neon-green font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🗃️</span> Portfolio
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Your work, your portfolio, your reputation. Portable to any platform. Truly yours.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={450}>
-                <h3 className="text-tropical-teal font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>💰</span> Settlement Chains
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Plug in any blockchain. Civicverse is network-agnostic. Use Solana, Ethereum, Bitcoin, or custom chains.
-                </p>
-              </AnimatedCard>
-            </>
-          )}
-
+        {/* Content Area */}
+        <div className="min-h-[450px] mb-12">
           {/* Governance Tab */}
           {activeTab === 'governance' && (
-            <>
-              <AnimatedCard delay={200}>
-                <h3 className="text-neon-cyan font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🗳️</span> Decentralized Governance
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  One citizen, one vote. Quadratic voting optional. Transparent on-chain proposal system.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={250}>
-                <h3 className="text-neon-pink font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>📋</span> Proposals & Voting
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Submit governance proposals. Vote on protocol changes. Your voice matters equally.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={300}>
-                <h3 className="text-neon-purple font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>⚖️</span> Treasury
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Community-controlled treasury. Allocate funds transparently. Fund ecosystem development.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={350}>
-                <h3 className="text-neon-orange font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🎓</span> Reputation Delegation
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Delegate your vote based on expertise. Assign reputation weight to trusted validators.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={400}>
-                <h3 className="text-neon-green font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>📊</span> Proposal Analytics
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Transparent voting metrics. See where citizens stand on issues. Instant analytics.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={450}>
-                <h3 className="text-tropical-coral font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🔄</span> Protocol Evolution
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Citizens drive evolution. Hard forks require consensus. You choose which chain to follow.
-                </p>
-              </AnimatedCard>
-            </>
+            <div className="animate-slide-up">
+               <div className="bg-[#161b22] border border-gray-800 rounded-[3rem] p-12 md:p-20 flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
+                  
+                  <div className="w-24 h-24 bg-blue-600/20 rounded-3xl flex items-center justify-center mb-8 border border-blue-500/30">
+                     <Landmark className="w-12 h-12 text-blue-500" />
+                  </div>
+                  
+                  <h2 className="text-5xl font-black italic tracking-tighter uppercase mb-6 text-white">Decentralized Governance</h2>
+                  
+                  <p className="text-gray-400 max-w-2xl mb-10 text-lg leading-relaxed font-medium">
+                    Participate in the evolution of CivicVerse. Vote on protocol parameters, 
+                    treasury allocations, and community initiatives using your cryptographically 
+                    secured Civic Identity.
+                  </p>
+                  
+                  <button 
+                    onClick={() => nav('/governance')}
+                    className="group bg-blue-600 hover:bg-blue-700 text-white font-black py-5 px-12 rounded-2xl shadow-2xl shadow-blue-900/30 transition-all flex items-center gap-4 uppercase italic tracking-tight text-xl active:scale-95"
+                  >
+                    Launch Governance Portal
+                    <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                  </button>
+               </div>
+            </div>
           )}
 
-          {/* Community Tab */}
-          {activeTab === 'community' && (
-            <>
-              <AnimatedCard delay={200}>
-                <h3 className="text-neon-cyan font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>👥</span> Direct P2P Messaging
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  End-to-end encrypted messaging. No central intermediary. Your conversations are private.
-                </p>
-              </AnimatedCard>
+          {/* Overview, Marketplace, Community Tabs */}
+          {(activeTab === 'overview' || activeTab === 'marketplace' || activeTab === 'community') && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up">
+              {activeTab === 'overview' && (
+                <>
+                  <AnimatedCard delay={100} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-blue-500/50 transition-colors">
+                    <h3 className="text-blue-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>🔐</span> Zero-Custody
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Your Civic ID is generated locally and encrypted on your device. No platform holds your keys. Pure sovereignty.
+                    </p>
+                  </AnimatedCard>
+                  <AnimatedCard delay={200} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-purple-500/50 transition-colors">
+                    <h3 className="text-purple-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>🌍</span> Peer-to-Peer
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Connect directly with other citizens. No central authority. Communications encrypted end-to-end.
+                    </p>
+                  </AnimatedCard>
+                  <AnimatedCard delay={300} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-blue-500/50 transition-colors">
+                    <h3 className="text-blue-500 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>⚡</span> Offline-First
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Works without internet. Syncs when available. Your data stays local unless you explicitly share it.
+                    </p>
+                  </AnimatedCard>
+                </>
+              )}
 
-              <AnimatedCard delay={250}>
-                <h3 className="text-neon-pink font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>💬</span> Group Spaces
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Create communities. Invite members. Govern spaces collectively. Moderation by citizens.
-                </p>
-              </AnimatedCard>
+              {activeTab === 'marketplace' && (
+                <>
+                  <AnimatedCard delay={100} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-orange-500/50 transition-colors">
+                    <h3 className="text-orange-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>🏪</span> Marketplace
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Buy and sell directly with other citizens. Services, goods, creative work. No platform fees.
+                    </p>
+                  </AnimatedCard>
+                  <AnimatedCard delay={200} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-green-500/50 transition-colors">
+                    <h3 className="text-green-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>✅</span> Trust Ratings
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Transparent reputation system. Your history is your credential. Spam blocked automatically.
+                    </p>
+                  </AnimatedCard>
+                  <AnimatedCard delay={300} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-blue-500/50 transition-colors">
+                    <h3 className="text-blue-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>⚡</span> Settlement
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Atomic swaps and escrow. No asset custody. No chargebacks or frozen accounts.
+                    </p>
+                  </AnimatedCard>
+                </>
+              )}
 
-              <AnimatedCard delay={300}>
-                <h3 className="text-neon-purple font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>⭐</span> Reputation System
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Earn trust through action. Your reputation is portable. Spam and abuse are filtered algorithmically.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={350}>
-                <h3 className="text-neon-green font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🎭</span> Pseudonymity
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Choose your identity. Multiple personas supported. Privacy-first design throughout.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={400}>
-                <h3 className="text-neon-orange font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🏆</span> Achievements
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Earn badges and credentials. Verifiable, transferable, and cryptographically signed.
-                </p>
-              </AnimatedCard>
-
-              <AnimatedCard delay={450}>
-                <h3 className="text-tropical-teal font-bold mb-3 text-lg flex items-center gap-2">
-                  <span>🌱</span> Growth & Onboarding
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  Invite friends without fees. Network effects drive growth. Bootstrapped by community.
-                </p>
-              </AnimatedCard>
-            </>
+              {activeTab === 'community' && (
+                <>
+                  <AnimatedCard delay={100} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-blue-500/50 transition-colors">
+                    <h3 className="text-blue-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>👥</span> Messaging
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      End-to-end encrypted messaging. No central intermediary. Your conversations are private.
+                    </p>
+                  </AnimatedCard>
+                  <AnimatedCard delay={200} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-purple-500/50 transition-colors">
+                    <h3 className="text-purple-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>💬</span> Group Spaces
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Create communities. Invite members. Govern spaces collectively. Moderation by citizens.
+                    </p>
+                  </AnimatedCard>
+                  <AnimatedCard delay={300} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-green-500/50 transition-colors">
+                    <h3 className="text-green-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>⭐</span> Reputation
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Earn trust through action. Portable reputation. Spam filtered algorithmically.
+                    </p>
+                  </AnimatedCard>
+                </>
+              )}
+            </div>
           )}
         </div>
-        )}
 
         {/* Vision Statement */}
-        <AnimatedCard delay={500} className="mb-12 border-t-4 border-neon-cyan">
-          <h2 className="text-2xl font-bold gradient-text mb-4">🚀 The Vision</h2>
-          <p className="text-gray-300 leading-relaxed mb-4">
-            Civicverse is a protocol, not a platform. It enables the future of decentralized identity and peer-to-peer coordination at scale.
-          </p>
-          <p className="text-gray-300 leading-relaxed mb-4">
-            We believe identity should be:
-          </p>
-          <ul className="space-y-2 text-gray-300 list-none">
-            <li className="flex gap-3">
-              <span className="text-neon-cyan font-bold">▸</span>
-              <span><strong>Yours.</strong> Generated locally, encrypted, non-transferable, non-recoverable.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-neon-cyan font-bold">▸</span>
-              <span><strong>Portable.</strong> Take your identity and reputation anywhere. No platform lock-in.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-neon-cyan font-bold">▸</span>
-              <span><strong>Sovereign.</strong> You own your data. You control your narrative. No extraction.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-neon-cyan font-bold">▸</span>
-              <span><strong>Verifiable.</strong> Cryptographic proof. No platform intermediary required.</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="text-neon-cyan font-bold">▸</span>
-              <span><strong>Censorship-resistant.</strong> No authority can revoke your identity. No deplatforming.</span>
-            </li>
-          </ul>
+        <AnimatedCard delay={400} className="mb-16 border border-gray-800 bg-[#161b22] rounded-[2.5rem] p-12 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+          <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white mb-10 text-center">🚀 The Vision</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+             {[
+               { num: '01', title: 'Yours', desc: 'Generated locally, encrypted, non-custodial.' },
+               { num: '02', title: 'Portable', desc: 'Take your reputation across any platform.' },
+               { num: '03', title: 'Sovereign', desc: 'You own your data. You control your narrative.' },
+               { num: '04', title: 'Resistant', desc: 'Censorship-proof and fully peer-to-peer.' }
+             ].map((item, i) => (
+               <div key={i} className="text-center group">
+                  <div className="text-blue-500 font-black text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{item.num}</div>
+                  <h4 className="text-white font-bold uppercase mb-3 tracking-tight text-lg">{item.title}</h4>
+                  <p className="text-gray-500 text-sm leading-relaxed font-medium">{item.desc}</p>
+               </div>
+             ))}
+          </div>
         </AnimatedCard>
 
-        {/* Call to Action */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-center mb-8 animate-slide-up" style={{ animationDelay: '600ms' }}>
-          <AnimatedButton
-            variant="primary"
-            size="lg"
-            className="px-8 flex items-center gap-2"
-            onClick={() => nav('/wallet')}
-          >
-            <span>← Back to Wallet</span>
-          </AnimatedButton>
-
-          <a
-            href="/foyer-dist/index.html"
-            target="_blank"
-            rel="noreferrer"
-            className="neon-btn-secondary px-8 py-3 font-semibold rounded-lg border-2 transition-all hover:scale-105"
-          >
-            <span>🌐 Launch 3D Foyer →</span>
-          </a>
+        {/* Action Button */}
+        <div className="flex justify-center pb-12">
+           <button 
+             onClick={() => nav('/wallet')}
+             className="bg-blue-600 hover:bg-blue-700 text-white font-black py-6 px-16 rounded-[2rem] shadow-2xl shadow-blue-900/40 transition-all hover:scale-105 uppercase italic tracking-tighter text-2xl flex items-center gap-4 active:scale-95"
+           >
+             <Shield className="w-8 h-8" />
+             Access Identity Vault
+           </button>
         </div>
 
-        {/* Footer Message */}
-        <div className="text-center text-gray-500 text-sm">
-          <p>This is the MVP. The vision is much larger.</p>
-          <p className="mt-2 text-xs">Civicverse: Protocol-level infrastructure for decentralized identity. Not a service.</p>
+        {/* Footer */}
+        <div className="text-center border-t border-gray-800 pt-10">
+          <p className="text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em]">
+            Civicverse: Infrastructure for Decentralized Humanity
+          </p>
+          <div className="flex justify-center gap-4 mt-4 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500">
+             <div className="h-6 w-px bg-gray-700"></div>
+             <span className="text-[10px] font-mono text-blue-400">V0.9.2-NIGHTLY</span>
+             <div className="h-6 w-px bg-gray-700"></div>
+             <span className="text-[10px] font-mono text-white">EST. 2026</span>
+             <div className="h-6 w-px bg-gray-700"></div>
+          </div>
         </div>
       </div>
     </div>

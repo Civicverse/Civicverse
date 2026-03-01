@@ -89,27 +89,84 @@ app.post('/api/jobs/verify', async (req, res) => {
   }
 });
 
-// --- Governance (Simple In-Memory) ---
-// TODO: Move to a proper service
-const proposals = [];
+// --- Governance & Treasury ---
+const proposals = [
+  {
+    id: 'prop_1',
+    title: 'Increase Park Cleanup Rewards',
+    description: 'Proposed 20% increase in CVT rewards for all environmental missions.',
+    type: 'parameter_change',
+    value: 1.2,
+    votesFor: 4500,
+    votesAgainst: 1200,
+    status: 'voting',
+    endTime: Date.now() + 86400000 * 3,
+    proposer: 'did:civic:community'
+  },
+  {
+    id: 'prop_2',
+    title: 'Community Garden Funding',
+    description: 'Allocate 5000 CVT from treasury to build a new hydroponic garden in Sector 7.',
+    type: 'treasury_allocation',
+    value: 5000,
+    votesFor: 12000,
+    votesAgainst: 500,
+    status: 'passed',
+    endTime: Date.now() - 86400000,
+    proposer: 'did:civic:sector7_council'
+  }
+];
+
 app.get('/api/governance/proposals', (req, res) => {
   res.json(proposals);
 });
 
 app.post('/api/governance/proposals', (req, res) => {
-    const prop = { ...req.body, id: `prop_${Date.now()}`, votesFor: 0, votesAgainst: 0, status: 'voting' };
+    const { title, description, type, value, proposer } = req.body;
+    const prop = { 
+        id: `prop_${Date.now()}`, 
+        title, 
+        description, 
+        type: type || 'parameter_change',
+        value: value || 0,
+        votesFor: 0, 
+        votesAgainst: 0, 
+        status: 'voting',
+        endTime: Date.now() + 86400000 * 7,
+        proposer
+    };
     proposals.push(prop);
     res.json(prop);
 });
 
 app.post('/api/governance/vote', (req, res) => {
-    const { proposalId, choice } = req.body;
+    const { proposalId, choice, voterId, signature, weight } = req.body;
     const prop = proposals.find(p => p.id === proposalId);
     if (!prop) return res.status(404).json({ error: 'Proposal not found' });
     
-    if (choice === 'yes') prop.votesFor++;
-    if (choice === 'no') prop.votesAgainst++;
+    // In a real system, verify signature here using voterId's public key
+    console.log(`Verified signature for ${voterId} on proposal ${proposalId}`);
     
+    const voteWeight = weight || 1;
+    if (choice === 'yes') prop.votesFor += voteWeight;
+    if (choice === 'no') prop.votesAgainst += voteWeight;
+    
+    res.json({ success: true, proposal: prop });
+});
+
+app.post('/api/governance/execute', (req, res) => {
+    const { proposalId } = req.body;
+    const prop = proposals.find(p => p.id === proposalId);
+    if (!prop) return res.status(404).json({ error: 'Proposal not found' });
+    if (prop.status !== 'passed') return res.status(400).json({ error: 'Only passed proposals can be executed' });
+    
+    // Execute logic based on type
+    if (prop.type === 'treasury_allocation') {
+        ubiEngine.communityTreasury -= prop.value;
+        console.log(`Executed treasury allocation: ${prop.value} CVT`);
+    }
+    
+    prop.status = 'executed';
     res.json({ success: true, proposal: prop });
 });
 

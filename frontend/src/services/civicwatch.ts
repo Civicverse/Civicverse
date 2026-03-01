@@ -8,10 +8,13 @@ export interface Job {
   description: string;
   type: 'volunteer' | 'paid';
   reward: number;
-  location: { lat: number; lng: number };
+  category: string;
+  location: { lat: number; lng: number; address: string };
   status: 'open' | 'in_progress' | 'verifying' | 'completed';
   assignee: string | null;
   requirements: string[];
+  stats: Record<string, number>;
+  createdAt: number;
 }
 
 export const civicWatchApi = {

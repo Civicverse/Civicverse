@@ -8,6 +8,14 @@ export interface CivicUser {
   avatar: string;
   trustScore: number;
   level: number;
+  stats?: {
+    environmental?: number;
+    civic?: number;
+    social?: number;
+    educational?: number;
+    logistics?: number;
+    empathy?: number;
+  };
 }
 
 export interface Wallet {
@@ -171,35 +179,35 @@ export const useGameStore = create<GameState>((set) => ({
   initialize: async () => {
     try {
       console.log('[store] initialize START');
+      
       const isAuth = localStorage.getItem('isAuthenticated') === '1';
       const savedUser = localStorage.getItem('civicverse_user');
+      const tos = localStorage.getItem('civicverse:tos') === 'true';
       
-      console.log('[store] localStorage check:', { isAuth, hasUser: !!savedUser });
+      console.log('[store] localStorage check:', { isAuth, hasUser: !!savedUser, tos });
+
+      set({ tosAccepted: tos });
 
       if (isAuth && savedUser) {
         try {
           const parsed = JSON.parse(savedUser);
-          console.log('[store] rehydrating user:', parsed.user?.username);
           set({ 
             isAuthenticated: true, 
             user: parsed.user, 
             wallet: parsed.wallet, 
             multiChainAddresses: parsed.multiChainAddresses,
-            loading: false,
-            isInitialized: true 
           });
           console.log('[store] rehydration SUCCESS');
-          return;
         } catch (e) {
           console.error('[store] Failed to parse saved user', e);
+          localStorage.removeItem('isAuthenticated');
+          localStorage.removeItem('civicverse_user');
         }
-      } else {
-        console.log('[store] No existing session found');
       }
     } catch (err) {
       console.error('[store] Global initialize error:', err);
     } finally {
-      console.log('[store] initialize FINISHED - setting isInitialized: true');
+      console.log('[store] initialize FINISHED');
       set({ isInitialized: true, loading: false });
     }
   },
