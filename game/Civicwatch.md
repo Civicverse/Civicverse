@@ -4,13 +4,13 @@ CivicWatch is a real-time job marketplace + civic dispatch system built into Civ
 
 It blends:
 
-🚗 Uber-style job selection
+Indeed-style job selection
 
 📦 DoorDash-style dispatch
 
 🗺️ A Niantic-style live overworld map
 
-🧠 AI-guided onboarding and safety
+🧠 Job issuer created or AI-guided onboarding, training and safety short form video
 
 💸 Crypto-based payouts
 
