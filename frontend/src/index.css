@@ -177,6 +177,31 @@ h3 {
   background-size: 50px 50px;
 }
 
+/* Tropical & Neon Utilities */
+.bg-gradient-tropical {
+  background: linear-gradient(135deg, #0A1428 0%, #1A1A2E 50%, #0F1E35 100%);
+}
+
+.bg-tropical-dark {
+  @apply bg-dark-900;
+}
+
+.bg-tropical-surface {
+  @apply bg-dark-800;
+}
+
+.bg-gradient-neon-cyan-pink {
+  background: linear-gradient(to right, #00D9FF, #FF006E);
+}
+
+.text-tropical-accent {
+  @apply text-neon-cyan;
+}
+
+.placeholder-tropical-accent {
+  @apply placeholder-neon-cyan;
+}
+
 /* Smooth Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

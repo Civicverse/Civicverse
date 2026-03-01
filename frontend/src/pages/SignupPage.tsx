@@ -1,11 +1,11 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { vault } from '../lib/vault'
-import { Mnemonic } from '../lib/mnemonic'
+import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, AnimatedInput, NeonText, GradientOrb, LoadingSpinner } from '../components'
 
 export default function SignupPage() {
   const nav = useNavigate()
+  const signup = useGameStore(state => state.signup)
   const [username, setUsername] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [confirm, setConfirm] = React.useState('')
@@ -31,46 +31,10 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
-      // Generate 32-byte entropy locally
-      const entropy = new Uint8Array(32)
-      globalThis.crypto.getRandomValues(entropy)
-
-      // Hash entropy with SHA-256 to derive Civic ID
-      const hashBuf = await globalThis.crypto.subtle.digest('SHA-256', entropy)
-      const hashArray = Array.from(new Uint8Array(hashBuf))
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-      const civicId = 'civic:' + hashHex.slice(0, 32)
-
-      // Convert entropy to base64 encoding
-      const entropyB64 = btoa(String.fromCharCode.apply(null, Array.from(entropy)))
-
-      // Generate keypair (public key from entropy)
-      const publicKeyB64 = entropyB64
-
-      // Generate mnemonic from entropy
-      const mnemonic = await Mnemonic.generate(entropy)
-
-      // Derive wallet address
-      const walletAddress = 'cc:' + civicId.slice(6, 16) + '...' + civicId.slice(-6)
-
-      // Create encrypted vault
-      const vaultResult = await vault.create(
-        username,
-        password,
-        civicId,
-        entropy,
-        mnemonic,
-        publicKeyB64,
-        walletAddress
-      )
-
-      // Store vault to localStorage
-      localStorage.setItem('civicverse:vault:encrypted', vaultResult.encryptedVault)
-      localStorage.setItem('civicverse:vault:salt', vaultResult.salt)
-      localStorage.setItem('civicverse:civicId', civicId)
-
+      // Use the global signup method which handles vault creation and authentication state
+      await signup(username, `did:civic:${Math.random().toString(36).substring(2, 15)}`, password)
+      
       setLoading(false)
-
       // Navigate to mnemonic display page
       nav('/mnemonic', { state: { isNewUser: true } })
     } catch (e) {

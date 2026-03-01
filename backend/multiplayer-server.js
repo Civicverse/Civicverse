@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
+const ubiEngine = require('./services/UBI-engine/ubi-service');
 
 const app = express();
 const server = http.createServer(app);
@@ -398,9 +399,12 @@ function resolveMatch(matchId) {
   // sum bets
   let total = 0;
   match.bets.forEach(v => total += v);
-  const fee = total * 0.01;
-  const payout = total - fee;
-  communityWallet += fee;
+  
+  // Apply 1% Micro-tax per whitepaper
+  const { netAmount, taxAmount } = ubiEngine.processTransaction(total);
+  const payout = netAmount;
+  const fee = taxAmount;
+
   wallets.set(winner, (wallets.get(winner) || 0) + payout);
   match.status = 'finished';
   // clear participants' matchId
@@ -413,6 +417,10 @@ function resolveMatch(matchId) {
   wss.clients.forEach(c => c.readyState === WebSocket.OPEN && c.send(msg));
   return { winner, payout, fee };
 }
+
+app.get('/api/ubi/status', (req, res) => {
+  res.json(ubiEngine.getStatus());
+});
 
 app.post('/api/reset', (req, res) => {
   players.clear();

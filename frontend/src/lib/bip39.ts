@@ -2,7 +2,7 @@
  * BIP-39 Mnemonic Seed Phrase Generation
  * 12 or 24 word recovery phrases compatible with Bitcoin/Ethereum wallets
  */
-import { sha256 } from '@noble/hashes/sha256';
+import { sha256 } from '@noble/hashes/sha2.js';
 
 // BIP-39 English word list (first 256 words for demo - full list has 2048)
 const WORDLIST = [

@@ -4,7 +4,8 @@ services:
       context: ./backend
     container_name: civicverse_rebuilt_backend
     ports:
-      - 3003:3003
+      - "3003:3003"
+      - "8080:8080"
     networks:
       - civicnet
 

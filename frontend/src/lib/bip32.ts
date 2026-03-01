@@ -13,10 +13,9 @@
  * Monero (custom): 128
  */
 
-import { sha256 } from '@noble/hashes/sha256';
-import { hmac } from '@noble/hashes/hmac';
-import { sha512 } from '@noble/hashes/sha512';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { sha256, sha512 } from '@noble/hashes/sha2.js';
+import { hmac } from '@noble/hashes/hmac.js';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import * as secp from '@noble/secp256k1';
 
 interface ExtendedKey {
@@ -176,7 +175,7 @@ function deriveChild(parent: ExtendedKey, index: number): ExtendedKey {
   // child k = (IL + kpar) mod n
   const ILbn = BigInt('0x' + bytesToHex(IL));
   const kpar = BigInt('0x' + parent.privateKey);
-  const n = secp.CURVE.n;
+  const n = BigInt('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141');
   const childKeyNum = (ILbn + kpar) % n;
   const childKeyHex = childKeyNum.toString(16).padStart(64, '0');
 

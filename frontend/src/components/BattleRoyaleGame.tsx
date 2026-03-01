@@ -75,7 +75,7 @@ export const BattleRoyaleGame: React.FC = () => {
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight)
     renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFShadowShadowMap
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
     containerRef.current.appendChild(renderer.domElement)
 
     // Physics world

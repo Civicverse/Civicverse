@@ -1,22 +1,24 @@
 import React from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { vault } from '../lib/vault'
+import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
 
 export default function MnemonicPage() {
   const nav = useNavigate()
-  const location = useLocation()
+  const isAuthenticated = useGameStore(state => state.isAuthenticated)
   const [copied, setCopied] = React.useState(false)
   const [understood, setUnderstood] = React.useState(false)
   const [showMnemonic, setShowMnemonic] = React.useState(false)
 
-  const mnemonic = vault.getMnemonic()
+  const vaultData = vault.getData()
+  const mnemonic = vaultData?.mnemonic
 
   React.useEffect(() => {
-    if (!mnemonic || !vault.isUnlocked()) {
+    if (!isAuthenticated || !mnemonic) {
       nav('/welcome')
     }
-  }, [])
+  }, [isAuthenticated, mnemonic, nav])
 
   const copyToClip = () => {
     if (mnemonic) {

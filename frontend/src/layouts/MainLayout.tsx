@@ -16,7 +16,8 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
-    { path: '/missions', label: 'Missions', icon: Gamepad2 },
+    { path: '/civicwatch', label: 'CivicWatch', icon: Users }, // Replaced generic missions or added new
+    { path: '/missions', label: 'Game Missions', icon: Gamepad2 },
     { path: '/wallet', label: 'Wallet', icon: Wallet },
     { path: '/governance', label: 'Governance', icon: Users },
   ];

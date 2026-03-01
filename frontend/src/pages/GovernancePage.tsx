@@ -1,75 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ThumbsUp, ThumbsDown, Clock, Plus, X } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:3003/api';
 
 interface Proposal {
   id: string;
   title: string;
   description: string;
-  votes: { yes: number; no: number };
-  timeRemaining: string;
+  votesFor: number;
+  votesAgainst: number;
+  status: string;
   userVoted?: boolean;
-  author?: string;
 }
 
 export function GovernancePage() {
   const [showProposalForm, setShowProposalForm] = useState(false);
   const [formData, setFormData] = useState({ title: '', description: '' });
-  const [proposals, setProposals] = useState<Proposal[]>([
-    {
-      id: '1',
-      title: 'Increase Mission Rewards by 20%',
-      description: 'Community proposal to increase reward amounts for all missions to incentivize participation.',
-      votes: { yes: 234, no: 45 },
-      timeRemaining: '2d 4h',
-    },
-    {
-      id: '2',
-      title: 'Add Environmental Category Missions',
-      description: 'New environmental protection missions focused on climate change mitigation efforts.',
-      votes: { yes: 156, no: 78 },
-      timeRemaining: '1d 12h',
-    },
-    {
-      id: '3',
-      title: 'Governance Token Distribution',
-      description: 'Proposal to distribute governance tokens to long-term community members.',
-      votes: { yes: 89, no: 120 },
-      timeRemaining: '3h 45m',
-    },
-  ]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleVote = (proposalId: string, vote: boolean) => {
-    setProposals(
-      proposals.map((p) =>
-        p.id === proposalId
-          ? {
-              ...p,
-              votes: vote ? { ...p.votes, yes: p.votes.yes + 1 } : { ...p.votes, no: p.votes.no + 1 },
-              userVoted: true,
-            }
-          : p
-      )
-    );
+  useEffect(() => {
+    fetchProposals();
+  }, []);
+
+  const fetchProposals = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/governance/proposals`);
+      setProposals(res.data);
+    } catch (err) {
+      console.error('Failed to fetch proposals', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmitProposal = (e: React.FormEvent) => {
+  const handleVote = async (proposalId: string, choice: 'yes' | 'no') => {
+    try {
+      await axios.post(`${API_URL}/governance/vote`, { proposalId, choice });
+      // Optimistic update or refetch
+      fetchProposals();
+    } catch (err) {
+      alert('Vote failed');
+    }
+  };
+
+  const handleSubmitProposal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.description.trim()) return;
 
-    const newProposal: Proposal = {
-      id: (proposals.length + 1).toString(),
-      title: formData.title,
-      description: formData.description,
-      votes: { yes: 0, no: 0 },
-      timeRemaining: '7d',
-      userVoted: false,
-      author: 'You',
-    };
-
-    setProposals([newProposal, ...proposals]);
-    setFormData({ title: '', description: '' });
-    setShowProposalForm(false);
+    try {
+      await axios.post(`${API_URL}/governance/proposals`, {
+        title: formData.title,
+        description: formData.description
+      });
+      setFormData({ title: '', description: '' });
+      setShowProposalForm(false);
+      fetchProposals();
+    } catch (err) {
+      alert('Failed to create proposal');
+    }
   };
 
   return (
@@ -158,7 +149,7 @@ export function GovernancePage() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {[
-            { label: 'Active Proposals', value: '3', icon: '🗳️' },
+            { label: 'Active Proposals', value: proposals.length.toString(), icon: '🗳️' },
             { label: 'Your Voting Power', value: '1,250 CIVIC', icon: '⚡' },
             { label: 'Governance Participation', value: '85%', icon: '📊' },
           ].map((stat, i) => (
@@ -178,10 +169,10 @@ export function GovernancePage() {
 
         {/* Proposals */}
         <div className="space-y-4">
-          {proposals.map((proposal, index) => {
-            const totalVotes = proposal.votes.yes + proposal.votes.no;
-            const yesPercent = totalVotes > 0 ? (proposal.votes.yes / totalVotes) * 100 : 0;
-            const noPercent = totalVotes > 0 ? (proposal.votes.no / totalVotes) * 100 : 0;
+          {loading ? <div className="text-white">Loading proposals...</div> : proposals.map((proposal, index) => {
+            const totalVotes = proposal.votesFor + proposal.votesAgainst;
+            const yesPercent = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
+            const noPercent = totalVotes > 0 ? (proposal.votesAgainst / totalVotes) * 100 : 0;
 
             return (
               <motion.div
@@ -199,7 +190,7 @@ export function GovernancePage() {
                   </div>
                   <div className="flex items-center gap-2 text-dark-300 text-sm ml-4">
                     <Clock className="w-4 h-4" />
-                    {proposal.timeRemaining}
+                    {proposal.status}
                   </div>
                 </div>
 
@@ -220,32 +211,26 @@ export function GovernancePage() {
                     ></div>
                   </div>
                   <div className="flex justify-between mt-2 text-sm">
-                    <span className="text-green-400">✓ Yes: {proposal.votes.yes}</span>
-                    <span className="text-red-400">✗ No: {proposal.votes.no}</span>
+                    <span className="text-green-400">✓ Yes: {proposal.votesFor}</span>
+                    <span className="text-red-400">✗ No: {proposal.votesAgainst}</span>
                   </div>
                 </div>
 
                 {/* Vote Buttons */}
-                {!proposal.userVoted ? (
-                  <div className="flex gap-3">
+                <div className="flex gap-3">
                     <button
-                      onClick={() => handleVote(proposal.id, true)}
+                      onClick={() => handleVote(proposal.id, 'yes')}
                       className="flex-1 py-2.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/50 text-green-400 font-semibold rounded-lg transition flex items-center justify-center gap-2"
                     >
                       <ThumbsUp className="w-4 h-4" /> Vote Yes
                     </button>
                     <button
-                      onClick={() => handleVote(proposal.id, false)}
+                      onClick={() => handleVote(proposal.id, 'no')}
                       className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/50 text-red-400 font-semibold rounded-lg transition flex items-center justify-center gap-2"
                     >
                       <ThumbsDown className="w-4 h-4" /> Vote No
                     </button>
                   </div>
-                ) : (
-                  <div className="p-3 bg-civic-500/10 border border-civic-500/50 rounded-lg text-civic-300 text-center font-semibold">
-                    ✓ You have voted on this proposal
-                  </div>
-                )}
               </motion.div>
             );
           })}

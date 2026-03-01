@@ -25,7 +25,7 @@ export default function WelcomePage() {
             DECENTRALIZED IDENTITY PROTOCOL
           </p>
           <p className="text-sm text-gray-400">
-            Non-Custodial • Offline-First • Zero Recovery
+            Non-Custodial • Offline-First • Sovereign
           </p>
         </div>
 
@@ -38,7 +38,7 @@ export default function WelcomePage() {
             Civicverse is a decentralized identity and wallet system that runs entirely on your device.
           </p>
           <p className="text-gray-300 mb-4 leading-relaxed">
-            Your keys, your identity, your control. <span className="text-neon-pink font-bold">No platform. No cloud. No recovery.</span>
+            CivicVerse provides <span className="text-neon-cyan font-bold">sovereign control</span> with optional recovery paths governed by the community.
           </p>
           <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-neon-cyan/20">
             <div className="text-center">
