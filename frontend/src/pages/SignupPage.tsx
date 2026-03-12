@@ -124,7 +124,7 @@ export default function SignupPage() {
                   Your Civic ID is generated from entropy (randomness) and encrypted with your password.
                 </p>
                 <p className="text-xs text-neon-pink font-bold mt-2">
-                  Next: You'll see a recovery mnemonic. Back it up securely — there is NO recovery without it.
+                  Next: You'll see your Memetic Wallet Password. Back it up securely — there is NO recovery without it.
                 </p>
               </div>
             </div>

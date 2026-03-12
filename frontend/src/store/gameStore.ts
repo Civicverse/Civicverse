@@ -180,27 +180,26 @@ export const useGameStore = create<GameState>((set) => ({
     try {
       console.log('[store] initialize START');
       
-      const isAuth = localStorage.getItem('isAuthenticated') === '1';
       const savedUser = localStorage.getItem('civicverse_user');
-      const tos = localStorage.getItem('civicverse:tos') === 'true';
       
-      console.log('[store] localStorage check:', { isAuth, hasUser: !!savedUser, tos });
+      console.log('[store] localStorage check:', { hasUser: !!savedUser });
 
-      set({ tosAccepted: tos });
+      // Always start with tosAccepted: false and isAuthenticated: false for a new session
+      set({ tosAccepted: false, isAuthenticated: false });
 
-      if (isAuth && savedUser) {
+      if (savedUser) {
         try {
           const parsed = JSON.parse(savedUser);
+          // We can still rehydrate user data if needed, but isAuthenticated remains false
+          // until they unlock with their password.
           set({ 
-            isAuthenticated: true, 
             user: parsed.user, 
             wallet: parsed.wallet, 
             multiChainAddresses: parsed.multiChainAddresses,
           });
-          console.log('[store] rehydration SUCCESS');
+          console.log('[store] user data rehydrated (but not authenticated)');
         } catch (e) {
           console.error('[store] Failed to parse saved user', e);
-          localStorage.removeItem('isAuthenticated');
           localStorage.removeItem('civicverse_user');
         }
       }

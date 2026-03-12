@@ -1,40 +1,37 @@
 # Civicverse Development State
 
 ## 🚀 Active Environment
-The services are running locally (non-Docker) via `npm run start:backend` and `npm run start:frontend`.
+The services are running locally via `npm run start`.
+- **Frontend:** [http://localhost:3000](http://localhost:3000)
+- **API Server:** [http://localhost:3003](http://localhost:3003)
 
-- **Frontend:** [http://localhost:3000](http://localhost:3000) (Vite/React)
-- **API Server:** [http://localhost:3003](http://localhost:3003) (Identity, Jobs, Governance)
-- **Game Server:** [http://localhost:8080](http://localhost:8080) (Multiplayer, UBI, Matches)
+## 🛠 Fixes Applied (2026-03-12)
 
-## 🛠 Fixes Applied (2026-03-01)
+### 1. Startup Flow & Session Management
+- **Strict TOS Enforcement:** Configured `App.tsx` and `gameStore.ts` so that `tosAccepted` and `isAuthenticated` are reset on every new session. The Terms of Service (TOS) is now the mandatory first page.
+- **Linear Routing Flow:**
+    1. **TOS Page:** Must be accepted (resets every session).
+    2. **Welcome Page:** Choice between "Unlock Existing Wallet" (Login) or "Create New Identity" (Signup).
+    3. **Authenticated Flow:**
+        - **Returning Users:** Redirected to `/wallet` after successful login.
+        - **New Users:** Redirected to `/mnemonic` (Memetic Wallet Password page) after signup, then to `/wallet`.
 
-### 1. Authentication & Persistence
-- **State Rehydration:** Implemented `initialize` method in `gameStore.ts` to restore user sessions and wallet addresses from `localStorage` on page refresh.
-- **Login Persistence:** Fixed `LoginPage.tsx` to handle existing local identities. Users are now prompted for their password to unlock their non-custodial vault instead of being auto-logged in with empty state.
-- **Secure Mnemonic Flow:** Introduced `tempMnemonic` in the global store. It is generated during signup and held in memory for the `MnemonicPage` to display, but is never persisted to `localStorage`, maintaining non-custodial security standards.
+### 2. Terminology & Branding
+- **Memetic Wallet Password:** Replaced all instances of "mnemonic" and "recovery phrase" with "Memetic Wallet Password" across the UI (`TOSPage.tsx`, `WelcomePage.tsx`, `SignupPage.tsx`, `MnemonicPage.tsx`).
+- **Unified Auth State:** Authenticated routes now correctly include the `/mnemonic` path to allow new users to view their backup phrase without being prematurely redirected to the main dashboard.
 
-### 2. Navigation & Routing
-- **Infinite Loop Resolution:** Fixed "Maximum update depth exceeded" error by refactoring `App.tsx`. Replaced recursive `TOSGuard`/`ProtectedRoute` components with a linear, centralized routing switch.
-- **Strict Flow Enforcement:**
-    1. **TOS:** Must be accepted first in every session.
-    2. **Auth Check:** Redirects to `/welcome` if no active session.
-    3. **Protected Area:** Only accessible after rehydration or login.
-- **Clean Redirects:** Removed redundant `useEffect` navigation logic from individual pages (`MnemonicPage`, `WalletPage`) to let `App.tsx` handle the source of truth.
-
-### 3. UI & Styling
-- **Missing Assets:** Added missing CSS utility classes (`bg-gradient-dark`, `bg-civic-*`, etc.) to `index.css` that were causing blank screens in `MainLayout`.
-- **Component Stability:** Fixed a crash in `AnimatedButton` caused by a missing color reference (`neon-orange`) and added defensive checks to `MnemonicPage` to prevent `split()` errors on null values.
+### 3. Identity & Security
+- **Non-Custodial Integrity:** Maintained the "Local-Only" principle by ensuring passwords and identity data are encrypted on-device and never saved in plain text or transmitted to the backend.
 
 ## 📦 Source Control
 - **Branch:** `main`
-- **Latest Commit:** includes all auth rehydration, routing refactor, and CSS fixes.
+- **Current State:** Startup order fixed, terminology updated, services running.
 
 ## 📋 Next Steps
-- [ ] **Social Recovery:** Implement actual Shamir's Secret Sharing in `socialRecovery.ts` to provide a non-custodial path for lost passwords.
-- [ ] **Real Connectivity:** Transition from mock wallet balances to real blockchain indexing (Monero/ETH).
-- [ ] **Identity Library:** Integrate the "real" `@civicverse/civic-id` library once it's moved out of the frontend source.
-- [ ] **Rust Migration:** Move Rust source files (`main.rs`, `genesis.rs`, etc.) out of the React `frontend/src/` folder into a dedicated crate.
+- [ ] **Social Recovery:** Implement actual Shamir's Secret Sharing in `socialRecovery.ts`.
+- [ ] **Real Connectivity:** Transition from mock wallet balances to real blockchain indexing.
+- [ ] **Identity Library:** Integrate the "real" `@civicverse/civic-id` library.
+- [ ] **Rust Migration:** Move Rust source files out of the frontend source into a dedicated crate.
 
 ---
-*Next session: Start by verifying the login/signup flow and proceed to Social Recovery or Real-time Blockchain integration.*
+*Updated context saved for next session.*

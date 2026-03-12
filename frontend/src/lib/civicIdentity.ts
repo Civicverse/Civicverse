@@ -4,6 +4,7 @@
  * TODO: Replace with @civicverse/civic-id once library is built
  */
 
+import { secureStorage } from './secureStorage';
 import * as ed25519 from '@noble/ed25519';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
@@ -82,14 +83,14 @@ export class CivicIdentity {
     if (password) {
       // Encrypt sensitive data with password
       encrypted = await encryptWithPassword(JSON.stringify(storageData), password);
-      localStorage.setItem('civicverse:identity', `ENCRYPTED:${encrypted}`);
+      await secureStorage.setItem('civicverse:identity', `ENCRYPTED:${encrypted}`);
     } else {
       // Fall back to simple base64 for demo
       encrypted = btoa(JSON.stringify(storageData));
-      localStorage.setItem('civicverse:identity', encrypted);
+      await secureStorage.setItem('civicverse:identity', encrypted);
     }
     
-    localStorage.setItem('civicverse:did', did);
+    await secureStorage.setItem('civicverse:did', did);
 
     return identity;
   }
@@ -100,7 +101,7 @@ export class CivicIdentity {
    */
   static async restore(password?: string): Promise<CivicIdentity | null> {
     try {
-      const encrypted = localStorage.getItem('civicverse:identity');
+      const encrypted = await secureStorage.getItem('civicverse:identity');
       if (!encrypted) return null;
       
       let data: StorageData;
@@ -147,23 +148,24 @@ export class CivicIdentity {
   /**
    * Delete identity permanently
    */
-  static deleteIdentity(): void {
-    localStorage.removeItem('civicverse:identity');
-    localStorage.removeItem('civicverse:did');
+  static async deleteIdentity(): Promise<void> {
+    await secureStorage.removeItem('civicverse:identity');
+    await secureStorage.removeItem('civicverse:did');
   }
 
   /**
    * Check if identity exists
    */
-  static exists(): boolean {
-    return localStorage.getItem('civicverse:did') !== null;
+  static async exists(): Promise<boolean> {
+    const did = await secureStorage.getItem('civicverse:did');
+    return did !== null;
   }
 
   /**
    * Get stored DID
    */
-  static getStoredDID(): string | null {
-    return localStorage.getItem('civicverse:did');
+  static async getStoredDID(): Promise<string | null> {
+    return secureStorage.getItem('civicverse:did');
   }
 }
 

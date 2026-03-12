@@ -69,6 +69,7 @@ export default function App() {
         <Route path="/governance" element={<GovernancePage />} />
         <Route path="/foyer" element={<FoyerPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
+        <Route path="/mnemonic" element={<MnemonicPage />} />
         <Route path="/" element={<Navigate to="/foyer" replace />} />
         <Route path="*" element={<Navigate to="/foyer" replace />} />
       </Routes>

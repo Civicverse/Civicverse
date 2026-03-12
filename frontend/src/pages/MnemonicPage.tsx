@@ -69,7 +69,7 @@ export default function MnemonicPage() {
         {/* Header */}
         <div className="text-center mb-8 animate-slide-up">
           <NeonText size="4xl" gradient={true} className="block mb-2">
-            🔐 Recovery Mnemonic
+            🔐 Memetic Wallet Password
           </NeonText>
           <p className="text-neon-pink text-lg font-bold tracking-wider">CRITICAL — THIS IS YOUR ONLY BACKUP</p>
         </div>
@@ -79,13 +79,13 @@ export default function MnemonicPage() {
           <div className="bg-neon-pink/20 border border-neon-pink/50 rounded-lg p-4 mb-6">
             <p className="text-neon-pink font-bold text-lg mb-2">⚠️ MOST IMPORTANT MESSAGE</p>
             <p className="text-white text-sm leading-relaxed">
-              This is your <span className="font-bold">ONLY way</span> to recover your wallet if your device is lost, corrupted, or stolen.
+              This is your <span className="font-bold">Memetic Wallet Password</span> (Seed Phrase). It is the <span className="font-bold">ONLY way</span> to recover your wallet if your device is lost, corrupted, or stolen.
             </p>
           </div>
 
           {/* Mnemonic Display */}
           <div className="mb-6">
-            <p className="text-gray-300 mb-4 font-semibold">Your 12-Word Recovery Phrase:</p>
+            <p className="text-gray-300 mb-4 font-semibold">Your 12-Word Memetic Password:</p>
             <div className={`relative rounded-lg border-2 transition-all duration-300 p-6 min-h-[200px] flex items-center justify-center ${
               showMnemonic 
                 ? 'border-neon-cyan/60 bg-dark-800/80 scanlines' 
@@ -117,7 +117,7 @@ export default function MnemonicPage() {
                   size="lg"
                   onClick={() => setShowMnemonic(true)}
                 >
-                  Click to Reveal Your Mnemonic
+                  Reveal Your Memetic Password
                 </AnimatedButton>
               )}
             </div>
@@ -163,7 +163,7 @@ export default function MnemonicPage() {
               />
               <label htmlFor="understood" className="cursor-pointer flex-1 text-sm">
                 <p className="font-bold text-neon-green">
-                  ✓ I have securely backed up my recovery mnemonic
+                  ✓ I have securely backed up my Memetic Wallet Password
                 </p>
                 <p className="text-gray-400 text-xs mt-1">
                   I understand: No password reset. No key recovery. Civicverse cannot help me.
@@ -180,7 +180,7 @@ export default function MnemonicPage() {
             disabled={!understood || !showMnemonic}
             onClick={proceed}
           >
-            {understood && showMnemonic ? '✓ Continue to Wallet' : '⏳ Backup Your Mnemonic First'}
+            {understood && showMnemonic ? '✓ Continue to Wallet' : '⏳ Backup Your Memetic Password First'}
           </AnimatedButton>
         </AnimatedCard>
       </div>

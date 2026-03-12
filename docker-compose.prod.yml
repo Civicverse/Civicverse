@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: civicverse-backend:latest
+    container_name: civicverse_backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      # Add other env vars here
+    volumes:
+      - civic_data:/app/data
+    networks:
+      - civicnet
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    user: "node"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    image: civicverse-frontend:latest
+    container_name: civicverse_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - civicnet
+
+  nginx:
+    image: nginx:alpine
+    container_name: civicverse_gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - civicnet
+
+networks:
+  civicnet:
+    driver: bridge
+
+volumes:
+  civic_data:

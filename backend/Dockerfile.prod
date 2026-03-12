@@ -1,0 +1,36 @@
+# Stage 1: Builder
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files for caching
+COPY package*.json ./
+
+# Install dependencies (production only)
+RUN npm ci --only=production
+
+# Stage 2: Runner
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Set non-root user
+USER node
+
+# Copy dependencies and source from builder
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --chown=node:node . .
+
+# Environment variables (defaults, should be overridden)
+ENV NODE_ENV=production
+ENV PORT=3003
+
+# Expose port
+EXPOSE 3003
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3003/api/status || exit 1
+
+# Start command
+CMD ["node", "index.js"]

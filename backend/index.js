@@ -2,6 +2,9 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const fs = require('fs')
 const path = require('path')
+const helmet = require('helmet')
+const cors = require('cors')
+const rateLimit = require('express-rate-limit')
 const app = express()
 const port = process.env.PORT || 3003
 
@@ -14,13 +17,21 @@ try { fs.mkdirSync(WALLETS_DIR, { recursive: true }) } catch(e) {}
 const ubiEngine = require('./services/UBI-engine/ubi-service');
 const civicWatch = require('./services/civicwatch-service');
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-  if (req.method === 'OPTIONS') return res.sendStatus(204)
-  next()
+// Security Middleware
+app.use(helmet())
+app.use(cors({ 
+  origin: process.env.CORS_ORIGIN || '*', 
+  optionsSuccessStatus: 200 
+}))
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
 })
+app.use('/api/', limiter)
 
 app.use(bodyParser.json({ limit: '10mb' })) // Increased limit for image proofs
 

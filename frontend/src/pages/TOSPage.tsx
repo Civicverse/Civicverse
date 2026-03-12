@@ -9,7 +9,7 @@ export default function TOSPage() {
   const [agreed, setAgreed] = React.useState(false)
 
   const handleAccept = () => {
-    localStorage.setItem('civicverse:tos', 'true')
+    // No longer save to localStorage to ensure it shows on every session
     setTosAccepted(true)
     nav('/welcome')
   }
@@ -73,7 +73,7 @@ export default function TOSPage() {
                 <li className="flex gap-2">
                   <span className="text-neon-cyan">→</span>
                   <span>
-                    <strong>NO key recovery.</strong> Losing mnemonic = losing wallet forever.
+                    <strong>NO key recovery.</strong> Losing Memetic Password = losing wallet forever.
                   </span>
                 </li>
                 <li className="flex gap-2">
@@ -98,7 +98,7 @@ export default function TOSPage() {
                 </li>
                 <li className="flex gap-2">
                   <span className="text-neon-purple">▸</span>
-                  <span>You must backup password and recovery mnemonic.</span>
+                  <span>You must backup password and Memetic Wallet Password.</span>
                 </li>
               </ul>
             </div>
@@ -117,7 +117,7 @@ export default function TOSPage() {
                 <li>• Key Derivation: PBKDF2-SHA256</li>
                 <li>• Password: Never leaves device</li>
                 <li>• Civic ID: Derived from entropy, not registered</li>
-                <li>• Mnemonic: BIP-39 standard (12 words)</li>
+                <li>• Memetic Password: BIP-39 standard (12 words)</li>
                 <li>• Storage: Local encrypted vault</li>
                 <li>• Network: Offline-first, full functionality without internet</li>
               </ul>
@@ -140,7 +140,7 @@ export default function TOSPage() {
                 I understand <span className="text-neon-cyan font-bold">this is non-custodial software</span>. I accept <span className="text-neon-pink font-bold">full responsibility</span> for my keys and data.
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                No account recovery. No customer support. Only me, my password, my mnemonic.
+                No account recovery. No customer support. Only me, my password, my Memetic Password.
               </p>
             </label>
           </div>

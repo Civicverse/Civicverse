@@ -78,7 +78,7 @@ export default function WelcomePage() {
 
         {/* Footer info */}
         <div className="mt-10 text-center text-xs text-gray-500 space-y-2">
-          <p>Your password is your only key. Your mnemonic is your recovery.</p>
+          <p>Your password is your only key. Your Memetic Wallet Password is your recovery.</p>
           <p>Lose both? Your identity is gone forever. Choose wisely.</p>
         </div>
       </div>
