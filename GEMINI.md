@@ -1,37 +1,44 @@
 # Civicverse Development State
 
 ## 🚀 Active Environment
-The services are running locally via `npm run start`.
-- **Frontend:** [http://localhost:3000](http://localhost:3000)
-- **API Server:** [http://localhost:3003](http://localhost:3003)
+The services are running locally via `npm run start` or via the new production stack:
+- **Production Stack:** `docker-compose -f docker-compose.prod.yml up --build`
+- **Frontend Gateway:** [https://localhost](https://localhost) (Nginx Reverse Proxy)
+- **API Server:** [https://localhost/api/status](https://localhost/api/status)
 
-## 🛠 Fixes Applied (2026-03-12)
+## 🛠 Security & Infrastructure Overhaul (2026-03-12)
 
-### 1. Startup Flow & Session Management
-- **Strict TOS Enforcement:** Configured `App.tsx` and `gameStore.ts` so that `tosAccepted` and `isAuthenticated` are reset on every new session. The Terms of Service (TOS) is now the mandatory first page.
-- **Linear Routing Flow:**
-    1. **TOS Page:** Must be accepted (resets every session).
-    2. **Welcome Page:** Choice between "Unlock Existing Wallet" (Login) or "Create New Identity" (Signup).
-    3. **Authenticated Flow:**
-        - **Returning Users:** Redirected to `/wallet` after successful login.
-        - **New Users:** Redirected to `/mnemonic` (Memetic Wallet Password page) after signup, then to `/wallet`.
+### 1. Hardened Key Storage (The "Civilian Vault")
+- **IndexedDB Transition:** Replaced insecure `localStorage` for private keys and DID data with a new `secureStorage.ts` module using `IndexedDB`.
+- **Async Identity Flow:** Refactored `CivicIdentity.ts` to use asynchronous secure storage, preventing XSS-based key scraping.
+- **Encryption at Rest:** All sensitive data is now stored as encrypted blobs, requiring the user's password to derive the decryption key via PBKDF2.
 
-### 2. Terminology & Branding
-- **Memetic Wallet Password:** Replaced all instances of "mnemonic" and "recovery phrase" with "Memetic Wallet Password" across the UI (`TOSPage.tsx`, `WelcomePage.tsx`, `SignupPage.tsx`, `MnemonicPage.tsx`).
-- **Unified Auth State:** Authenticated routes now correctly include the `/mnemonic` path to allow new users to view their backup phrase without being prematurely redirected to the main dashboard.
+### 2. Production-Grade Containerization
+- **Non-Root Execution:** Backend now runs as `USER node` in `Dockerfile.prod` to prevent container-to-host breakout.
+- **Multi-Stage Builds:** Reduced image sizes and attack surfaces by separating build and runtime environments.
+- **Nginx Gateway:** Implemented a dedicated Nginx reverse proxy with SSL termination, SPA routing, and API proxying.
+- **Infrastructure as Code:** Created `docker-compose.prod.yml` and `.env.example` for reproducible, secure deployments.
 
-### 3. Identity & Security
-- **Non-Custodial Integrity:** Maintained the "Local-Only" principle by ensuring passwords and identity data are encrypted on-device and never saved in plain text or transmitted to the backend.
+### 3. Backend Defense System
+- **Security Middleware:** Integrated `helmet` for robust HTTP security headers.
+- **Abuse Prevention:** Implemented `express-rate-limit` (100 req / 15 min) to mitigate DoS and brute-force attempts on identity endpoints.
+- **CORS Hardening:** Restricted cross-origin requests to configurable safe origins.
+
+## 🛠 Startup Flow & Session Management (2026-03-12)
+- **Strict TOS Enforcement:** Configured `App.tsx` and `gameStore.ts` so that `tosAccepted` and `isAuthenticated` are reset on every new session.
+- **Linear Routing Flow:** Mandatory TOS acceptance -> Welcome Page (Login/Signup) -> Authenticated Dashboard.
+- **Unified Auth State:** Authenticated routes now correctly include the `/mnemonic` path for new users.
 
 ## 📦 Source Control
 - **Branch:** `main`
-- **Current State:** Startup order fixed, terminology updated, services running.
+- **Latest Commit:** `feat: security & infrastructure overhaul (v0.9-NIGHTLY)`
+- **Current State:** Hardened storage, production Docker/Nginx configs, and backend security middleware active.
 
 ## 📋 Next Steps
 - [ ] **Social Recovery:** Implement actual Shamir's Secret Sharing in `socialRecovery.ts`.
-- [ ] **Real Connectivity:** Transition from mock wallet balances to real blockchain indexing.
-- [ ] **Identity Library:** Integrate the "real" `@civicverse/civic-id` library.
-- [ ] **Rust Migration:** Move Rust source files out of the frontend source into a dedicated crate.
+- [ ] **Real Connectivity:** Transition from mock wallet balances to real blockchain indexing (ethers.js / kaspa-wasm).
+- [ ] **Secret Management:** Move from `.env` files to a secure vault for production.
+- [ ] **WebAuthn Integration:** Add biometric-backed session signing for high-value transactions.
 
 ---
-*Updated context saved for next session.*
+*Hardened Nightly (v0.9-NIGHTLY) Audit & Implementation Complete.*
