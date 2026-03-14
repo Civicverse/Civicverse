@@ -1,36 +1,20 @@
-# Stage 1: Builder
-FROM node:18-alpine AS builder
-
+# backend/Dockerfile.prod
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Copy package files for caching
 COPY package*.json ./
-
-# Install dependencies (production only)
 RUN npm ci --only=production
+COPY . .
 
-# Stage 2: Runner
-FROM node:18-alpine
-
+FROM node:20-alpine
 WORKDIR /app
+# Create non-root user
+RUN addgroup -S civic && adduser -S civic -G civic
+USER civic
 
-# Set non-root user
-USER node
+COPY --from=builder --chown=civic:civic /app .
 
-# Copy dependencies and source from builder
-COPY --from=builder --chown=node:node /app/node_modules ./node_modules
-COPY --chown=node:node . .
-
-# Environment variables (defaults, should be overridden)
 ENV NODE_ENV=production
-ENV PORT=3003
+EXPOSE 3003 8080
 
-# Expose port
-EXPOSE 3003
-
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3003/api/status || exit 1
-
-# Start command
+# Start via a process manager or direct node
 CMD ["node", "index.js"]

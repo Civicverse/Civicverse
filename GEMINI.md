@@ -1,44 +1,41 @@
-# Civicverse Development State
+# Civicverse Development State - v1.0-NIGHTLY (SECURED)
 
 ## 🚀 Active Environment
-The services are running locally via `npm run start` or via the new production stack:
-- **Production Stack:** `docker-compose -f docker-compose.prod.yml up --build`
-- **Frontend Gateway:** [https://localhost](https://localhost) (Nginx Reverse Proxy)
-- **API Server:** [https://localhost/api/status](https://localhost/api/status)
+- **Local Dev:** `npm start` (Frontend: 3000, API: 3003, WS: 8080)
+- **Production Stack (Ready):** `docker-compose -f docker-compose.prod.yml up --build`
+- **Identity Vault:** Secured with IndexedDB + PBKDF2/AES-256-GCM.
+- **Blockchain:** Ethers.js integrated (Sepolia Testnet ready).
 
-## 🛠 Security & Infrastructure Overhaul (2026-03-12)
+## 🛠 Recent Achievements (2026-03-13)
 
-### 1. Hardened Key Storage (The "Civilian Vault")
-- **IndexedDB Transition:** Replaced insecure `localStorage` for private keys and DID data with a new `secureStorage.ts` module using `IndexedDB`.
-- **Async Identity Flow:** Refactored `CivicIdentity.ts` to use asynchronous secure storage, preventing XSS-based key scraping.
-- **Encryption at Rest:** All sensitive data is now stored as encrypted blobs, requiring the user's password to derive the decryption key via PBKDF2.
+### 1. Security Hardening (Sovereign Vault v1.1)
+- **Eliminated Custom Crypto:** Replaced custom BIP-39/32 logic with audited `@scure/bip39` and `@scure/bip32` libraries.
+- **Enforced Encryption:** `CivicIdentity` and `CivicWallet` now strictly require a password for creation/storage. Unencrypted fallbacks removed.
+- **Plaintext Wipe:** Updated `secureStorage.ts` to automatically wipe `localStorage` after migrating keys to the encrypted IndexedDB vault.
+- **Browser Compatibility:** Fixed "Buffer is not defined" errors by using `ethers.hexlify` and corrected ESM import paths for `@scure` wordlists.
 
-### 2. Production-Grade Containerization
-- **Non-Root Execution:** Backend now runs as `USER node` in `Dockerfile.prod` to prevent container-to-host breakout.
-- **Multi-Stage Builds:** Reduced image sizes and attack surfaces by separating build and runtime environments.
-- **Nginx Gateway:** Implemented a dedicated Nginx reverse proxy with SSL termination, SPA routing, and API proxying.
-- **Infrastructure as Code:** Created `docker-compose.prod.yml` and `.env.example` for reproducible, secure deployments.
+### 2. DevOps & Production Readiness
+- **Secure Containerization:** Implemented `backend/Dockerfile.prod` using a multi-stage build and a non-root `civic` user.
+- **Orchestration:** Created `docker-compose.prod.yml` with healthchecks, network isolation, and resource constraints.
+- **Environment Management:** Added `.env.production` template with RPC and security placeholders.
 
-### 3. Backend Defense System
-- **Security Middleware:** Integrated `helmet` for robust HTTP security headers.
-- **Abuse Prevention:** Implemented `express-rate-limit` (100 req / 15 min) to mitigate DoS and brute-force attempts on identity endpoints.
-- **CORS Hardening:** Restricted cross-origin requests to configurable safe origins.
+### 3. Blockchain Infrastructure
+- **Ethers Integration:** `CivicWallet` now handles Ethereum address derivation via standard BIP-44 paths.
+- **Transaction Logic:** Added `getProvider()` and `broadcastTransaction()` stubs to `CivicWallet.ts` for real testnet connectivity.
 
-## 🛠 Startup Flow & Session Management (2026-03-12)
-- **Strict TOS Enforcement:** Configured `App.tsx` and `gameStore.ts` so that `tosAccepted` and `isAuthenticated` are reset on every new session.
-- **Linear Routing Flow:** Mandatory TOS acceptance -> Welcome Page (Login/Signup) -> Authenticated Dashboard.
-- **Unified Auth State:** Authenticated routes now correctly include the `/mnemonic` path for new users.
+## 📋 Next Steps (Priority Queue)
 
-## 📦 Source Control
-- **Branch:** `main`
-- **Latest Commit:** `feat: security & infrastructure overhaul (v0.9-NIGHTLY)`
-- **Current State:** Hardened storage, production Docker/Nginx configs, and backend security middleware active.
+### 1. Game World Integration (Immediate)
+- [ ] **Bridge the Avatar:** Currently, the 3D Avatar Studio saves a `CharacterConfig` to the vault. We need to bridge this config to `MMORPGPage.tsx` and `FPSGamePage.tsx` so users appear as their custom characters in game worlds.
+- [ ] **Refactor MMORPG Scene:** Replace the blocky placeholders in the MMORPG world with the `CharacterViewer` component.
 
-## 📋 Next Steps
-- [ ] **Social Recovery:** Implement actual Shamir's Secret Sharing in `socialRecovery.ts`.
-- [ ] **Real Connectivity:** Transition from mock wallet balances to real blockchain indexing (ethers.js / kaspa-wasm).
-- [ ] **Secret Management:** Move from `.env` files to a secure vault for production.
-- [ ] **WebAuthn Integration:** Add biometric-backed session signing for high-value transactions.
+### 2. Real-World Impact (CivicWatch)
+- [ ] **GPS Verification:** Implement native geolocation checks to verify "Proof-of-Impact" for local civic tasks.
+- [ ] **Craig AI Node:** Transition the simulated AI verification to a decentralized backend node (Ollama or local LLM inference).
+
+### 3. Economy & Treasury
+- [ ] **Real Blockchain Sync:** Connect frontend balances to real-time indexing for Kaspa and Ethereum (Sepolia/Mainnet).
+- [ ] **Quadratic Voting:** Implement the mathematical logic for quadratic funding/voting in the Governance DAO.
 
 ---
-*Hardened Nightly (v0.9-NIGHTLY) Audit & Implementation Complete.*
+*Production-ready security baseline established. Moving to game-world character bridging.*

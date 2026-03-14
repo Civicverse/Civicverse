@@ -9,6 +9,8 @@ import * as ed25519 from '@noble/ed25519';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { hashPassword, verifyPassword, encryptWithPassword, decryptWithPassword } from './passwordUtils';
+import * as bip39 from '@scure/bip39';
+import { wordlist } from '@scure/bip39/wordlists/english.js';
 
 interface StorageData {
   civicId: string;
@@ -16,6 +18,8 @@ interface StorageData {
   privateKey: string;
   did: string;
   createdAt: number;
+  username?: string;
+  characterConfig?: any;
   passwordHash?: string; // PBKDF2 hash of password
 }
 
@@ -27,27 +31,39 @@ export class CivicIdentity {
   public publicKey: string;
   private privateKey: string;
   public createdAt: number;
+  public username?: string;
+  public characterConfig?: any;
 
   constructor(
     did: string,
     publicKey: string,
     privateKey: string,
-    createdAt: number = Date.now()
+    createdAt: number = Date.now(),
+    username?: string,
+    characterConfig?: any
   ) {
     this.did = did;
     this.publicKey = publicKey;
     this.privateKey = privateKey;
     this.createdAt = createdAt;
+    this.username = username;
+    this.characterConfig = characterConfig;
   }
 
   /**
    * Create new identity (generates keypair client-side)
-   * Optionally password-protect with PBKDF2 hash
+   * Enforces password protection.
    */
-  static async create(password?: string): Promise<CivicIdentity> {
-    // Generate Ed25519 keypair
-    const randomSeed = crypto.getRandomValues(new Uint8Array(32));
-    const privateKey = randomSeed;
+  static async create(username: string, password?: string): Promise<CivicIdentity> {
+    if (!password) {
+      throw new Error("SECURITY ERROR: Password is required to create a sovereign identity.");
+    }
+
+    // Generate Standard BIP-39 Mnemonic
+    const mnemonic = bip39.generateMnemonic(wordlist);
+    const seed = await bip39.mnemonicToSeed(mnemonic);
+    const privateKey = seed.slice(0, 32); // Simplified Ed25519 seed derivation
+    
     const publicKey = await ed25519.getPublicKeyAsync(privateKey);
     
     // Generate DID from public key
@@ -55,40 +71,44 @@ export class CivicIdentity {
     const didHash = bytesToHex(sha256(new TextEncoder().encode(publicKeyHex))).slice(0, 32);
     const did = `did:civic:${didHash}`;
     
+    const defaultCharacter = {
+      skinColor: '#e0ac69',
+      hairColor: '#4a3b2a',
+      shirtColor: '#00d9ff',
+      pantsColor: '#1a1a2e',
+      shoesColor: '#333333',
+      hairStyle: 'short',
+      accessory: 'none',
+      bodyType: 'athletic'
+    };
+
     // Create identity
     const identity = new CivicIdentity(
       did,
       publicKeyHex,
       bytesToHex(privateKey),
-      Date.now()
+      Date.now(),
+      username,
+      defaultCharacter
     );
 
-    // Hash password if provided
-    let passwordHash: string | undefined;
-    if (password) {
-      passwordHash = await hashPassword(password);
-    }
+    // Hash password
+    const passwordHash = await hashPassword(password);
 
-    // Encrypt with password if provided, otherwise just base64
-    let encrypted: string;
     const storageData = {
       civicId: did,
       publicKey: publicKeyHex,
       privateKey: bytesToHex(privateKey),
       did,
       createdAt: identity.createdAt,
+      username,
+      characterConfig: defaultCharacter,
       passwordHash,
     };
 
-    if (password) {
-      // Encrypt sensitive data with password
-      encrypted = await encryptWithPassword(JSON.stringify(storageData), password);
-      await secureStorage.setItem('civicverse:identity', `ENCRYPTED:${encrypted}`);
-    } else {
-      // Fall back to simple base64 for demo
-      encrypted = btoa(JSON.stringify(storageData));
-      await secureStorage.setItem('civicverse:identity', encrypted);
-    }
+    // Encrypt sensitive data with password
+    const encrypted = await encryptWithPassword(JSON.stringify(storageData), password);
+    await secureStorage.setItem('civicverse:identity', `ENCRYPTED:${encrypted}`);
     
     await secureStorage.setItem('civicverse:did', did);
 
@@ -101,37 +121,75 @@ export class CivicIdentity {
    */
   static async restore(password?: string): Promise<CivicIdentity | null> {
     try {
+      console.debug('[CivicIdentity] Attempting to restore identity...');
       const encrypted = await secureStorage.getItem('civicverse:identity');
-      if (!encrypted) return null;
+      if (!encrypted) {
+        console.warn('[CivicIdentity] No identity found in storage.');
+        return null;
+      }
       
       let data: StorageData;
 
       if (encrypted.startsWith('ENCRYPTED:')) {
-        // Password-encrypted data
         if (!password) {
           throw new Error('Identity is password-protected. Please provide password.');
         }
 
         const encryptedData = encrypted.substring('ENCRYPTED:'.length);
+        console.debug('[CivicIdentity] Decrypting identity data...');
         const decrypted = await decryptWithPassword(encryptedData, password);
-        data = JSON.parse(decrypted) as StorageData;
-
-        // Verify password hash matches
-        if (data.passwordHash) {
-          const isValid = await verifyPassword(password, data.passwordHash);
-          if (!isValid) {
-            throw new Error('Invalid password.');
-          }
+        
+        try {
+          data = JSON.parse(decrypted) as StorageData;
+        } catch (e) {
+          console.error('[CivicIdentity] Failed to parse decrypted identity JSON:', e);
+          throw new Error('Identity data is corrupted or invalid.');
         }
+
+        console.debug('[CivicIdentity] Identity decrypted successfully.');
       } else {
         // Legacy: base64-encoded data (no password)
+        console.debug('[CivicIdentity] Restoring legacy base64 identity...');
         data = JSON.parse(atob(encrypted)) as StorageData;
       }
 
-      return new CivicIdentity(data.did, data.publicKey, data.privateKey, data.createdAt);
+      return new CivicIdentity(
+        data.did, 
+        data.publicKey, 
+        data.privateKey, 
+        data.createdAt, 
+        data.username, 
+        data.characterConfig
+      );
     } catch (error) {
-      console.error('Failed to restore identity:', error);
-      return null;
+      console.error('[CivicIdentity] Failed to restore identity:', error);
+      throw error; // Propagate the error instead of returning null
+    }
+  }
+
+  /**
+   * Update identity data (e.g., save character changes)
+   */
+  static async updateIdentity(password: string, updates: { username?: string, characterConfig?: any }): Promise<void> {
+    try {
+      const encrypted = await secureStorage.getItem('civicverse:identity');
+      if (!encrypted) throw new Error('No identity found');
+
+      let data: StorageData;
+      const encryptedData = encrypted.substring('ENCRYPTED:'.length);
+      const decrypted = await decryptWithPassword(encryptedData, password);
+      data = JSON.parse(decrypted);
+
+      // Apply updates
+      if (updates.username) data.username = updates.username;
+      if (updates.characterConfig) data.characterConfig = updates.characterConfig;
+
+      // Re-encrypt
+      const newEncrypted = await encryptWithPassword(JSON.stringify(data), password);
+      await secureStorage.setItem('civicverse:identity', `ENCRYPTED:${newEncrypted}`);
+    } catch (e) {
+      console.error('[CivicIdentity] Failed to update identity:', e);
+      throw e;
     }
   }
 

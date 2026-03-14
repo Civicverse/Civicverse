@@ -1,19 +1,32 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { vault } from '../lib/vault'
+import { useGameStore } from '../store/gameStore'
+import { secureStorage } from '../lib/secureStorage'
 import { AnimatedButton, AnimatedCard, AnimatedInput, NeonText, GradientOrb, LoadingSpinner } from '../components'
 
 export default function SignInPage() {
   const nav = useNavigate()
-  const [password, setPassword] = React.useState('')
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState('')
+  const login = useGameStore(state => state.login)
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [civicId, setCivicId] = useState<string | null>(null)
+  const [identityExists, setIdentityExists] = useState(false)
 
-  const vaultExists = !!localStorage.getItem('civicverse:vault:encrypted')
-  const civicId = localStorage.getItem('civicverse:civicId')
+  useEffect(() => {
+    async function checkIdentity() {
+      const id = await secureStorage.getItem('civicverse:did')
+      if (id) {
+        setCivicId(id)
+        setIdentityExists(true)
+      }
+    }
+    checkIdentity()
+  }, [])
 
   async function unlock() {
-    if (!password) {
+    const trimmedPassword = password.trim();
+    if (!trimmedPassword) {
       setError('Enter your password')
       return
     }
@@ -22,31 +35,18 @@ export default function SignInPage() {
     setError('')
 
     try {
-      const encryptedVault = localStorage.getItem('civicverse:vault:encrypted')
-      const salt = localStorage.getItem('civicverse:vault:salt')
-
-      if (!encryptedVault || !salt) {
-        setError('No vault found. You may need to create a new account.')
-        setLoading(false)
-        return
-      }
-
-      const unlocked = await vault.unlock(password, encryptedVault, salt)
-
-      if (unlocked) {
-        setLoading(false)
-        nav('/wallet')
-      } else {
-        setError('Incorrect password. Civicverse cannot recover access.')
-        setLoading(false)
-      }
-    } catch (e) {
-      setError('Unlock failed: ' + (e instanceof Error ? e.message : String(e)))
+      // In a real non-custodial system, we might have multiple IDs on one device.
+      // We try to log in with the one found in storage.
+      await login(civicId || 'device-local', trimmedPassword)
+      nav('/wallet')
+    } catch (e: any) {
+      console.error('[SignInPage] Unlock error:', e);
+      setError(e.message || 'Incorrect password. Civicverse cannot recover access.')
       setLoading(false)
     }
   }
 
-  if (!vaultExists) {
+  if (!identityExists) {
     return (
       <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden flex items-center justify-center">
         <GradientOrb delay={0} size={300} />
@@ -56,9 +56,9 @@ export default function SignInPage() {
         <div className="relative z-10 container mx-auto max-w-2xl px-4">
           <AnimatedCard>
             <NeonText size="3xl" gradient={true} className="block mb-4">
-              No Vault Found
+              No Identity Found
             </NeonText>
-            <p className="text-gray-300 mb-4">There is no existing vault on this device.</p>
+            <p className="text-gray-300 mb-4">There is no existing identity on this device.</p>
             <div className="bg-neon-purple/10 border border-neon-purple/30 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-300 mb-2">You can either:</p>
               <ul className="text-sm text-gray-300 list-none space-y-1">

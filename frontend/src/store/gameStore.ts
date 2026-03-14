@@ -1,6 +1,18 @@
 import { create } from 'zustand';
 import CivicIdentity from '../lib/civicIdentity';
 import CivicWallet from '../lib/civicWallet';
+import { secureStorage } from '../lib/secureStorage';
+
+export interface CharacterConfig {
+  skinColor: string;
+  hairColor: string;
+  shirtColor: string;
+  pantsColor: string;
+  shoesColor: string;
+  hairStyle: 'short' | 'long' | 'mohawk' | 'bald';
+  accessory: 'none' | 'glasses' | 'headband' | 'mask';
+  bodyType: 'slim' | 'athletic' | 'heavy';
+}
 
 export interface CivicUser {
   civicId: string;
@@ -8,6 +20,7 @@ export interface CivicUser {
   avatar: string;
   trustScore: number;
   level: number;
+  character: CharacterConfig;
   stats?: {
     environmental?: number;
     civic?: number;
@@ -85,6 +98,7 @@ export interface GameState {
   login: (civicId: string, password: string) => Promise<void>;
   signup: (username: string, civicId: string, password: string) => Promise<void>;
   logout: () => void;
+  updateCharacter: (config: CharacterConfig) => Promise<void>;
 
   // User
   updateUser: (user: Partial<CivicUser>) => void;
@@ -180,9 +194,14 @@ export const useGameStore = create<GameState>((set) => ({
     try {
       console.log('[store] initialize START');
       
-      const savedUser = localStorage.getItem('civicverse_user');
+      // Migrate legacy data if exists
+      await secureStorage.migrate();
       
-      console.log('[store] localStorage check:', { hasUser: !!savedUser });
+      const savedUser = localStorage.getItem('civicverse_user');
+      const savedCivicId = await secureStorage.getItem('civicId');
+      const savedIsAuthenticated = await secureStorage.getItem('isAuthenticated');
+      
+      console.log('[store] storage check:', { hasUser: !!savedUser, hasCivicId: !!savedCivicId });
 
       // Always start with tosAccepted: false and isAuthenticated: false for a new session
       set({ tosAccepted: false, isAuthenticated: false });
@@ -223,34 +242,58 @@ export const useGameStore = create<GameState>((set) => ({
       }
 
       // Check if identity exists on this device
-      if (!CivicIdentity.exists()) {
+      if (!(await CivicIdentity.exists())) {
         throw new Error('No identity found on this device. Please sign up first.');
       }
 
       // Restore identity with password verification
-      const identity = await CivicIdentity.restore(password);
+      let identity;
+      try {
+        identity = await CivicIdentity.restore(password);
+      } catch (e: any) {
+        console.error('[auth] Identity restoration failed:', e);
+        throw new Error(e.message || 'Invalid password or identity data.');
+      }
       
       if (!identity) {
-        throw new Error('Invalid password. Please try again.');
+        throw new Error('Could not find identity data on this device.');
       }
 
+      // ALWAYS use the DID from the decrypted vault, ignoring the 'device-local' placeholder
       const realCivicId = identity.did;
       
-      // Restore HD wallet with password
-      const civicWallet = await CivicWallet.restore(realCivicId, password);
-      if (!civicWallet) {
-        throw new Error('Wallet could not be restored. Password may be incorrect.');
-      }
-      
-      const multiChainAddresses = civicWallet.getAllAddresses();
-
       const user: CivicUser = {
         civicId: realCivicId,
-        username: `Citizen_${realCivicId.slice(12, 20)}`,
+        username: identity.username || `Citizen_${realCivicId.slice(12, 20)}`,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${realCivicId}`,
         trustScore: 75,
         level: 3,
+        character: identity.characterConfig || {
+          skinColor: '#e0ac69',
+          hairColor: '#4a3b2a',
+          shirtColor: '#00d9ff',
+          pantsColor: '#1a1a2e',
+          shoesColor: '#333333',
+          hairStyle: 'short',
+          accessory: 'none',
+          bodyType: 'athletic'
+        }
       };
+
+      // Restore HD wallet with password
+      let civicWallet;
+      try {
+        civicWallet = await CivicWallet.restore(realCivicId, password);
+      } catch (e: any) {
+        console.error('[auth] Wallet restoration failed:', e);
+        throw new Error(e.message || 'Invalid password or wallet data.');
+      }
+
+      if (!civicWallet) {
+        throw new Error('Could not find wallet data on this device.');
+      }
+      
+      const multiChainAddresses = civicWallet.getAllAddresses();
 
       const wallet: Wallet = {
         address: multiChainAddresses.ETH?.slice(0, 42) || identity.publicKey.slice(0, 40),
@@ -258,6 +301,9 @@ export const useGameStore = create<GameState>((set) => ({
         pendingBalance: 150,
         currency: 'CIVIC',
       };
+
+      // Store password in session memory (not localStorage) for updates
+      (window as any)._cv_session_pass = password;
 
       set({
         isAuthenticated: true,
@@ -269,11 +315,11 @@ export const useGameStore = create<GameState>((set) => ({
       });
 
       // Persist session flags (but keep identity encrypted)
-      localStorage.setItem('civicId', realCivicId);
-      localStorage.setItem('isAuthenticated', '1');
-      localStorage.setItem('civicverse:publicKey', identity.publicKey);
+      await secureStorage.setItem('civicId', realCivicId);
+      await secureStorage.setItem('isAuthenticated', '1');
+      await secureStorage.setItem('civicverse:publicKey', identity.publicKey);
       if (multiChainAddresses && Object.keys(multiChainAddresses).length > 0) {
-        localStorage.setItem('civicverse:multichain', JSON.stringify(multiChainAddresses));
+        await secureStorage.setItem('civicverse:multichain', JSON.stringify(multiChainAddresses));
       }
       try {
         localStorage.setItem('civicverse_user', JSON.stringify({ user, wallet, multiChainAddresses }));
@@ -300,7 +346,7 @@ export const useGameStore = create<GameState>((set) => ({
 
       // Create real Civic Identity with Ed25519 keypair and password encryption
       console.debug('[signup] creating Civic Identity...');
-      const identity = await CivicIdentity.create(password);
+      const identity = await CivicIdentity.create(username, password);
       const realCivicId = identity.did;
       console.debug('[signup] Civic Identity created:', realCivicId);
 
@@ -312,10 +358,20 @@ export const useGameStore = create<GameState>((set) => ({
 
       const user: CivicUser = {
         civicId: realCivicId,
-        username,
+        username: username, // Use the user-provided username
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${realCivicId}`,
         trustScore: 50,
         level: 1,
+        character: identity.characterConfig || {
+          skinColor: '#e0ac69',
+          hairColor: '#4a3b2a',
+          shirtColor: '#00d9ff',
+          pantsColor: '#1a1a2e',
+          shoesColor: '#333333',
+          hairStyle: 'short',
+          accessory: 'none',
+          bodyType: 'athletic'
+        }
       };
 
       const wallet: Wallet = {
@@ -337,10 +393,13 @@ export const useGameStore = create<GameState>((set) => ({
 
       console.log('Signup SUCCESS. tempMnemonic set:', !!civicWallet.mnemonic);
 
-      localStorage.setItem('civicId', realCivicId);
-      localStorage.setItem('isAuthenticated', '1');
-      localStorage.setItem('civicverse:publicKey', identity.publicKey);
-      localStorage.setItem('civicverse:multichain', JSON.stringify(multiChainAddresses));
+      // Store password in session memory
+      (window as any)._cv_session_pass = password;
+
+      await secureStorage.setItem('civicId', realCivicId);
+      await secureStorage.setItem('isAuthenticated', '1');
+      await secureStorage.setItem('civicverse:publicKey', identity.publicKey);
+      await secureStorage.setItem('civicverse:multichain', JSON.stringify(multiChainAddresses));
       try {
         localStorage.setItem('civicverse_user', JSON.stringify({ user, wallet, multiChainAddresses }));
       } catch (e) {
@@ -355,12 +414,12 @@ export const useGameStore = create<GameState>((set) => ({
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('civicId');
-    localStorage.removeItem('isAuthenticated');
+  logout: async () => {
+    await secureStorage.removeItem('civicId');
+    await secureStorage.removeItem('isAuthenticated');
+    await secureStorage.removeItem('civicverse:publicKey');
+    await secureStorage.removeItem('civicverse:multichain');
     localStorage.removeItem('civicverse_user');
-    localStorage.removeItem('civicverse:publicKey');
-    localStorage.removeItem('civicverse:multichain');
     set({
       isAuthenticated: false,
       user: null,
@@ -650,6 +709,33 @@ export const useGameStore = create<GameState>((set) => ({
       currentJobStatus: verificationResult ? 'completed' : 'verifying',
       currentJobProgress: verificationResult ? 100 : 50,
     }));
+  },
+
+  updateCharacter: async (config) => {
+    const password = (window as any)._cv_session_pass;
+    if (!password) {
+      throw new Error('Session expired. Please log in again to save changes.');
+    }
+
+    set({ loading: true });
+    try {
+      await CivicIdentity.updateIdentity(password, { characterConfig: config });
+      set((state) => ({
+        user: state.user ? { ...state.user, character: config } : null,
+        loading: false
+      }));
+      
+      // Update the local user cache too
+      const savedUserStr = localStorage.getItem('civicverse_user');
+      if (savedUserStr) {
+        const savedUser = JSON.parse(savedUserStr);
+        savedUser.user.character = config;
+        localStorage.setItem('civicverse_user', JSON.stringify(savedUser));
+      }
+    } catch (e) {
+      set({ loading: false });
+      throw e;
+    }
   },
 
   completeJob: async (jobId) => {

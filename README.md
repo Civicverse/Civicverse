@@ -2,83 +2,91 @@
 
 CivicVerse is a protocol-level infrastructure for decentralized humanity. It enables sovereign identity, peer-to-peer coordination, and a real-world impact marketplace without intermediaries or centralized extraction.
 
+This is the **Nightly v1.0** build featuring the hardened "Civilian Vault" and the High-Fidelity 3D Avatar Studio.
+
 ---
 
-## 🚀 Quick Start Guide (MVP)
+## 🏗 Architectural Overview
+
+- **Monorepo Structure**: Managed via NPM Workspaces.
+- **Frontend**: React + TypeScript + Three.js + TailwindCSS.
+- **Backend**: Node.js Express API + WebSocket Multiplayer Server.
+- **Identity (The Civilian Vault)**: Local-only, Ed25519-based identity encrypted with PBKDF2 + AES-256-GCM, stored in IndexedDB (Secure Storage).
+- **3D Engine**: Procedural humanoid character system built with pure Three.js for cross-platform portability.
+
+---
+
+## 🚀 Startup Guide
 
 ### 1. Prerequisites
-- **Node.js**: v18+ (v20+ recommended)
-- **NPM**: v9+
-- **Ports**: Ensure `3000`, `3003`, and `8080` are free.
+- **Node.js**: v20.x or higher.
+- **NPM**: v10.x or higher.
+- **Git**: For source control.
 
-### 2. Installation
-From the root directory:
+### 2. Initial Setup
 ```bash
-# Install all dependencies for root, backend, and frontend
+# Clone the repository
+git clone git@github.com:Civicverse/Civicverse-nightly-v0.0.git
+cd Civicverse-nightly-v0.0
+
+# Install all dependencies (Root, Backend, and Frontend)
 npm install
 ```
 
-### 3. Firing it up
+### 3. Environment Configuration
+Create a `.env` file in the root directory (use `.env.example` as a template):
 ```bash
-# Start both backend services and the frontend hub concurrently
+cp .env.example .env
+```
+
+### 4. Firing up the System
+```bash
+# Start both Backend and Frontend concurrently
 npm start
 ```
-- **Frontend Hub**: `http://localhost:3000`
-- **Backend API**: `http://localhost:3003`
-- **Multiplayer WS**: `ws://localhost:8080`
+- **Frontend Hub**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:3003](http://localhost:3003)
+- **Multiplayer Server**: `ws://localhost:8080`
 
 ---
 
-## 🛠 Technical Architecture
+## 🛠 For Contributors: What to do next
 
-### 1. Zero-Custody Identity (`/frontend/src/lib/civicIdentity.ts`)
-Uses **Ed25519** and **PBKDF2** for local-only identity generation.
-- **Sovereignty**: Your DID (Decentralized ID) is derived from local entropy and encrypted with your password. 
-- **Privacy**: No central database of users exists. Authentication is a cryptographic signature challenge.
+We are building the foundation for a sovereign digital society. Here are the immediate technical priorities:
 
-### 2. Multi-Chain Asset Vault (`/frontend/src/lib/civicWallet.ts`)
-A BIP-32/BIP-39 hierarchical deterministic wallet.
-- **Interoperability**: One seed phrase derives addresses for **BTC, ETH, KASPA,** and **MONERO**.
-- **Security**: Private keys never leave the device. Transactions are signed locally.
+### 1. Game World Integration (Priority)
+- **Bridge the Avatar**: Currently, the 3D Avatar Studio saves a `CharacterConfig` to the vault. We need to bridge this config to `MMORPGPage.tsx` and `FPSGamePage.tsx` so users appear as their custom characters in game worlds.
+- **Refactor MMORPG Scene**: Replace the blocky placeholders in the MMORPG world with the `CharacterViewer` component or a similar Three.js instance.
 
-### 3. CivicWatch: Impact Dispatch (`/frontend/src/pages/CivicWatchPage.tsx`)
-A real-world "Indeed-style" marketplace for civic work.
-- **Dispatch**: Accept local missions (Cleanup, Audits, Social Aid).
-- **Verification**: Proof-of-Impact analyzed by **Craig AI** (Simulation) and verified on-chain.
-- **Redistribution**: Payments trigger a **1% Micro-Tax** for community UBI.
+### 2. Security & Recovery
+- **Social Recovery**: Implement Shamir's Secret Sharing (SSS) in `socialRecovery.ts` to allow users to split their recovery phrase among trusted "Guardians."
+- **WebAuthn**: Integrate Passkeys/WebAuthn for hardware-backed session signing.
 
-### 4. Governance DAO (`/frontend/src/pages/GovernancePage.tsx`)
-Decentralized protocol control.
-- **Voting**: Signed, weight-based voting on treasury allocations and parameter changes.
-- **Execution**: Passed proposals trigger automated treasury transfers or multiplier adjustments.
+### 3. Real-World Impact (CivicWatch)
+- **GPS Verification**: Implement native geolocation checks to verify "Proof-of-Impact" for local civic tasks.
+- **Craig AI Node**: Transition the simulated AI verification to a decentralized backend node (Ollama or local LLM inference).
+
+### 4. Economy & Treasury
+- **Real Blockchain Sync**: Replace mock wallet balances with real-time indexing for Kaspa and Ethereum.
+- **Governance Flow**: Finalize the DAO voting mechanism to trigger actual treasury transfers upon proposal passing.
 
 ---
 
-## 🛰 Roadmap: Getting to "Real"
-
-To move from the current functional prototype to a global production system, contributors should focus on:
-
-### Phase 1: Hardening & Security (Current Priority)
-1. **Real BIP-44 Libraries**: Replace internal BIP-32/39 mocks with audited libraries (like `@scure/bip39`).
-2. **Key Storage**: Move from `localStorage` to **IndexedDB** or **Secure Enclave** (WebAuthn/Passkeys) for hardware-level security.
-3. **Transaction Signing**: Implement actual transaction construction for Kaspa and Ethereum using `ethers.js` or `kaspa-wasm`.
-
-### Phase 2: Real-World Verification
-1. **GPS Proofs**: Integrate native geolocation verification to ensure workers are actually "on-location".
-2. **Mobile Dispatch**: Build a Capacitor/React Native wrapper to enable mobile-first fieldwork (Camera access, GPS).
-3. **AI Node**: Transition "Craig AI" from a frontend simulation to a decentralized backend service (e.g., using Ollama or a dedicated AI inference node).
-
-### Phase 3: Infrastructure
-1. **P2P Syncing**: Implement **GunDB** or **OrbitDB** for serverless data syncing between users.
-2. **LoRaWAN Support**: Add support for offline mesh network communication for disaster-recovery scenarios.
+## 📦 Project Structure
+- `/frontend`: React application, 3D character engine, and identity vault.
+- `/backend`: API server and multiplayer WebSocket gateway.
+- `/game`: Game-specific logic and assets.
+- `/Ue5_project`: Unreal Engine 5 source and assets.
+- `/whitepaper`: Protocol documentation and design specifications.
+- `/mining`: Mining simulation and facility logic.
+- `/scripts`: Development and automation utilities.
+- `GEMINI.md`: Internal development logs and session state.
 
 ---
 
-## 👥 Contributing
-
-We are building for humanity. All contributions must respect the **Core Mandates**:
+## 📜 Core Mandates
 1. **No Extraction**: No hidden fees, no data harvesting.
 2. **Non-Custodial**: User always owns the keys.
-3. **Open Source**: The protocol is public good.
+3. **Sovereign**: The identity belongs to the human, not the platform.
 
-**Pick up where we left off:** Check `.gemini/PROGRESS.md` for the current dev queue.
+**Build for humanity.**

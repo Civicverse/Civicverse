@@ -18,7 +18,14 @@ export const AnimatedInput: React.FC<AnimatedInputProps> = ({
         {label}
       </label>
     )}
-    <input className={`neon-input ${className}`} {...props} />
+    <input 
+      className={`neon-input ${className}`} 
+      {...props} 
+      onChange={(e) => {
+        console.log('Input change:', e.target.value);
+        if (props.onChange) props.onChange(e);
+      }}
+    />
     {error && (
       <p className="text-neon-pink text-xs mt-1 animate-pulse">{error}</p>
     )}

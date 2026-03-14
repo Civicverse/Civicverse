@@ -6,7 +6,9 @@ import SignupPage from './pages/SignupPage'
 import MnemonicPage from './pages/MnemonicPage'
 import WalletPage from './pages/WalletPage'
 import FoyerPage from './pages/FoyerPage'
-import { LoginPage } from './pages/LoginPage'
+import LoginPage from './pages/LoginPage'
+import SignInPage from './pages/SignInPage'
+import { CharacterCreatorPage } from './pages/CharacterCreatorPage'
 import { MissionsPage } from './pages/MissionsPage'
 import CivicWatchPage from './pages/CivicWatchPage'
 import { GovernancePage } from './pages/GovernancePage'
@@ -51,8 +53,8 @@ export default function App() {
       <Routes>
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/signin" element={<LoginPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/login" element={<SignInPage />} />
         <Route path="/mnemonic" element={<MnemonicPage />} />
         <Route path="*" element={<Navigate to="/welcome" replace />} />
       </Routes>
@@ -64,6 +66,7 @@ export default function App() {
     <MainLayout>
       <Routes>
         <Route path="/wallet" element={<WalletPage />} />
+        <Route path="/wardrobe" element={<CharacterCreatorPage />} />
         <Route path="/missions" element={<MissionsPage />} />
         <Route path="/civicwatch" element={<CivicWatchPage />} />
         <Route path="/governance" element={<GovernancePage />} />

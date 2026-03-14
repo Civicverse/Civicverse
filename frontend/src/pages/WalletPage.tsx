@@ -2,6 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
+import { CharacterViewer } from '../components/3d/CharacterViewer'
 
 export default function WalletPage() {
   const nav = useNavigate()
@@ -27,13 +28,21 @@ export default function WalletPage() {
   const balance = wallet.balance.toFixed(2) + ' ' + wallet.currency
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden">
-      {/* ... (rest of the component structure) */}
-      <GradientOrb delay={0} size={350} />
-      <GradientOrb delay={2} size={250} />
-      <GradientOrb delay={4} size={300} />
-
-      <div className="absolute inset-0 grid-glow opacity-20 pointer-events-none" />
+    <div className="relative min-h-screen text-white overflow-hidden bg-black">
+      {/* Live GIF Background */}
+      <div 
+        className="fixed inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen scale-110 blur-[1px]"
+        style={{
+          backgroundImage: 'url(/images/wallet-bg.gif)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          filter: 'hue-rotate(0deg) brightness(1.2) contrast(1.1)',
+        }}
+      />
+      
+      {/* Dark Overlay for readability */}
+      <div className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-dark-900/40 via-transparent to-dark-900/60" />
 
       <div className="relative z-10 container mx-auto max-w-4xl py-8 px-4">
         <div className="flex flex-col md:flex-row items-start md:items-end gap-8 mb-12 animate-slide-up">
@@ -43,11 +52,36 @@ export default function WalletPage() {
             </NeonText>
             <p className="text-neon-cyan text-lg">Non-Custodial • Offline-First • Encrypted</p>
           </div>
-          <img
-            src={avatar}
-            alt="civic identity"
-            className="w-32 h-32 rounded-2xl border-4 border-neon-purple/60 shadow-lg hover:shadow-2xl transition-all hover:border-neon-purple animate-float"
-          />
+          
+          <div className="w-48 h-64 md:w-64 md:h-80 rounded-2xl border-4 border-neon-purple/60 shadow-lg hover:shadow-2xl transition-all hover:border-neon-purple overflow-hidden bg-black relative group">
+            {/* Character Backdrop Image */}
+            <div 
+              className="absolute inset-0 z-0 opacity-60 group-hover:opacity-80 transition-opacity"
+              style={{
+                backgroundImage: 'url(/images/avatar-bg.jpg)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }}
+            />
+            
+            {/* The 3D Character (Larger Scale) */}
+            <div className="relative z-10 w-full h-full">
+              {user.character ? (
+                <CharacterViewer 
+                  config={user.character} 
+                  className="w-full h-full" 
+                  animate={true} 
+                  scale={0.9} 
+                />
+              ) : (
+                <img
+                  src={avatar}
+                  alt="civic identity"
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -128,6 +162,14 @@ export default function WalletPage() {
         </AnimatedCard>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 animate-slide-up" style={{ animationDelay: '400ms' }}>
+          <AnimatedButton
+            variant="secondary"
+            size="lg"
+            className="w-full flex items-center justify-center gap-2"
+            onClick={() => nav('/wardrobe')}
+          >
+            <span>👕</span> Open Wardrobe
+          </AnimatedButton>
           <AnimatedButton
             variant="primary"
             size="lg"

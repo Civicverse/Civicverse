@@ -87,5 +87,39 @@ export const secureStorage = {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve();
     });
+  },
+
+  /**
+   * Migrate data from localStorage to IndexedDB
+   * CRITICAL FIX: Removes plaintext data from localStorage after migration
+   */
+  migrate: async (): Promise<void> => {
+    const keys = [
+      'civicverse:identity',
+      'civicverse:did',
+      'civicverse:wallet',
+      'civicId',
+      'isAuthenticated',
+      'civicverse:publicKey',
+      'civicverse:multichain'
+    ];
+
+    let migratedCount = 0;
+
+    for (const key of keys) {
+      const value = localStorage.getItem(key);
+      if (value) {
+        // 1. Move to Secure Storage
+        await secureStorage.setItem(key, value);
+        
+        // 2. WIPE from LocalStorage (The Fix)
+        localStorage.removeItem(key);
+        migratedCount++;
+      }
+    }
+    
+    if (migratedCount > 0) {
+      console.log(`[Vault] Successfully migrated and wiped ${migratedCount} keys from localStorage.`);
+    }
   }
 };
