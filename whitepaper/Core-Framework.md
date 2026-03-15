@@ -132,8 +132,6 @@ Incentives: CivicPoints, crypto rewards, and public recognition
 
 5️⃣ ECONOMIC FLOWS
 
-![CivicVerse System Flow](../images/mermaid-diagram.png)
-
 4.3 Micro-Tax Economy
 
 1% voluntary contribution on commerce
