@@ -5,7 +5,7 @@
 ### 1. CivicWatch: Impact Dispatch Board
 - **UI/UX Refactor**: Implemented a high-fidelity "Indeed-style" mission board with search and categories (Environmental, Civic, Social, etc.).
 - **Live Dispatch**: Added a "DoorDash-style" mission tracking system with step-by-step progress from acceptance to verification.
-- **Verification Engine**: Built a simulated "Craig AI" interface that "audits" proof of impact (photos/videos).
+- **Verification Engine**: Build an AI goveracne interface based on the Governance Whitepaper that "audits" proof of impact (photos/videos).
 - **Economic Integration**: Payouts now include the **1% Micro-Tax** for community UBI and dynamic reputation/stat gains for the user profile.
 - **Interactive Map**: Added a custom 2D SVG map view for visual job discovery across local sectors.
 
