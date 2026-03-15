@@ -112,7 +112,7 @@ Before any dispatch:
 
 📷 AI-assisted recording ensures accountability
 
-Craig AI:
+AI:
 
 Routes you efficiently
 
