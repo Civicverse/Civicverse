@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3003/api'; // Adjust if needed
+const API_URL = '/api'; // Relative URL for proxy compatibility (Dev & Prod)
 
 export interface Job {
   id: string;
@@ -10,16 +10,26 @@ export interface Job {
   reward: number;
   category: string;
   location: { lat: number; lng: number; address: string };
-  status: 'open' | 'in_progress' | 'verifying' | 'completed';
+  status: 'open' | 'in_progress' | 'verifying' | 'completed' | 'failed_verification';
   assignee: string | null;
+  issuer: string;
+  trainingUrl?: string;
+  instructionalVideo?: string;
   requirements: string[];
-  stats: Record<string, number>;
+  ppeRequired?: boolean;
+  isStreaming?: boolean;
+  stats?: Record<string, number>;
   createdAt: number;
 }
 
 export const civicWatchApi = {
-  getJobs: async (): Promise<Job[]> => {
+  getJobs: async () => {
     const response = await axios.get(`${API_URL}/jobs`);
+    return response.data;
+  },
+
+  createJob: async (jobData: Partial<Job>) => {
+    const response = await axios.post(`${API_URL}/jobs`, jobData);
     return response.data;
   },
 
@@ -28,8 +38,13 @@ export const civicWatchApi = {
     return response.data;
   },
 
-  verifyJob: async (jobId: string, workerId: string, proofData: string) => {
-    const response = await axios.post(`${API_URL}/jobs/verify`, { jobId, workerId, proofData });
+  toggleStreaming: async (jobId: string, workerId: string, isStreaming: boolean) => {
+    const response = await axios.post(`${API_URL}/jobs/stream`, { jobId, workerId, isStreaming });
+    return response.data;
+  },
+
+  verifyJob: async (jobId: string, workerId: string, proofText: string, proofImage?: string | null, gpsData?: { lat: number; lng: number }) => {
+    const response = await axios.post(`${API_URL}/jobs/verify`, { jobId, workerId, proofText, proofImage, gpsData });
     return response.data;
   }
 };

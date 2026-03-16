@@ -2,7 +2,7 @@
 
 CivicVerse is a protocol-level infrastructure for decentralized humanity. It enables sovereign identity, peer-to-peer coordination, and a real-world impact marketplace without intermediaries or centralized extraction.
 
-This is the **Nightly v1.0** build featuring the hardened "Civilian Vault" and the High-Fidelity 3D Avatar Studio.
+This is the **v1.2-NIGHTLY** build featuring the functional **CivicWatch Load Board**, **Quadratic Governance**, and the **Consolidated Community Hub**.
 
 ---
 
@@ -11,8 +11,9 @@ This is the **Nightly v1.0** build featuring the hardened "Civilian Vault" and t
 - **Monorepo Structure**: Managed via NPM Workspaces.
 - **Frontend**: React + TypeScript + Three.js + TailwindCSS (Vite).
 - **Backend**: Node.js Express API + WebSocket Multiplayer Server.
+- **Hub Page**: `FoyerPage.tsx` acts as the unified coordination layer for identity, missions, and governance.
 - **Identity (The Civilian Vault)**: Local-only, Ed25519-based identity encrypted with PBKDF2 + AES-256-GCM, stored in IndexedDB (Secure Storage).
-- **3D Engine**: Procedural humanoid character system built with pure Three.js for cross-platform portability.
+- **Governance**: Quadratic Voting Protocol (`Cost = Weight²`) with AI Watchdog auditing and Community Treasury management.
 
 ---
 
@@ -21,92 +22,78 @@ This is the **Nightly v1.0** build featuring the hardened "Civilian Vault" and t
 ### 1. Prerequisites
 - **Node.js**: v20.x or higher (LTS recommended).
 - **NPM**: v10.x or higher.
-- **Git**: For source control management.
+- **Docker**: Optional, required for production-ready stack.
 
 ### 2. Initial Setup (.git procedure)
-To contribute or set up the project locally:
+To set up the development environment from scratch:
 
 ```bash
-# Clone the repository (SSH recommended for contributors)
-git clone git@github.com:Civicverse/Civicverse-nightly-v0.0.git
-# OR via HTTPS
-# git clone https://github.com/Civicverse/Civicverse-nightly-v0.0.git
+# 1. Clone the repository
+git clone git@github.com:Civicverse/Civicverse-nightly.git
+cd Civicverse-nightly
 
-cd Civicverse-nightly-v0.0
-
-# Install all dependencies (Root, Backend, and Frontend)
+# 2. Install dependencies for the entire monorepo
+# This installs root, frontend, and backend dependencies in one go.
 npm install
-```
 
-### 3. Environment Configuration
-Create a `.env` file in the root directory (use `.env.example` as a template):
-```bash
+# 3. Configure environment variables
+# Copy the example environment file and adjust if necessary
 cp .env.example .env
 ```
-Ensure you update the `ETH_RPC_URL` and other security-sensitive variables.
 
-### 4. Running the Application (Startup procedure)
-The system uses `concurrently` to run both the backend and frontend in a single terminal.
+### 3. Spinning it Up (Development)
+The nightly build uses `concurrently` to launch the full stack (Frontend, API, and Multiplayer Server) in a single command.
 
 ```bash
-# Start both Backend and Frontend concurrently
+# Start the full development stack
 npm start
 ```
-- **Frontend Hub**: [http://localhost:3000](http://localhost:3000)
-- **Backend API**: [http://localhost:3003](http://localhost:3003)
-- **Multiplayer Server**: `ws://localhost:8080`
+- **Community Hub**: [http://localhost:3000](http://localhost:3000)
+- **API Terminal**: [http://localhost:3003](http://localhost:3003)
+- **Multiplayer Relay**: `ws://localhost:8080`
 
-For production-ready builds:
+### 4. Production Deployment (VPS)
+The stack is pre-configured for seamless VPS deployment via Docker Compose.
+
 ```bash
-docker-compose -f docker-compose.prod.yml up --build
+# Launch the production-ready stack
+docker-compose -f docker-compose.prod.yml up --build -d
 ```
 
 ---
 
-## 🛠 For Contributors: Development & Next Build Instructions
+## 🛠 For Contributors: Next Build Instructions
 
-We are building the foundation for a sovereign digital society. Here are the immediate technical priorities and instructions for the next build cycle.
+We are transitioning from protocol design to operational infrastructure. Here are the priorities for the next build cycle.
 
-### 🏗 Next Build Priorities (Priority Queue)
+### 🏗 Priority Queue (Next Steps)
 
-1.  **Game World Integration (Immediate)**
-    - **Bridge the Avatar**: Currently, the 3D Avatar Studio saves a `CharacterConfig` to the vault. We need to bridge this config to `MMORPGPage.tsx` and `FPSGamePage.tsx`.
-    - **Refactor MMORPG Scene**: Replace the blocky placeholders in the MMORPG world with the `CharacterViewer` component.
+1.  **Decentralized Storage Integration**
+    *   **IPFS for Proofs**: Transition mission verification images and instructional video metadata from local storage to IPFS.
+    *   **Sovereign Backup**: Implement encrypted identity backups to community-governed nodes as per the whitepaper.
 
-2.  **Security & Recovery**
-    - **Social Recovery**: Implement Shamir's Secret Sharing (SSS) in `socialRecovery.ts` to allow users to split their recovery phrase.
-    - **WebAuthn**: Integrate Passkeys for hardware-backed session signing.
+2.  **Marketplace & Economy**
+    *   **P2P Marketplace**: Synchronize the marketplace module with the global ledger to enable direct peer-to-peer commerce.
+    *   **UBI Engine Execution**: Connect the Community Treasury to the UBI engine for automated disbursements based on passed governance votes.
 
-3.  **Real-World Impact (CivicWatch)**
-    - **GPS Verification**: Implement native geolocation checks to verify "Proof-of-Impact" for local civic tasks.
-    - **Craig AI Node**: Transition simulated AI verification to a decentralized backend node (Ollama or local LLM inference).
-
-4.  **Economy & Treasury**
-    - **Real Blockchain Sync**: Replace mock wallet balances with real-time indexing for Kaspa and Ethereum (Sepolia).
-    - **Governance Flow**: Finalize the DAO voting mechanism for treasury transfers.
+3.  **Field Optimization (PWA)**
+    *   **Mobile Readiness**: Optimize the CivicWatch interface for field use with offline-first PWA capabilities and native GPS locking.
 
 ### 🧪 Contribution Workflow
-- **Branching Strategy**: Create feature branches from `main` (e.g., `feat/avatar-bridge`).
-- **Committing**: Follow conventional commits (e.g., `feat: add character viewer component`).
-- **Testing**: Run `npm test` before submitting pull requests.
+- **Branching**: Create feature branches from `main` (e.g., `feat/ipfs-integration`).
+- **Standard**: Follow conventional commits and ensure `npm run build` passes before submission.
 
 ---
 
-## 📦 Project Structure
-- `/frontend`: React application, 3D character engine, and identity vault.
-- `/backend`: API server and multiplayer WebSocket gateway.
-- `/game`: Game-specific logic and assets.
-- `/Ue5_project`: Unreal Engine 5 source and assets.
-- `/whitepaper`: Protocol documentation and design specifications.
-- `/mining`: Mining simulation and facility logic.
-- `/scripts`: Development and automation utilities.
-- `GEMINI.md`: Internal development logs and session state.
+## 💎 Support the Vision
+
+A huge **thank you** to the citizens supporting the **Community Wallet**. Every bit of hashpower contributed helps us build the infrastructure for decentralized humanity and secures the Community Treasury. Your support directly funds the missions deployed on the CivicWatch board.
 
 ---
 
 ## 📜 Core Mandates
 1. **No Extraction**: No hidden fees, no data harvesting.
 2. **Non-Custodial**: User always owns the keys.
-3. **Sovereign**: The identity belongs to the human, not the platform.
+3. **Sovereign**: Your identity belongs to you, not the platform.
 
 **Build for humanity.**

@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Award,
   List,
-  Map as MapIcon
+  Map as MapIcon,
+  Navigation
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -29,11 +30,14 @@ const CivicWatchPage: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [verificationFile, setVerificationFile] = useState<string | null>(null);
+  const [proofDescription, setProofDescription] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [status, setStatus] = useState<'browsing' | 'dispatching' | 'verifying' | 'completed'>('browsing');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [gpsLocked, setGpsLocked] = useState<boolean>(false);
+  const [currentGps, setCurrentGps] = useState<{ lat: number; lng: number } | null>(null);
 
   const { user, updateUser, wallet, updateWallet } = useGameStore();
 
@@ -57,12 +61,37 @@ const CivicWatchPage: React.FC = () => {
     setFilteredJobs(result);
   }, [jobs, searchQuery, activeCategory]);
 
+  // GPS Tracking Effect
+  useEffect(() => {
+    if (status === 'dispatching' || status === 'verifying') {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation not supported");
+        return;
+      }
+
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setCurrentGps({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setGpsLocked(true);
+        },
+        (err) => {
+          console.error("GPS Error:", err);
+          setGpsLocked(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+      return () => navigator.geolocation.clearWatch(watchId);
+    } else {
+      setGpsLocked(false);
+      setCurrentGps(null);
+    }
+  }, [status]);
+
   const fetchJobs = async () => {
     setLoading(true);
     try {
       const data = await civicWatchApi.getJobs();
       setJobs(data);
-      // Check if user already has an active job
       const myActiveJob = data.find(j => j.assignee === did && (j.status === 'in_progress' || j.status === 'verifying'));
       if (myActiveJob) {
         setActiveJob(myActiveJob);
@@ -89,16 +118,28 @@ const CivicWatchPage: React.FC = () => {
   };
 
   const handleVerify = async () => {
-    if (!activeJob || !did || !verificationFile) return;
+    if (!activeJob || !did) return;
+    if (!verificationFile && !proofDescription) {
+      alert('Please provide at least a photo or a description as proof.');
+      return;
+    }
+
     setStatus('verifying');
-    setAiAnalysis("Craig AI is analyzing your proof for authenticity, GPS consistency, and impact verification...");
+    setAiAnalysis("Craig AI Node: Analyzing proof against job requirements...");
     
     try {
-      const res = await civicWatchApi.verifyJob(activeJob.id, did, verificationFile);
+      // Send proofDescription as the primary proofData for AI analysis
+      // verificationFile is now sent separately for image hash verification
+      const res = await civicWatchApi.verifyJob(
+        activeJob.id, 
+        did, 
+        proofDescription || 'No text proof provided',
+        verificationFile || null,
+        currentGps || undefined
+      );
       
-      // Simulate Craig AI feedback delay
-      setTimeout(() => {
-        setAiAnalysis("✓ Proof Verified. 100% Match with Civic Standard. Impact recorded in Global Ledger.");
+      if (res.status === 'verified') {
+        setAiAnalysis(`✓ Craig AI: ${res.aiReasoning || "Proof Verified. Impact recorded in Global Ledger."}`);
         
         setTimeout(() => {
           if (res.payoutDetails) {
@@ -119,12 +160,17 @@ const CivicWatchPage: React.FC = () => {
           
           setStatus('completed');
           fetchJobs();
-        }, 1500);
-      }, 2000);
+        }, 2500);
+      } else {
+        setAiAnalysis(`⚠ Craig AI Rejected: ${res.aiReasoning || "Inconsistent proof."}`);
+        setTimeout(() => {
+          setStatus('dispatching');
+        }, 3000);
+      }
 
     } catch (err) {
       setStatus('dispatching');
-      alert('Verification failed: ' + err.message);
+      setAiAnalysis(`⚠ Node Error: ${err.response?.data?.error || err.message}`);
     }
   };
 
@@ -151,12 +197,18 @@ const CivicWatchPage: React.FC = () => {
               <Shield className="text-white w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">CivicWatch <span className="text-blue-500 text-xs font-mono ml-1">v0.9-NIGHTLY</span></h1>
+              <h1 className="text-xl font-bold tracking-tight">CivicWatch <span className="text-blue-500 text-xs font-mono ml-1">v1.0-NIGHTLY</span></h1>
               <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">Real-World Impact Dispatch</p>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
+            {gpsLocked && (
+              <div className="hidden md:flex items-center gap-2 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full">
+                <Navigation className="w-3 h-3 text-green-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-green-500 uppercase">GPS Locked</span>
+              </div>
+            )}
             <div className="hidden md:flex flex-col items-end">
               <div className="text-xs text-gray-400">Reputation Score</div>
               <div className="flex items-center gap-1">
@@ -344,7 +396,20 @@ const CivicWatchPage: React.FC = () => {
                     <div className="relative pl-12 mb-8">
                       <div className={`absolute left-2.5 -translate-x-1/2 w-4 h-4 rounded-full border-4 border-gray-900 z-10 ${status !== 'dispatching' ? 'bg-green-500' : 'bg-blue-500 animate-pulse ring-4 ring-blue-500/20'}`}></div>
                       <h4 className="text-sm font-bold text-white mb-1">On Location</h4>
-                      <p className="text-xs text-gray-500">Perform the work at: <span className="text-blue-400 font-mono">{activeJob?.location.address}</span></p>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs text-gray-500">Perform the work at: <span className="text-blue-400 font-mono">{activeJob?.location.address}</span></p>
+                        {gpsLocked ? (
+                          <div className="flex items-center gap-1 text-[10px] text-green-500 font-bold uppercase tracking-tighter">
+                            <CheckCircle className="w-3 h-3" />
+                            GPS Position Verified
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[10px] text-yellow-500 font-bold uppercase tracking-tighter animate-pulse">
+                            <Navigation className="w-3 h-3" />
+                            Waiting for GPS Signal...
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="relative pl-12">
@@ -361,8 +426,18 @@ const CivicWatchPage: React.FC = () => {
                         Submit Verification
                       </h3>
                       <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-                        To claim your <span className="text-white font-bold">{activeJob?.reward} CVT</span>, upload a clear photo or video proof of the completed work.
+                        To claim your <span className="text-white font-bold">{activeJob?.reward} CVT</span>, describe what you did and optionally upload a photo.
                       </p>
+
+                      <div className="mb-6">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Proof Description (AI Verified)</label>
+                        <textarea 
+                          className="w-full bg-[#0d1117] border border-gray-800 rounded-xl p-4 text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600/50 transition h-32"
+                          placeholder="Describe the work you completed in detail..."
+                          value={proofDescription}
+                          onChange={(e) => setProofDescription(e.target.value)}
+                        />
+                      </div>
                       
                       <div className="relative group mb-6">
                         <input 
@@ -382,7 +457,7 @@ const CivicWatchPage: React.FC = () => {
                               <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mb-3">
                                 <Camera className="text-gray-400 group-hover:text-blue-400 transition" />
                               </div>
-                              <span className="text-sm font-bold text-gray-400 group-hover:text-blue-400 transition">Capture or Upload Proof</span>
+                              <span className="text-sm font-bold text-gray-400 group-hover:text-blue-400 transition">Capture or Upload Photo (Optional)</span>
                             </>
                           )}
                         </label>
@@ -390,10 +465,11 @@ const CivicWatchPage: React.FC = () => {
 
                       <button 
                         onClick={handleVerify}
-                        disabled={!verificationFile}
-                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 transform active:scale-95 transition"
+                        disabled={(!verificationFile && !proofDescription) || !gpsLocked}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 transform active:scale-95 transition flex items-center justify-center gap-2"
                       >
-                        Submit for Craig AI Audit
+                        {!gpsLocked && <Navigation className="w-4 h-4 animate-spin" />}
+                        {gpsLocked ? 'Submit for Craig AI Audit' : 'Awaiting GPS Lock...'}
                       </button>
                     </div>
                   )}
@@ -413,7 +489,7 @@ const CivicWatchPage: React.FC = () => {
                       <div className="bg-black/40 rounded-xl p-4 font-mono text-xs text-blue-400 mb-6">
                         <div className="flex gap-2">
                           <span className="text-gray-600">$</span>
-                          <span>{aiAnalysis}</span>
+                          <span className="break-words">{aiAnalysis}</span>
                         </div>
                       </div>
 
@@ -509,6 +585,10 @@ const CivicWatchPage: React.FC = () => {
                         <span>{req.replace('_', ' ')}</span>
                       </div>
                     ))}
+                    <div className="flex items-center gap-2 text-sm text-blue-400 font-bold uppercase tracking-tighter">
+                      <Navigation className="w-4 h-4" />
+                      <span>Real-Time GPS Verification Required</span>
+                    </div>
                   </div>
                 </div>
 

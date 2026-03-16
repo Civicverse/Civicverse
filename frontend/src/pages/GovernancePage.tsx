@@ -21,12 +21,13 @@ interface Proposal {
 }
 
 export function GovernancePage() {
-  const { user, wallet } = useGameStore();
+  const { user, wallet, updateWallet } = useGameStore();
   const [showProposalForm, setShowProposalForm] = useState(false);
   const [formData, setFormData] = useState({ title: '', description: '', type: 'parameter_change', value: 0 });
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [votingId, setVotingId] = useState<string | null>(null);
+  const [voteWeights, setVoteWeights] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchProposals();
@@ -34,6 +35,7 @@ export function GovernancePage() {
 
   const fetchProposals = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${API_URL}/governance/proposals`);
       setProposals(res.data);
     } catch (err) {
@@ -43,34 +45,58 @@ export function GovernancePage() {
     }
   };
 
+  const getVoteWeight = (id: string) => voteWeights[id] || 1;
+
+  const calculateCost = (proposal: Proposal, additionalWeight: number) => {
+    // This client-side calculation should match the backend logic
+    const voterRecord = (proposal as any).voters?.[user?.civicId || ''] || { weight: 0 };
+    const currentWeight = voterRecord.weight;
+    const newTotal = currentWeight + additionalWeight;
+    return (newTotal * newTotal) - (currentWeight * currentWeight);
+  };
+
   const handleVote = async (proposalId: string, choice: 'yes' | 'no') => {
     if (!user?.civicId) return alert('Connect identity to vote');
     
+    const weight = getVoteWeight(proposalId);
+    const proposal = proposals.find(p => p.id === proposalId);
+    if (!proposal) return;
+
+    const cost = calculateCost(proposal, weight);
+    if ((wallet?.balance || 0) < cost) {
+        return alert(`Insufficient CVT. This vote costs ${cost} CVT, but you only have ${wallet?.balance.toFixed(2)} CVT.`);
+    }
+
     setVotingId(proposalId);
     try {
       // 1. Restore identity to sign the vote
-      const password = prompt('Enter password to sign vote:');
+      const password = prompt(`Confirm vote cost: ${cost} CVT for ${weight} additional vote weight. Enter password to sign:`);
       if (!password) { setVotingId(null); return; }
       
       const identity = await CivicIdentity.restore(password);
       if (!identity) throw new Error('Invalid password');
 
       // 2. Sign vote message
-      const message = `VOTE:${proposalId}:${choice}:${Date.now()}`;
+      const message = `VOTE:${proposalId}:${choice}:${weight}:${Date.now()}`;
       const signature = await identity.signMessage(message);
 
       // 3. Submit to API
-      await axios.post(`${API_URL}/governance/vote`, { 
+      const res = await axios.post(`${API_URL}/governance/vote`, { 
         proposalId, 
         choice, 
         voterId: user.civicId,
         signature,
-        weight: Math.floor(wallet?.balance || 1) // Quadratic voting or balance-weighted? Let's do simple weight for now
+        weight: weight
       });
       
+      // Update local wallet balance
+      if (res.data.cost) {
+          updateWallet({ balance: (wallet?.balance || 0) - res.data.cost });
+      }
+
       fetchProposals();
     } catch (err: any) {
-      alert('Vote failed: ' + err.message);
+      alert('Vote failed: ' + (err.response?.data?.error || err.message));
     } finally {
       setVotingId(null);
     }
@@ -354,37 +380,59 @@ export function GovernancePage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-4">
-                      {proposal.status === 'voting' ? (
-                        <>
-                          <button
-                            onClick={() => handleVote(proposal.id, 'yes')}
-                            disabled={votingId === proposal.id}
-                            className="flex-1 py-4 bg-green-500/10 hover:bg-green-500 border border-green-500/20 hover:text-white text-green-400 font-black rounded-2xl transition flex items-center justify-center gap-2 uppercase tracking-tight italic disabled:opacity-50"
-                          >
-                            <ThumbsUp className="w-5 h-5" /> {votingId === proposal.id ? 'Signing...' : 'Approve'}
-                          </button>
-                          <button
-                            onClick={() => handleVote(proposal.id, 'no')}
-                            disabled={votingId === proposal.id}
-                            className="flex-1 py-4 bg-red-500/10 hover:bg-red-500 border border-red-500/20 hover:text-white text-red-400 font-black rounded-2xl transition flex items-center justify-center gap-2 uppercase tracking-tight italic disabled:opacity-50"
-                          >
-                            <ThumbsDown className="w-5 h-5" /> Disapprove
-                          </button>
-                        </>
-                      ) : proposal.status === 'passed' ? (
-                        <button
-                          onClick={() => handleExecute(proposal.id)}
-                          className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl transition flex items-center justify-center gap-2 uppercase tracking-tight italic"
-                        >
-                          <Zap className="w-5 h-5" /> Execute Protocol Change
-                        </button>
-                      ) : (
-                        <div className="w-full py-4 bg-gray-900 border border-gray-800 text-gray-500 font-black rounded-2xl flex items-center justify-center gap-2 uppercase tracking-tight italic">
-                           {proposal.status === 'executed' ? <CheckCircle className="w-5 h-5" /> : null}
-                           {proposal.status === 'executed' ? 'Effect Complete' : 'Proposal Terminated'}
+                    <div className="space-y-4">
+                      {proposal.status === 'voting' && (
+                        <div className="bg-[#0a0c10] border border-gray-800 rounded-2xl p-4 flex items-center justify-between gap-4">
+                           <div className="flex-1">
+                              <label className="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Additional Votes</label>
+                              <div className="flex items-center gap-2">
+                                 <input 
+                                    type="number" 
+                                    min="1" 
+                                    value={getVoteWeight(proposal.id)}
+                                    onChange={(e) => setVoteWeights({...voteWeights, [proposal.id]: Math.max(1, parseInt(e.target.value) || 1)})}
+                                    className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-1 text-sm font-bold text-white w-20 outline-none focus:border-blue-500 transition"
+                                 />
+                                 <span className="text-[10px] font-bold text-blue-400 uppercase italic">
+                                    Cost: {calculateCost(proposal, getVoteWeight(proposal.id))} CVT
+                                 </span>
+                              </div>
+                           </div>
                         </div>
                       )}
+
+                      <div className="flex gap-4">
+                        {proposal.status === 'voting' ? (
+                          <>
+                            <button
+                              onClick={() => handleVote(proposal.id, 'yes')}
+                              disabled={votingId === proposal.id}
+                              className="flex-1 py-4 bg-green-500/10 hover:bg-green-500 border border-green-500/20 hover:text-white text-green-400 font-black rounded-2xl transition flex items-center justify-center gap-2 uppercase tracking-tight italic disabled:opacity-50"
+                            >
+                              <ThumbsUp className="w-5 h-5" /> {votingId === proposal.id ? 'Signing...' : 'Approve'}
+                            </button>
+                            <button
+                              onClick={() => handleVote(proposal.id, 'no')}
+                              disabled={votingId === proposal.id}
+                              className="flex-1 py-4 bg-red-500/10 hover:bg-red-500 border border-red-500/20 hover:text-white text-red-400 font-black rounded-2xl transition flex items-center justify-center gap-2 uppercase tracking-tight italic disabled:opacity-50"
+                            >
+                              <ThumbsDown className="w-5 h-5" /> Disapprove
+                            </button>
+                          </>
+                        ) : proposal.status === 'passed' ? (
+                          <button
+                            onClick={() => handleExecute(proposal.id)}
+                            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl transition flex items-center justify-center gap-2 uppercase tracking-tight italic"
+                          >
+                            <Zap className="w-5 h-5" /> Execute Protocol Change
+                          </button>
+                        ) : (
+                          <div className="w-full py-4 bg-gray-900 border border-gray-800 text-gray-500 font-black rounded-2xl flex items-center justify-center gap-2 uppercase tracking-tight italic">
+                             {proposal.status === 'executed' ? <CheckCircle className="w-5 h-5" /> : null}
+                             {proposal.status === 'executed' ? 'Effect Complete' : 'Proposal Terminated'}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </motion.div>

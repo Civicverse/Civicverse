@@ -18,5 +18,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "overrides": {
+    "esbuild": "0.25.0"
   }
 }

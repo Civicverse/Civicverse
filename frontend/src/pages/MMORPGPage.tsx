@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Heart, Share2, MessageSquare } from 'lucide-react';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, CharacterConfig } from '../store/gameStore';
+import { createCharacterMesh } from '../lib/characterFactory';
 import * as THREE from 'three';
 
 interface Character {
@@ -32,6 +33,7 @@ export function MMORPGPage() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const characterGroupRef = useRef<THREE.Group | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const { user } = useGameStore();
 
@@ -42,7 +44,7 @@ export function MMORPGPage() {
     name: user?.username || 'Player',
     level: user?.level || 1,
     class: 'Warrior',
-    skinTone: '#D4A373',
+    skinTone: user?.character?.skinColor || '#D4A373',
     outfit: 'Legendary Armor',
     weapon: 'Crystal Sword',
     position: [0, 0, 0],
@@ -77,15 +79,6 @@ export function MMORPGPage() {
       liked: false,
     },
   ]);
-
-  const storeItems = [
-    { id: '1', name: 'Legendary Armor', price: '500 CIVIC', icon: '⚔️', rarity: 'Legendary' },
-    { id: '2', name: 'Crystal Weapon', price: '300 CIVIC', icon: '🗡️', rarity: 'Epic' },
-    { id: '3', name: 'Shadow Cloak', price: '200 CIVIC', icon: '👕', rarity: 'Rare' },
-    { id: '4', name: 'Dragon Helm', price: '400 CIVIC', icon: '👑', rarity: 'Legendary' },
-    { id: '5', name: 'Enchanted Ring', price: '150 CIVIC', icon: '💍', rarity: 'Rare' },
-    { id: '6', name: 'Void Wings', price: '1000 CIVIC', icon: '🪶', rarity: 'Mythic' },
-  ];
 
   const shops = {
     armor: {
@@ -142,9 +135,9 @@ export function MMORPGPage() {
     },
   };
 
-  // Initialize 3D scene
+  // Initialize 3D scene (Once)
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || selectedTab !== 'world') return;
 
     // Scene setup
     const scene = new THREE.Scene();
@@ -197,79 +190,15 @@ export function MMORPGPage() {
     const characterGroup = new THREE.Group();
     scene.add(characterGroup);
 
-    // Body
-    const bodyGeometry = new THREE.CapsuleGeometry(0.4, 1.2, 4, 8);
-    const bodyMaterial = new THREE.MeshStandardMaterial({
-      color: character.skinTone,
-      metalness: 0.1,
-      roughness: 0.8,
-    });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.castShadow = true;
-    body.receiveShadow = true;
-    body.position.y = 1;
-    characterGroup.add(body);
-
-    // Head
-    const headGeometry = new THREE.SphereGeometry(0.35, 32, 32);
-    const headMaterial = new THREE.MeshStandardMaterial({
-      color: character.skinTone,
-      metalness: 0.05,
-      roughness: 0.8,
-    });
-    const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.castShadow = true;
-    head.receiveShadow = true;
-    head.position.y = 2.2;
-    characterGroup.add(head);
-
-    // Armor
-    const armorGeometry = new THREE.BoxGeometry(0.5, 1.4, 0.4);
-    const armorMaterial = new THREE.MeshStandardMaterial({
-      color: 0x2d5a7b,
-      metalness: 0.8,
-      roughness: 0.2,
-      emissive: 0x00d4ff,
-      emissiveIntensity: 0.3,
-    });
-    const armor = new THREE.Mesh(armorGeometry, armorMaterial);
-    armor.castShadow = true;
-    armor.receiveShadow = true;
-    armor.position.y = 1.1;
-    characterGroup.add(armor);
-
-    // Weapon (sword)
-    const weaponGroup = new THREE.Group();
-    const bladeGeometry = new THREE.BoxGeometry(0.15, 1.5, 0.05);
-    const bladeMaterial = new THREE.MeshStandardMaterial({
-      color: 0x00d4ff,
-      metalness: 0.9,
-      roughness: 0.1,
-      emissive: 0x00d4ff,
-      emissiveIntensity: 0.5,
-    });
-    const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
-    blade.castShadow = true;
-    blade.position.set(0.6, 1, 0);
-    weaponGroup.add(blade);
-
-    const hiltGeometry = new THREE.SphereGeometry(0.1, 16, 16);
-    const hiltMaterial = new THREE.MeshStandardMaterial({
-      color: 0x8b4513,
-      metalness: 0.6,
-    });
-    const hilt = new THREE.Mesh(hiltGeometry, hiltMaterial);
-    hilt.castShadow = true;
-    hilt.position.set(0.6, 0.5, 0);
-    weaponGroup.add(hilt);
-
-    weaponGroup.rotation.z = Math.PI / 6;
-    characterGroup.add(weaponGroup);
+    // Save refs
+    sceneRef.current = scene;
+    cameraRef.current = camera;
+    rendererRef.current = renderer;
+    characterGroupRef.current = characterGroup;
 
     // Animate character
-    let animationId: number;
     const animate = () => {
-      animationId = requestAnimationFrame(animate);
+      animationFrameRef.current = requestAnimationFrame(animate);
 
       // Gentle rotation
       characterGroup.rotation.y += 0.005;
@@ -279,32 +208,65 @@ export function MMORPGPage() {
 
       renderer.render(scene, camera);
     };
-
     animate();
-
-    sceneRef.current = scene;
-    cameraRef.current = camera;
-    rendererRef.current = renderer;
-    characterGroupRef.current = characterGroup;
 
     // Handle resize
     const handleResize = () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const width = containerRef.current.clientWidth;
       const height = containerRef.current.clientHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
+      cameraRef.current.aspect = width / height;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(width, height);
     };
-
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationId);
-      containerRef.current?.removeChild(renderer.domElement);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (rendererRef.current && rendererRef.current.domElement && containerRef.current) {
+          containerRef.current.removeChild(rendererRef.current.domElement);
+      }
+      rendererRef.current?.dispose();
     };
-  }, [character.skinTone]);
+  }, [selectedTab]);
+
+  // Update Character Mesh (Reactive)
+  useEffect(() => {
+    if (!characterGroupRef.current) return;
+
+    // Clear previous
+    while(characterGroupRef.current.children.length > 0){ 
+      characterGroupRef.current.remove(characterGroupRef.current.children[0]); 
+    }
+
+    // Bridge the Avatar: Use user.character config or fallback to local state defaults
+    const characterConfig: CharacterConfig & { weapon?: string } = {
+      skinColor: character.skinTone,
+      hairColor: user?.character?.hairColor || '#4a3b2a',
+      shirtColor: user?.character?.shirtColor || '#00d9ff',
+      pantsColor: user?.character?.pantsColor || '#1a1a2e',
+      shoesColor: user?.character?.shoesColor || '#333333',
+      hairStyle: user?.character?.hairStyle || 'short',
+      accessory: user?.character?.accessory || 'none',
+      bodyType: user?.character?.bodyType || 'athletic',
+      weapon: character.weapon,
+      ...(user?.character || {})
+    };
+
+    // If customizing, override with local state (basic mapping for preview)
+    if (selectedTab === 'customize') {
+      characterConfig.skinColor = character.skinTone;
+      characterConfig.weapon = character.weapon;
+    }
+
+    const meshGroup = createCharacterMesh(characterConfig);
+    // Adjust scale and position to match previous placeholder
+    meshGroup.scale.set(1.4, 1.4, 1.4);
+    meshGroup.position.y = 0; 
+    characterGroupRef.current.add(meshGroup);
+
+  }, [character.skinTone, user?.character, selectedTab]);
 
   const handleLikePost = (postId: string) => {
     setPosts(

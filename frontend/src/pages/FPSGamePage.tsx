@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Heart, Send, Users, MessageCircle, Zap, Trophy, Target, Lock } from 'lucide-react';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, CharacterConfig } from '../store/gameStore';
+import { createCharacterMesh } from '../lib/characterFactory';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
@@ -260,49 +261,27 @@ export function FPSGamePage() {
     groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     world.addBody(groundBody);
 
-    // Create player mesh (cell-shaded character)
+    // Create player mesh (detailed avatar)
     const createPlayerMesh = () => {
-      const group = new THREE.Group();
-
-      const bodyGeom = new THREE.BoxGeometry(0.6, 1.5, 0.4);
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x00ffff,
-        metalness: 0.6,
-        roughness: 0.3,
-        emissive: 0x00aaaa,
-        emissiveIntensity: 0.2,
-      });
-      const body = new THREE.Mesh(bodyGeom, bodyMat);
-      body.castShadow = true;
-      group.add(body);
-
-      const headGeom = new THREE.BoxGeometry(0.5, 0.6, 0.5);
-      const headMat = new THREE.MeshStandardMaterial({
-        color: 0xffaa00,
-        metalness: 0.5,
-        roughness: 0.4,
-      });
-      const head = new THREE.Mesh(headGeom, headMat);
-      head.position.y = 1.1;
-      head.castShadow = true;
-      group.add(head);
-
-      const armGeom = new THREE.BoxGeometry(0.25, 1.2, 0.25);
-      const armMat = new THREE.MeshStandardMaterial({
-        color: 0x00ffff,
-        metalness: 0.4,
-        roughness: 0.5,
-      });
-      const leftArm = new THREE.Mesh(armGeom, armMat);
-      leftArm.position.set(-0.5, 0.5, 0);
-      leftArm.castShadow = true;
-      group.add(leftArm);
-
-      const rightArm = leftArm.clone();
-      rightArm.position.x = 0.5;
-      group.add(rightArm);
-
-      return group;
+      const config: CharacterConfig & { weapon?: string } = {
+          skinColor: '#e0ac69',
+          hairColor: '#4a3b2a',
+          shirtColor: '#00d9ff',
+          pantsColor: '#1a1a2e',
+          shoesColor: '#333333',
+          hairStyle: 'short',
+          accessory: 'none',
+          bodyType: 'athletic',
+          weapon: 'Crystal Sword',
+          ...(user?.character || {})
+      };
+      
+      const wrapper = new THREE.Group();
+      const character = createCharacterMesh(config);
+      // Offset character so feet align with bottom of physics collider (approx)
+      character.position.y = -0.5; 
+      wrapper.add(character);
+      return wrapper;
     };
 
     const playerMesh = createPlayerMesh();

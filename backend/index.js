@@ -71,114 +71,91 @@ app.get('/api/jobs', (req, res) => {
   res.json(civicWatch.getJobs());
 });
 
+app.post('/api/jobs', (req, res) => {
+    try {
+        const job = civicWatch.createJob(req.body);
+        res.json(job);
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
 app.post('/api/jobs/accept', (req, res) => {
+  const { jobId, workerId } = req.body;
   try {
-    const { jobId, workerId } = req.body;
     const job = civicWatch.acceptJob(jobId, workerId);
-    res.json({ success: true, job });
+    res.json(job);
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
+app.post('/api/jobs/stream', (req, res) => {
+    const { jobId, workerId, isStreaming } = req.body;
+    try {
+        const job = civicWatch.toggleStreaming(jobId, workerId, isStreaming);
+        res.json(job);
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
 app.post('/api/jobs/verify', async (req, res) => {
   try {
-    const { jobId, workerId, proofData } = req.body;
-    const result = await civicWatch.submitVerification(jobId, workerId, proofData);
+    const { jobId, workerId, proofText, proofImage, gpsData } = req.body;
+    const result = await civicWatch.submitVerification(jobId, workerId, proofText, proofImage, gpsData);
     
-    // If finalized immediately (mock), handle payout
-    if (result.status === 'verified') {
-        const payoutDetails = civicWatch.finalizeJob(jobId);
-        // Note: In a real app, we'd update the wallet here. 
-        // For now, we return the details so the frontend knows what happened.
-        res.json({ success: true, result, payoutDetails });
-    } else {
-        res.json({ success: true, result });
-    }
+    // Result now includes payoutDetails if verified
+    res.json({ success: true, result, payoutDetails: result.payoutDetails });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
 // --- Governance & Treasury ---
-const proposals = [
-  {
-    id: 'prop_1',
-    title: 'Increase Park Cleanup Rewards',
-    description: 'Proposed 20% increase in CVT rewards for all environmental missions.',
-    type: 'parameter_change',
-    value: 1.2,
-    votesFor: 4500,
-    votesAgainst: 1200,
-    status: 'voting',
-    endTime: Date.now() + 86400000 * 3,
-    proposer: 'did:civic:community'
-  },
-  {
-    id: 'prop_2',
-    title: 'Community Garden Funding',
-    description: 'Allocate 5000 CVT from treasury to build a new hydroponic garden in Sector 7.',
-    type: 'treasury_allocation',
-    value: 5000,
-    votesFor: 12000,
-    votesAgainst: 500,
-    status: 'passed',
-    endTime: Date.now() - 86400000,
-    proposer: 'did:civic:sector7_council'
-  }
-];
+const governanceService = require('./services/governance-service');
+
+app.get('/api/governance/status', (req, res) => {
+  res.json({
+    treasuryBalance: governanceService.getTreasuryBalance(),
+    proposalCount: governanceService.getProposals().length
+  });
+});
 
 app.get('/api/governance/proposals', (req, res) => {
-  res.json(proposals);
+  res.json(governanceService.getProposals());
 });
 
 app.post('/api/governance/proposals', (req, res) => {
-    const { title, description, type, value, proposer } = req.body;
-    const prop = { 
-        id: `prop_${Date.now()}`, 
-        title, 
-        description, 
-        type: type || 'parameter_change',
-        value: value || 0,
-        votesFor: 0, 
-        votesAgainst: 0, 
-        status: 'voting',
-        endTime: Date.now() + 86400000 * 7,
-        proposer
-    };
-    proposals.push(prop);
-    res.json(prop);
+    try {
+        const prop = governanceService.createProposal(req.body);
+        res.json(prop);
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
 });
 
 app.post('/api/governance/vote', (req, res) => {
-    const { proposalId, choice, voterId, signature, weight } = req.body;
-    const prop = proposals.find(p => p.id === proposalId);
-    if (!prop) return res.status(404).json({ error: 'Proposal not found' });
-    
-    // In a real system, verify signature here using voterId's public key
-    console.log(`Verified signature for ${voterId} on proposal ${proposalId}`);
-    
-    const voteWeight = weight || 1;
-    if (choice === 'yes') prop.votesFor += voteWeight;
-    if (choice === 'no') prop.votesAgainst += voteWeight;
-    
-    res.json({ success: true, proposal: prop });
+    try {
+        const { proposalId, choice, voterId, weight, voterLevel } = req.body;
+        // weight is the number of votes to add, voterLevel is identity level (1 or 2)
+        const result = governanceService.vote(proposalId, choice, voterId, weight || 1, voterLevel || 1);
+        res.json(result);
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
 });
 
 app.post('/api/governance/execute', (req, res) => {
-    const { proposalId } = req.body;
-    const prop = proposals.find(p => p.id === proposalId);
-    if (!prop) return res.status(404).json({ error: 'Proposal not found' });
-    if (prop.status !== 'passed') return res.status(400).json({ error: 'Only passed proposals can be executed' });
-    
-    // Execute logic based on type
-    if (prop.type === 'treasury_allocation') {
-        ubiEngine.communityTreasury -= prop.value;
-        console.log(`Executed treasury allocation: ${prop.value} CVT`);
+    try {
+        const { proposalId } = req.body;
+        const result = governanceService.executeProposal(proposalId);
+        res.json(result);
+    } catch (e) {
+        res.status(400).json({ error: e.message });
     }
-    
-    prop.status = 'executed';
-    res.json({ success: true, proposal: prop });
 });
+
+
 
 app.listen(port, () => console.log(`Rebuild backend listening on ${port}`))

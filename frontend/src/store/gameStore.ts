@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import CivicIdentity from '../lib/civicIdentity';
 import CivicWallet from '../lib/civicWallet';
 import { secureStorage } from '../lib/secureStorage';
+import { blockchainService } from '../services/blockchain';
 
 export interface CharacterConfig {
   skinColor: string;
@@ -20,6 +21,7 @@ export interface CivicUser {
   avatar: string;
   trustScore: number;
   level: number;
+  verificationLevel: number; // 1 = Unverified, 2 = Verified (Blue Check)
   character: CharacterConfig;
   stats?: {
     environmental?: number;
@@ -106,6 +108,7 @@ export interface GameState {
   // Wallet
   updateWallet: (wallet: Partial<Wallet>) => void;
   sendCrypto: (to: string, amount: number) => Promise<void>;
+  syncBalances: () => Promise<void>;
 
   // Missions
   setMissions: (missions: Mission[]) => void;
@@ -190,6 +193,27 @@ export const useGameStore = create<GameState>((set) => ({
   currentJobProgress: 0,
   selectedJob: null,
 
+  syncBalances: async () => {
+    const state = useGameStore.getState();
+    const addresses = state.multiChainAddresses;
+    if (!addresses) return;
+
+    try {
+      const balances = await blockchainService.syncAllBalances(addresses);
+      
+      set((state) => ({
+        multiChainAddresses: state.multiChainAddresses ? {
+          ...state.multiChainAddresses,
+          ETH_BALANCE: balances.ETH,
+          KASPA_BALANCE: balances.KASPA,
+          LAST_SYNC: Date.now()
+        } : null
+      }));
+    } catch (e) {
+      console.error('[wallet] Balance sync failed:', e);
+    }
+  },
+
   initialize: async () => {
     try {
       console.log('[store] initialize START');
@@ -268,6 +292,7 @@ export const useGameStore = create<GameState>((set) => ({
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${realCivicId}`,
         trustScore: 75,
         level: 3,
+        verificationLevel: 1, // Default to level 1
         character: identity.characterConfig || {
           skinColor: '#e0ac69',
           hairColor: '#4a3b2a',
@@ -328,6 +353,9 @@ export const useGameStore = create<GameState>((set) => ({
       }
       console.debug('[auth] login successful with Civic ID:', realCivicId);
       console.debug('[wallet] restored addresses:', Object.keys(multiChainAddresses));
+      
+      // Trigger background sync
+      setTimeout(() => useGameStore.getState().syncBalances(), 100);
     } catch (error) {
       console.error('Login failed:', error);
       set({ loading: false, isAuthenticated: false, user: null, wallet: null, multiChainAddresses: null });
@@ -362,6 +390,7 @@ export const useGameStore = create<GameState>((set) => ({
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${realCivicId}`,
         trustScore: 50,
         level: 1,
+        verificationLevel: 1, // Default to level 1
         character: identity.characterConfig || {
           skinColor: '#e0ac69',
           hairColor: '#4a3b2a',
@@ -407,6 +436,9 @@ export const useGameStore = create<GameState>((set) => ({
       }
       console.debug('[signup] signup successful with Civic ID:', realCivicId);
       console.debug('[wallet] created 12-word HD wallet for chains:', Object.keys(multiChainAddresses));
+
+      // Trigger background sync
+      setTimeout(() => useGameStore.getState().syncBalances(), 100);
     } catch (error) {
       console.error('[signup] Signup failed:', error);
       set({ loading: false, isAuthenticated: false, user: null, wallet: null, multiChainAddresses: null });
