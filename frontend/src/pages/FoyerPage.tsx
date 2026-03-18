@@ -563,12 +563,12 @@ export default function FoyerPage() {
                       Connect directly with other citizens. No central authority. Communications encrypted end-to-end.
                     </p>
                   </AnimatedCard>
-                  <AnimatedCard delay={300} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-blue-500/50 transition-colors">
-                    <h3 className="text-blue-500 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
-                      <span>⚡</span> Offline-First
+                  <AnimatedCard delay={300} onClick={() => nav('/gaming-rig')} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-pink-500/50 transition-colors cursor-pointer">
+                    <h3 className="text-pink-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>🖥️</span> Gaming Rig Avatar
                     </h3>
                     <p className="text-gray-400 leading-relaxed font-medium">
-                      Works without internet. Syncs when available. Your data stays local unless you explicitly share it.
+                      Customize your own epic gaming PC with ARGB lighting, waifu LCD displays, and interactive controls. Click to explore.
                     </p>
                   </AnimatedCard>
             </div>

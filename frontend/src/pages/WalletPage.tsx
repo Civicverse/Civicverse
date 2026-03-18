@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
-import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
+import { AnimatedButton, AnimatedCard, NeonText, GradientOrb, GamingRigAvatar } from '../components'
 import { CharacterViewer } from '../components/3d/CharacterViewer'
-import { MiningClusterChassis } from '../components/MiningClusterChassis'
 
 export default function WalletPage() {
   const nav = useNavigate()
@@ -163,9 +162,17 @@ export default function WalletPage() {
           </div>
         </AnimatedCard>
 
-        {/* Mining Cluster Visualization */}
-        <div className="mb-8 animate-slide-up" style={{ animationDelay: '375ms' }}>
-          <MiningClusterChassis />
+        {/* Gaming Rig Avatar Section */}
+        <div className="mb-8 animate-slide-up" style={{ animationDelay: '360ms' }}>
+          <AnimatedCard delay={360} className="border-l-4 border-neon-pink p-0 overflow-hidden">
+            <div className="h-96 w-full bg-dark-900/60">
+              <GamingRigAvatar />
+            </div>
+            <div className="p-6 bg-dark-900/40 border-t border-neon-pink/20">
+              <h3 className="text-neon-pink font-bold text-lg mb-2">⛏️ Monero Mining Rig</h3>
+              <p className="text-gray-400 text-sm">Live XMR mining statistics with ARGB lighting, customizable case styles, and real-time performance monitoring.</p>
+            </div>
+          </AnimatedCard>
         </div>
 
         {/* Mining Pool Section */}

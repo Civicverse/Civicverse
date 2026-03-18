@@ -12,6 +12,7 @@ import { CharacterCreatorPage } from './pages/CharacterCreatorPage'
 import { MissionsPage } from './pages/MissionsPage'
 import CivicWatchPage from './pages/CivicWatchPage'
 import { GovernancePage } from './pages/GovernancePage'
+import GamingRigPage from './pages/GamingRigPage'
 import { MainLayout } from './layouts/MainLayout'
 import { useGameStore } from './store/gameStore'
 
@@ -70,6 +71,7 @@ export default function App() {
         <Route path="/missions" element={<MissionsPage />} />
         <Route path="/civicwatch" element={<CivicWatchPage />} />
         <Route path="/governance" element={<GovernancePage />} />
+        <Route path="/gaming-rig" element={<GamingRigPage />} />
         <Route path="/foyer" element={<FoyerPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/mnemonic" element={<MnemonicPage />} />
