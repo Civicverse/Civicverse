@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
@@ -7,6 +7,7 @@ import { CharacterViewer } from '../components/3d/CharacterViewer'
 export default function WalletPage() {
   const nav = useNavigate()
   const { user, wallet, logout } = useGameStore()
+  const [showMiningPool, setShowMiningPool] = useState(false)
 
   if (!user || !wallet) {
     return (
@@ -160,6 +161,57 @@ export default function WalletPage() {
             </div>
           </div>
         </AnimatedCard>
+
+        {/* Mining Pool Section */}
+        <div className="mb-8 animate-slide-up" style={{ animationDelay: '375ms' }}>
+          <button
+            onClick={() => setShowMiningPool(!showMiningPool)}
+            className="w-full mb-4"
+          >
+            <AnimatedCard delay={375} className="border-l-4 border-neon-orange hover:border-neon-orange/80 transition-all cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-neon-orange font-bold text-lg">⛏️ Mining Pool</h3>
+                  <span className="text-gray-400 text-sm">(Support XMR Network)</span>
+                </div>
+                <span className="text-neon-orange text-xl transition-transform" style={{ transform: showMiningPool ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  ▼
+                </span>
+              </div>
+            </AnimatedCard>
+          </button>
+
+          {showMiningPool && (
+            <div className="bg-dark-900/40 border border-neon-orange/30 rounded-lg overflow-hidden shadow-xl animate-slide-up mb-4">
+              <iframe
+                src="https://supportxmr.com"
+                title="Support XMR Mining Pool"
+                className="w-full h-[800px] border-0"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-popups-to-escape-sandbox allow-pointer-lock"
+                allow="clipboard-read; clipboard-write"
+              />
+            </div>
+          )}
+
+          {showMiningPool && (
+            <AnimatedCard delay={400} className="border-l-4 border-neon-orange">
+              <h3 className="text-neon-orange font-bold mb-4 text-lg">💰 Pool Address</h3>
+              <div 
+                className="bg-dark-900/60 border border-neon-orange/20 rounded-lg p-4 font-mono text-xs text-neon-orange break-all hover:bg-dark-900/80 transition-colors cursor-pointer group relative"
+                onClick={() => {
+                  navigator.clipboard.writeText('438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp')
+                  alert('Address copied to clipboard!')
+                }}
+              >
+                438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp
+                <span className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-neon-orange text-sm">📋 Click to copy</span>
+              </div>
+              <p className="text-gray-400 text-xs mt-3 leading-relaxed">
+                Use this address to direct your mining contributions. Click the address to copy it to your clipboard.
+              </p>
+            </AnimatedCard>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 animate-slide-up" style={{ animationDelay: '400ms' }}>
           <AnimatedButton
