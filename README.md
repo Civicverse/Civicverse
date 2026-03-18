@@ -30,7 +30,7 @@ To set up the development environment from scratch:
 ```bash
 # 1. Clone the repository
 git clone https://github.com/Civicverse/Civicverse-nightly-v0.0.git
-cd Civicverse-nightly
+cd Civicverse-nightly-v0.0
 
 # 2. Install dependencies for the entire monorepo
 # This installs root, frontend, and backend dependencies in one go.
