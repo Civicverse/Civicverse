@@ -29,7 +29,7 @@ To set up the development environment from scratch:
 
 ```bash
 # 1. Clone the repository
-git clone git@github.com:Civicverse/Civicverse-nightly.git
+git clone https://github.com/Civicverse/Civicverse-nightly-v0.0.git
 cd Civicverse-nightly
 
 # 2. Install dependencies for the entire monorepo
