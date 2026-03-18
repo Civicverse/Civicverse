@@ -6,6 +6,8 @@ services:
     ports:
       - "3003:3003"
       - "8080:8080"
+    volumes:
+      - ./data:/app/data
     networks:
       - civicnet
 

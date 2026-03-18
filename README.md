@@ -52,7 +52,23 @@ npm start
 - **API Terminal**: [http://localhost:3003](http://localhost:3003)
 - **Multiplayer Relay**: `ws://localhost:8080`
 
-### 4. Production Deployment (VPS)
+### 4. One-Click Docker Launch (Modular Node)
+For easy deployment, use the provided launch script. This sets up a containerized, modular node system with persistent data storage.
+
+```bash
+# Ensure Docker daemon is running (on Linux: sudo systemctl start docker)
+# Then run the one-click launcher
+./launch.sh
+```
+
+This will:
+- Build and start the backend and frontend in containers
+- Mount the `./data` directory for persistent storage
+- Expose ports 3000 (frontend), 3003 (API), 8080 (multiplayer)
+
+To stop: `docker compose down`
+
+### 5. Production Deployment (VPS)
 The stack is pre-configured for seamless VPS deployment via Docker Compose.
 
 ```bash
