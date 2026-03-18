@@ -2,7 +2,7 @@
 
 CivicVerse is a protocol-level infrastructure for decentralized humanity. It enables sovereign identity, peer-to-peer coordination, and a real-world impact marketplace without intermediaries or centralized extraction.
 
-This is the **v1.2-NIGHTLY** build featuring the functional **CivicWatch Load Board**, **Quadratic Governance**, and the **Consolidated Community Hub**.
+This is the **v1.2-NIGHTLY** build featuring the in progress **CivicWatch Load Board**, **Quadratic Governance**, and the **Community Hub**.
 
 ---
 
