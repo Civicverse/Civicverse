@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
 import { CharacterViewer } from '../components/3d/CharacterViewer'
+import { MiningClusterChassis } from '../components/MiningClusterChassis'
 
 export default function WalletPage() {
   const nav = useNavigate()
@@ -161,6 +162,11 @@ export default function WalletPage() {
             </div>
           </div>
         </AnimatedCard>
+
+        {/* Mining Cluster Visualization */}
+        <div className="mb-8 animate-slide-up" style={{ animationDelay: '375ms' }}>
+          <MiningClusterChassis />
+        </div>
 
         {/* Mining Pool Section */}
         <div className="mb-8 animate-slide-up" style={{ animationDelay: '375ms' }}>
