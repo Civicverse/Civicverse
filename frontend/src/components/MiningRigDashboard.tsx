@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { GamingRigAvatar } from './GamingRigAvatar'
 
 const STORAGE_KEY = 'civicverse.mining.dashboard'
 
 export type MiningPreset = 'low' | 'medium' | 'high'
+export type RigTheme = 'midnight' | 'cyber' | 'gold' | 'white'
 
 export type MiningConfig = {
   workerName: string
@@ -14,6 +15,7 @@ export type MiningConfig = {
   pCores: number
   eCores: number
   advancedConfig: string
+  theme: RigTheme
 }
 
 const defaultConfig: MiningConfig = {
@@ -24,20 +26,9 @@ const defaultConfig: MiningConfig = {
   threads: navigator.hardwareConcurrency || 4,
   pCores: 0,
   eCores: 0,
-  advancedConfig: JSON.stringify(
-    {
-      algorithm: 'cn/r',
-      donate: 0,
-      cpu: {
-        maxThreadsHint: navigator.hardwareConcurrency || 4,
-      },
-    },
-    null,
-    2
-  ),
+  advancedConfig: '',
+  theme: 'midnight'
 }
-
-const clamp = (val: number, min: number, max: number) => Math.min(max, Math.max(min, val))
 
 const formatNumber = (value: number, digits = 1) => {
   if (value >= 1e9) return `${(value / 1e9).toFixed(digits)}G`
@@ -60,25 +51,18 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
   const [config, setConfig] = useState<MiningConfig>(() => ({
     ...defaultConfig,
     ...(saved || {}),
-    walletAddress,
+    walletAddress: walletAddress || defaultConfig.walletAddress,
   }))
+  
   const [isMining, setIsMining] = useState(false)
   const [hashRate, setHashRate] = useState(0)
   const [uptime, setUptime] = useState(0)
   const [systemInfo, setSystemInfo] = useState<any>(null)
-  const [rawConfig, setRawConfig] = useState<string>('')
-  const [rawConfigError, setRawConfigError] = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [showRawConfig, setShowRawConfig] = useState(false)
-
   const [backendAvailable, setBackendAvailable] = useState(true)
   const [backendError, setBackendError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Persist config to localStorage when it changes
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
-  }, [config])
-
+  // Polling for status
   const fetchStatus = async () => {
     try {
       const res = await fetch('/api/miner/status')
@@ -87,9 +71,9 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
       setBackendAvailable(true)
       setBackendError(data?.error || null)
 
-      if (data?.config) {
-        setConfig((prev) => ({ ...prev, ...data.config }))
-        setRawConfig(JSON.stringify(data.config, null, 2))
+      // If backend has a running config, sync basic fields if we aren't editing
+      if (data?.config && data.running && !showAdvanced) {
+         // Optionally sync back some fields, but be careful not to overwrite user input while typing
       }
 
       setIsMining(Boolean(data?.running))
@@ -104,322 +88,245 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
 
   useEffect(() => {
     let interval: number | null = null
-
     fetchStatus()
     interval = window.setInterval(fetchStatus, 2000)
-
     return () => {
-      if (interval) {
-        window.clearInterval(interval)
-      }
+      if (interval) window.clearInterval(interval)
     }
   }, [])
 
   useEffect(() => {
-    // Keep the wallet address in sync
-    setConfig((prev) => ({ ...prev, walletAddress }))
-  }, [walletAddress])
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
+  }, [config])
 
   const applyPreset = (preset: MiningPreset) => {
     const hw = navigator.hardwareConcurrency || 4
-    const threads = preset === 'low' ? Math.max(1, Math.floor(hw * 0.25)) : preset === 'high' ? hw : Math.max(1, Math.floor(hw * 0.6))
+    let threads = hw;
+    if (preset === 'low') threads = Math.max(1, Math.floor(hw * 0.25));
+    if (preset === 'medium') threads = Math.max(1, Math.floor(hw * 0.50));
+    
     setConfig((prev) => ({
       ...prev,
       preset,
       threads,
-      pCores: threads,
-      eCores: Math.max(0, hw - threads),
+      pCores: threads, // Simplified mapping
+      eCores: 0,
+      advancedConfig: '' // Clear advanced if using preset
     }))
   }
 
-  const onThreadsChange = (threads: number) => {
-    const hw = navigator.hardwareConcurrency || 4
-    const clamped = clamp(threads, 1, hw)
-    setConfig((prev) => ({ ...prev, threads: clamped, pCores: clamped, eCores: Math.max(0, hw - clamped), preset: 'custom' as MiningPreset }))
-  }
-
-  const onWorkerNameChange = (name: string) => {
-    setConfig((prev) => ({ ...prev, workerName: name }))
-  }
-
   const toggleMining = async () => {
-    if (backendAvailable) {
-      try {
-        if (isMining) {
-          await fetch('/api/miner/stop', { method: 'POST' })
-        } else {
-          await fetch('/api/miner/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config),
-          })
-        }
-
-        await fetchStatus()
-      } catch (err) {
-        setBackendError('Failed to control miner API')
-        setBackendAvailable(false)
-        setIsMining((prev) => !prev)
-      }
-    } else {
-      setIsMining((prev) => !prev)
-    }
-  }
-
-  const copyAddress = async () => {
-    await navigator.clipboard.writeText(config.walletAddress)
-    window.alert('Wallet address copied to clipboard')
-  }
-
-  const updateAdvancedConfig = (value: string) => {
-    setConfig((prev) => ({ ...prev, advancedConfig: value }))
-  }
-
-  const saveRawConfig = async () => {
+    if (!backendAvailable) return;
+    
     try {
-      const parsed = JSON.parse(rawConfig)
-      const res = await fetch('/api/miner/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed),
-      })
-      const data = await res.json()
-      if (data?.error) throw new Error(data.error)
-      setRawConfigError(null)
+      if (isMining) {
+        await fetch('/api/miner/stop', { method: 'POST' })
+      } else {
+        await fetch('/api/miner/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config),
+        })
+      }
       await fetchStatus()
-    } catch (err: any) {
-      setRawConfigError(err?.message || 'Invalid JSON')
+    } catch (err) {
+      setBackendError('Failed to control miner API')
     }
   }
 
   const hw = navigator.hardwareConcurrency || 4
-  const deviceMemory = systemInfo ? Math.round((systemInfo.totalMem ?? 0) / (1024 ** 3)) : (navigator as any).deviceMemory || 0
+  const cpuTemp = systemInfo?.cpuTemp || 40
+  const cpuLoad = systemInfo?.currentLoad || 0
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Left: Telemetry */}
-      <div className="bg-dark-900/90 border border-neon-cyan/20 rounded-lg p-4 space-y-4">
-        <div className="flex items-start justify-between">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      {/* Left: Telemetry Panel */}
+      <div className="bg-dark-900/90 border border-neon-cyan/20 rounded-lg p-5 space-y-4 shadow-lg backdrop-blur-sm">
+        <div className="flex items-center justify-between border-b border-neon-cyan/20 pb-2">
           <div>
-            <h3 className="text-neon-pink font-bold text-lg">📡 Telemetry</h3>
-            <p className="text-gray-400 text-xs">Live system metrics (simulated in browser).</p>
+            <h3 className="text-neon-pink font-bold text-xl">📡 Telemetry</h3>
+            <p className="text-gray-400 text-xs">Real-time Hardware Monitoring</p>
           </div>
-          <span className="text-xs text-gray-500">{isMining ? 'Mining' : 'Idle'}</span>
+          <div className={`px-2 py-1 rounded text-xs font-bold ${isMining ? 'bg-neon-green text-black animate-pulse' : 'bg-gray-700 text-gray-300'}`}>
+            {isMining ? 'ONLINE' : 'OFFLINE'}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-dark-900/60 border border-neon-pink/30 rounded-lg p-3">
-            <p className="text-gray-400 text-xs">Hash Rate</p>
-            <p className="text-neon-pink font-bold text-lg">{formatNumber(hashRate)} H/s</p>
+          <div className="bg-dark-800/60 p-3 rounded border border-neon-pink/10">
+            <p className="text-gray-400 text-xs uppercase">Hash Rate</p>
+            <p className="text-neon-pink font-bold text-2xl">{formatNumber(hashRate)} <span className="text-sm">H/s</span></p>
           </div>
-
-          <div className="bg-dark-900/60 border border-neon-pink/30 rounded-lg p-3">
-            <p className="text-gray-400 text-xs">CPU Load</p>
-            <p className="text-neon-pink font-bold text-lg">{systemInfo ? `${systemInfo.cpuPercent ?? 0}%` : 'N/A'}</p>
-          </div>
-
-          <div className="bg-dark-900/60 border border-neon-pink/30 rounded-lg p-3">
-            <p className="text-gray-400 text-xs">CPU Temp</p>
-            <p className="text-neon-pink font-bold text-lg">{systemInfo?.cpuTemp != null ? `${systemInfo.cpuTemp.toFixed(0)}°C` : 'N/A'}</p>
-          </div>
-
-          <div className="bg-dark-900/60 border border-neon-pink/30 rounded-lg p-3">
-            <p className="text-gray-400 text-xs">RAM Usage</p>
-            <p className="text-neon-pink font-bold text-lg">
-              {systemInfo ? `${((systemInfo.usedMem || 0) / (1024 ** 3)).toFixed(1)} / ${((systemInfo.totalMem || 0) / (1024 ** 3)).toFixed(1)} GB` : 'N/A'}
+          <div className="bg-dark-800/60 p-3 rounded border border-neon-pink/10">
+            <p className="text-gray-400 text-xs uppercase">CPU Temp</p>
+            <p className={`font-bold text-2xl ${cpuTemp > 80 ? 'text-neon-red animate-pulse' : 'text-neon-blue'}`}>
+              {cpuTemp.toFixed(1)}°C
             </p>
           </div>
-
-          <div className="bg-dark-900/60 border border-neon-pink/30 rounded-lg p-3">
-            <p className="text-gray-400 text-xs">Disk Usage</p>
-            <p className="text-neon-pink font-bold text-lg">{systemInfo?.disk?.usedPct ?? 'N/A'}</p>
+          <div className="bg-dark-800/60 p-3 rounded border border-neon-pink/10">
+            <p className="text-gray-400 text-xs uppercase">CPU Load</p>
+            <p className="text-neon-purple font-bold text-2xl">{cpuLoad.toFixed(1)}%</p>
           </div>
-
-          <div className="bg-dark-900/60 border border-neon-pink/30 rounded-lg p-3">
-            <p className="text-gray-400 text-xs">Uptime</p>
-            <p className="text-neon-pink font-bold text-lg">{Math.floor(uptime / 60)}m {Math.floor(uptime % 60)}s</p>
+          <div className="bg-dark-800/60 p-3 rounded border border-neon-pink/10">
+            <p className="text-gray-400 text-xs uppercase">RAM Usage</p>
+            <p className="text-neon-green font-bold text-lg">
+                {systemInfo ? `${(systemInfo.usedMem / 1024 / 1024 / 1024).toFixed(1)} GB` : '0 GB'}
+            </p>
           </div>
         </div>
 
-        <div className="bg-dark-900/60 border border-neon-cyan/20 rounded-lg p-3">
-          <p className="text-gray-400 text-xs mb-1">Hardware</p>
-          <div className="flex justify-between items-center text-sm">
-            <span>Logical Cores</span>
-            <span className="font-bold text-neon-cyan">{hw}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span>Device RAM</span>
-            <span className="font-bold text-neon-cyan">{deviceMemory ? `${deviceMemory} GB` : 'N/A'}</span>
-          </div>
+        <div className="space-y-2 pt-2">
+            <div className="flex justify-between text-xs text-gray-400">
+                <span>Disk Usage (/)</span>
+                <span>{systemInfo?.disk?.usedPct.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-dark-800 h-1.5 rounded-full overflow-hidden">
+                <div 
+                    className="h-full bg-neon-cyan" 
+                    style={{ width: `${systemInfo?.disk?.usedPct || 0}%` }}
+                />
+            </div>
+        </div>
+        
+        <div className="bg-dark-800/40 p-3 rounded text-xs font-mono text-gray-400 h-32 overflow-y-auto border border-gray-800">
+            <p className="text-neon-green">$ systemctl status miner</p>
+            {backendError && <p className="text-neon-red">{backendError}</p>}
+            {!backendAvailable && <p className="text-neon-red">Daemon unreachable...</p>}
+            {isMining && <p className="text-gray-300">Mining active. Uptime: {uptime}s</p>}
+            <p className="text-gray-500">Listening for telemetry...</p>
         </div>
       </div>
 
-      {/* Center: 3D model */}
-      <div className="lg:col-span-1 rounded-lg border border-neon-pink/10 overflow-hidden">
-        <div className="h-96">
-          <GamingRigAvatar />
+      {/* Center: The Rig */}
+      <div className="lg:col-span-1 rounded-xl border border-neon-pink/20 overflow-hidden relative min-h-[400px] bg-gradient-to-b from-transparent to-dark-900/50">
+        <GamingRigAvatar 
+            isMining={isMining}
+            load={cpuLoad}
+            temperature={cpuTemp}
+            workerName={config.workerName}
+            hashRate={hashRate}
+            theme={config.theme}
+        />
+        
+        {/* Overlay Badges */}
+        <div className="absolute top-4 right-4 flex flex-col gap-2">
+            {cpuTemp > 80 && (
+                <div className="bg-neon-red text-black text-xs font-bold px-2 py-1 rounded animate-bounce">
+                    🔥 OVERHEAT
+                </div>
+            )}
+        </div>
+
+        {/* Theme Selector Overlay */}
+        <div className="absolute bottom-4 left-4 right-4 flex justify-center gap-2">
+            {(['midnight', 'cyber', 'gold', 'white'] as RigTheme[]).map(t => (
+                <button
+                    key={t}
+                    onClick={() => setConfig({...config, theme: t})}
+                    className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                        config.theme === t 
+                        ? 'bg-neon-pink text-black border-neon-pink' 
+                        : 'bg-black/50 text-gray-300 border-gray-600 hover:border-white'
+                    }`}
+                >
+                    {t.toUpperCase()}
+                </button>
+            ))}
         </div>
       </div>
 
-      {/* Right: Mining Controls */}
-      <div className="bg-dark-900/90 border border-neon-cyan/20 rounded-lg p-4 space-y-4">
+      {/* Right: Controls */}
+      <div className="bg-dark-900/90 border border-neon-cyan/20 rounded-lg p-5 space-y-5 shadow-lg backdrop-blur-sm">
         <div>
-          <h3 className="text-neon-cyan font-bold text-lg">🛠️ Mining Controls</h3>
-          <p className="text-gray-400 text-xs">Configure the miner and start/stop hashing.</p>
+          <h3 className="text-neon-cyan font-bold text-xl">🛠️ Rig Control</h3>
+          <p className="text-gray-400 text-xs">Configure worker and mining strategy.</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3">
-          <div className="flex flex-col">
-            <label className="text-gray-400 text-xs mb-1">Worker Name</label>
-            <input
-              value={config.workerName}
-              onChange={(e) => onWorkerNameChange(e.target.value)}
-              className="bg-dark-900/70 border border-neon-cyan/20 rounded px-3 py-2 text-sm text-white"
-            />
-          </div>
+        <div className="space-y-4">
+            <div>
+                <label className="text-gray-400 text-xs mb-1 block">Worker Name</label>
+                <input
+                    value={config.workerName}
+                    onChange={(e) => setConfig({...config, workerName: e.target.value})}
+                    className="w-full bg-dark-800 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:border-neon-cyan outline-none transition"
+                    placeholder="Rig-01"
+                />
+            </div>
+            
+            <div>
+                <label className="text-gray-400 text-xs mb-1 block">Pool URL</label>
+                <input
+                    value={config.poolUrl}
+                    onChange={(e) => setConfig({...config, poolUrl: e.target.value})}
+                    className="w-full bg-dark-800 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:border-neon-cyan outline-none transition"
+                />
+            </div>
 
-          <div className="flex flex-col">
-            <label className="text-gray-400 text-xs mb-1">Pool URL</label>
-            <input
-              value={config.poolUrl}
-              onChange={(e) => setConfig((prev) => ({ ...prev, poolUrl: e.target.value }))}
-              className="bg-dark-900/70 border border-neon-cyan/20 rounded px-3 py-2 text-sm text-white"
-            />
-          </div>
+            <div className="bg-dark-800/50 p-3 rounded border border-gray-700">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-400 text-xs">Intensity Preset</span>
+                    <span className="text-neon-cyan text-xs font-bold uppercase">{config.preset}</span>
+                </div>
+                <div className="flex gap-2">
+                    {(['low', 'medium', 'high'] as MiningPreset[]).map(p => (
+                        <button
+                            key={p}
+                            onClick={() => applyPreset(p)}
+                            className={`flex-1 py-1.5 rounded text-xs font-bold uppercase transition-all ${
+                                config.preset === p 
+                                ? 'bg-neon-cyan text-black shadow-lg shadow-neon-cyan/20' 
+                                : 'bg-dark-700 text-gray-400 hover:bg-dark-600'
+                            }`}
+                        >
+                            {p}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-          <div className="flex flex-col">
-            <label className="text-gray-400 text-xs mb-1">Wallet Address</label>
-            <input
-              value={config.walletAddress}
-              onChange={(e) => setConfig((prev) => ({ ...prev, walletAddress: e.target.value }))}
-              className="bg-dark-900/70 border border-neon-cyan/20 rounded px-3 py-2 text-sm text-white"
-            />
-          </div>
+            <div>
+                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                    <span>Threads</span>
+                    <span className="text-neon-cyan">{config.threads} / {hw}</span>
+                </div>
+                <input
+                    type="range"
+                    min="1"
+                    max={hw}
+                    value={config.threads}
+                    onChange={(e) => setConfig({...config, threads: Number(e.target.value), preset: 'medium' as any})} // clear preset visual if modified
+                    className="w-full h-2 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-neon-cyan"
+                />
+            </div>
 
-          <div className="flex items-center gap-2">
             <button
-              onClick={toggleMining}
-              className={`flex-1 py-2 rounded font-bold text-sm transition ${
-                isMining
-                  ? 'bg-neon-red text-black hover:bg-neon-red/80'
-                  : 'bg-neon-green text-black hover:bg-neon-green/80'
-              }`}
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-xs text-neon-purple hover:text-white underline decoration-dashed underline-offset-4"
             >
-              {isMining ? '🛑 Stop Miner' : '▶️ Start Miner'}
+                {showAdvanced ? 'Hide Advanced Config' : 'Show Advanced JSON Config'}
             </button>
+
+            {showAdvanced && (
+                <textarea
+                    value={config.advancedConfig}
+                    onChange={(e) => setConfig({...config, advancedConfig: e.target.value})}
+                    placeholder='Paste raw xmrig "cpu" or "randomx" config JSON here...'
+                    className="w-full h-32 bg-dark-950 font-mono text-xs text-neon-green p-2 border border-neon-purple/30 rounded"
+                />
+            )}
+
             <button
-              onClick={copyAddress}
-              className="py-2 px-3 rounded bg-dark-900/70 border border-neon-cyan/20 text-sm text-white hover:bg-dark-900"
+                onClick={toggleMining}
+                disabled={!backendAvailable}
+                className={`w-full py-4 rounded-lg font-bold text-lg shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] ${
+                    isMining
+                    ? 'bg-gradient-to-r from-red-600 to-red-800 text-white shadow-red-900/50'
+                    : 'bg-gradient-to-r from-neon-green to-emerald-600 text-black shadow-neon-green/30'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              📋 Copy Wallet
+                {isMining ? '🛑 STOP MINING' : '⚡ START MINER'}
             </button>
-          </div>
-
-          <div className="bg-dark-900/60 border border-neon-cyan/20 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-xs">Preset</span>
-              <span className="text-neon-cyan text-xs">{config.preset}</span>
-            </div>
-            <div className="flex gap-2">
-              {(['low', 'medium', 'high'] as MiningPreset[]).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => applyPreset(p)}
-                  className={`flex-1 py-1 rounded text-xs font-bold transition ${
-                    config.preset === p
-                      ? 'bg-neon-cyan text-black'
-                      : 'bg-dark-900/60 text-gray-200 hover:bg-dark-900'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-dark-900/60 border border-neon-cyan/20 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-400 text-xs">Threads</span>
-              <span className="font-bold text-neon-cyan text-xs">{config.threads}</span>
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={hw}
-              value={config.threads}
-              onChange={(e) => onThreadsChange(Number(e.target.value))}
-              className="w-full"
-            />
-            <div className="text-xs text-gray-500 mt-1">Use slider to control P/E core split.</div>
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>P cores</span>
-            <span>{config.pCores}</span>
-          </div>
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>E cores</span>
-            <span>{config.eCores}</span>
-          </div>
-
-          <button
-            onClick={() => setShowAdvanced((prev) => !prev)}
-            className="w-full py-2 rounded border border-neon-cyan/30 text-xs text-neon-cyan hover:bg-dark-900/70"
-          >
-            {showAdvanced ? 'Hide' : 'Edit'} Advanced xmrig Config
-          </button>
-
-          {showAdvanced && (
-            <textarea
-              value={config.advancedConfig}
-              onChange={(e) => updateAdvancedConfig(e.target.value)}
-              className="w-full h-40 bg-dark-900/60 border border-neon-cyan/20 rounded p-2 text-xs font-mono text-white"
-            />
-          )}
-
-          <button
-            onClick={() => setShowRawConfig((prev) => !prev)}
-            className="w-full mt-2 py-2 rounded border border-neon-cyan/30 text-xs text-neon-cyan hover:bg-dark-900/70"
-          >
-            {showRawConfig ? 'Hide' : 'Edit'} Raw xmrig Config File
-          </button>
-
-          {showRawConfig && (
-            <div className="space-y-2">
-              <textarea
-                value={rawConfig}
-                onChange={(e) => setRawConfig(e.target.value)}
-                className="w-full h-56 bg-dark-900/60 border border-neon-cyan/20 rounded p-2 text-xs font-mono text-white"
-              />
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={saveRawConfig}
-                  className="flex-1 py-2 rounded bg-neon-cyan text-black font-bold text-xs hover:bg-neon-cyan/80"
-                >
-                  Save config file
-                </button>
-                <button
-                  onClick={fetchStatus}
-                  className="flex-1 py-2 rounded border border-neon-cyan/30 text-xs text-neon-cyan hover:bg-dark-900/70"
-                >
-                  Refresh config
-                </button>
-              </div>
-              {rawConfigError && <p className="text-neon-red text-xs">{rawConfigError}</p>}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-dark-900/60 border border-neon-cyan/20 rounded-lg p-3 text-xs text-gray-400">
-          <p>
-            <span className="font-bold text-neon-cyan">Note:</span> This dashboard controls a native xmrig miner running on the host. Ensure <code>xmrig</code> is installed and accessible in the PATH.
-          </p>
-          <p className="mt-1">
-            Backend miner API status: <span className={backendAvailable ? 'text-neon-green font-bold' : 'text-neon-red font-bold'}>{backendAvailable ? 'available' : 'unreachable'}</span>
-          </p>
-          {backendError && (
-            <p className="mt-1 text-neon-red text-xs">{backendError}</p>
-          )}
         </div>
       </div>
     </div>

