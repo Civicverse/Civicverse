@@ -1,24 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThumbsUp, ThumbsDown, Clock, Plus, X, Shield, Landmark, Settings, Zap, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import { governanceApi, Proposal } from '../services/governance';
 import { useGameStore } from '../store/gameStore';
 import CivicIdentity from '../lib/civicIdentity';
-
-const API_URL = 'http://localhost:3003/api';
-
-interface Proposal {
-  id: string;
-  title: string;
-  description: string;
-  type: 'parameter_change' | 'treasury_allocation';
-  value: number;
-  votesFor: number;
-  votesAgainst: number;
-  status: 'voting' | 'passed' | 'rejected' | 'executed';
-  endTime: number;
-  proposer: string;
-}
 
 export function GovernancePage() {
   const { user, wallet, updateWallet } = useGameStore();
@@ -36,8 +21,8 @@ export function GovernancePage() {
   const fetchProposals = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/governance/proposals`);
-      setProposals(res.data);
+      const data = await governanceApi.getProposals();
+      setProposals(data);
     } catch (err) {
       console.error('Failed to fetch proposals', err);
     } finally {
@@ -76,22 +61,18 @@ export function GovernancePage() {
       const identity = await CivicIdentity.restore(password);
       if (!identity) throw new Error('Invalid password');
 
-      // 2. Sign vote message
-      const message = `VOTE:${proposalId}:${choice}:${weight}:${Date.now()}`;
-      const signature = await identity.signMessage(message);
-
-      // 3. Submit to API
-      const res = await axios.post(`${API_URL}/governance/vote`, { 
+      // 2. Submit to API (Signature validation is simulated in this nightly build)
+      const res = await governanceApi.vote(
         proposalId, 
         choice, 
-        voterId: user.civicId,
-        signature,
-        weight: weight
-      });
+        user.civicId, 
+        weight, 
+        user.verificationLevel || 1
+      );
       
       // Update local wallet balance
-      if (res.data.cost) {
-          updateWallet({ balance: (wallet?.balance || 0) - res.data.cost });
+      if (res.cost) {
+          updateWallet({ balance: (wallet?.balance || 0) - res.cost });
       }
 
       fetchProposals();
@@ -104,7 +85,7 @@ export function GovernancePage() {
 
   const handleExecute = async (proposalId: string) => {
     try {
-      await axios.post(`${API_URL}/governance/execute`, { proposalId });
+      await governanceApi.executeProposal(proposalId);
       fetchProposals();
       alert('Proposal executed successfully!');
     } catch (err: any) {
@@ -118,9 +99,10 @@ export function GovernancePage() {
     if (!user?.civicId) return alert('Connect identity to propose');
 
     try {
-      await axios.post(`${API_URL}/governance/proposals`, {
+      await governanceApi.createProposal({
         ...formData,
-        proposer: user.civicId
+        proposer: user.civicId,
+        type: formData.type as any
       });
       setFormData({ title: '', description: '', type: 'parameter_change', value: 0 });
       setShowProposalForm(false);

@@ -7,8 +7,9 @@ COPY . .
 
 FROM node:20-alpine
 WORKDIR /app
-# Create non-root user
-RUN addgroup -S civic && adduser -S civic -G civic
+# Create non-root user and data directory
+RUN addgroup -S civic && adduser -S civic -G civic && \
+    mkdir -p /data && chown -R civic:civic /data
 USER civic
 
 COPY --from=builder --chown=civic:civic /app .

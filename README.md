@@ -49,7 +49,7 @@ The nightly build uses `concurrently` to launch the full stack (Frontend, API, a
 npm start
 ```
 - **Community Hub**: [http://localhost:3000](http://localhost:3000)
-- **API Terminal**: [http://localhost:3003](http://localhost:3003)
+- **API Terminal**: [http://localhost:3003/api/status](http://localhost:3003/api/status)
 - **Multiplayer Relay**: `ws://localhost:8080`
 
 ### 4. One-Click Docker Launch (Modular Node)

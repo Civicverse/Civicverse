@@ -4,7 +4,7 @@ import { useGameStore } from '../store/gameStore';
 import { Lock, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

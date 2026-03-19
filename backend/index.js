@@ -112,6 +112,40 @@ app.post('/api/jobs/verify', async (req, res) => {
   }
 });
 
+// --- Miner / Mining Control ---
+const minerService = require('./services/miner-service');
+
+app.get('/api/miner/status', (req, res) => {
+  res.json(minerService.getStatus());
+});
+
+app.post('/api/miner/start', (req, res) => {
+  try {
+    const status = minerService.start(req.body);
+    res.json(status);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/miner/stop', (req, res) => {
+  try {
+    const status = minerService.stop();
+    res.json(status);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/miner/config', (req, res) => {
+  try {
+    minerService.saveConfig(req.body);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // --- Governance & Treasury ---
 const governanceService = require('./services/governance-service');
 

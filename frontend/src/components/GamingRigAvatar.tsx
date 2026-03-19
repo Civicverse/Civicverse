@@ -199,7 +199,7 @@ export const GamingRigAvatar: React.FC<{ className?: string }> = ({ className = 
 
     // Scene setup
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x1a1a2e)
+    // scene.background = new THREE.Color(0x1a1a2e) // Removed for transparency
     sceneRef.current = scene
 
     // Camera
@@ -208,10 +208,11 @@ export const GamingRigAvatar: React.FC<{ className?: string }> = ({ className = 
     cameraRef.current = camera
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }) // alpha: true for transparency
     renderer.setSize(width, height)
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.shadowMap.enabled = true
+    renderer.setClearColor(0x000000, 0) // Ensure clear color is transparent
     containerRef.current.appendChild(renderer.domElement)
     rendererRef.current = renderer
 
@@ -486,85 +487,6 @@ export const GamingRigAvatar: React.FC<{ className?: string }> = ({ className = 
   return (
     <div className={`relative w-full h-full ${className}`}>
       <div ref={containerRef} className="w-full h-full" />
-
-      {/* Control Panel */}
-      <div className="fixed bottom-8 left-8 z-50 bg-dark-900/90 border-2 border-neon-cyan/50 rounded-lg p-4 backdrop-blur-sm w-48">
-        <div className="text-neon-cyan font-bold text-sm mb-3">⛏️ Monero Mining Rig</div>
-
-        {/* Power */}
-        <div className="mb-3">
-          <button
-            onClick={togglePower}
-            className={`w-full py-1.5 px-3 rounded text-xs font-bold transition-all ${
-              state.powered
-                ? 'bg-neon-green text-black hover:bg-neon-green/80'
-                : 'bg-gray-600 text-white hover:bg-gray-700'
-            }`}
-          >
-            {state.powered ? '⚡ ON' : '⚫ OFF'}
-          </button>
-        </div>
-
-        {/* Light Modes */}
-        <div className="mb-3">
-          <div className="text-neon-cyan text-xs font-bold mb-1.5">Lights:</div>
-          <div className="grid grid-cols-3 gap-1">
-            {(['rainbow', 'purple', 'cyan', 'pink', 'green', 'fire'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setLightMode(mode)}
-                className={`py-0.5 px-1 rounded text-[10px] font-bold transition-all ${
-                  state.lightMode === mode ? 'ring-2 ring-neon-cyan scale-105' : ''
-                } ${
-                  mode === 'rainbow'
-                    ? 'bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500'
-                    : mode === 'purple'
-                      ? 'bg-purple-600'
-                      : mode === 'cyan'
-                        ? 'bg-cyan-500'
-                        : mode === 'pink'
-                          ? 'bg-pink-500'
-                          : mode === 'green'
-                            ? 'bg-green-500'
-                            : 'bg-orange-600'
-                }`}
-              >
-                {mode === 'rainbow' ? '🌈' : mode === 'purple' ? '🟣' : mode === 'cyan' ? '🔵' : mode === 'pink' ? '💗' : mode === 'green' ? '💚' : '🔥'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Skins */}
-        <div className="mb-3">
-          <div className="text-neon-cyan text-xs font-bold mb-1.5">Case:</div>
-          <div className="grid grid-cols-2 gap-1">
-            {(['midnight', 'cosmic', 'neon', 'sakura'] as const).map((skin) => (
-              <button
-                key={skin}
-                onClick={() => setSkin(skin)}
-                className={`py-1 px-2 rounded text-[10px] font-bold transition-all ${
-                  state.skin === skin
-                    ? 'ring-2 ring-neon-cyan bg-neon-cyan/20'
-                    : 'bg-dark-800/60 hover:bg-dark-800'
-                } text-neon-cyan`}
-              >
-                {skin === 'midnight'
-                  ? '🌙'
-                  : skin === 'cosmic'
-                    ? '🌌'
-                    : skin === 'neon'
-                      ? '💚'
-                      : '🌸'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="text-gray-500 text-xs border-t border-neon-cyan/20 pt-2 mt-2">
-          <p className="text-[10px]">Drag to rotate</p>
-        </div>
-      </div>
     </div>
   )
 }

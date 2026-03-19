@@ -204,9 +204,9 @@ export const useGameStore = create<GameState>((set) => ({
       set((state) => ({
         multiChainAddresses: state.multiChainAddresses ? {
           ...state.multiChainAddresses,
-          ETH_BALANCE: balances.ETH,
-          KASPA_BALANCE: balances.KASPA,
-          LAST_SYNC: Date.now()
+          ETH_BALANCE: String(balances.ETH),
+          KASPA_BALANCE: String(balances.KASPA),
+          LAST_SYNC: String(Date.now())
         } : null
       }));
     } catch (e) {

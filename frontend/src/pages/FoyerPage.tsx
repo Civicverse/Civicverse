@@ -75,8 +75,11 @@ export default function FoyerPage() {
   const [verifyStep, setVerifyModalStep] = useState<'intro' | 'liveness' | 'attestation' | 'complete'>('intro');
 
   useEffect(() => {
-    const storedDid = CivicIdentity.getStoredDID();
-    setDid(storedDid);
+    const fetchDid = async () => {
+      const storedDid = await CivicIdentity.getStoredDID();
+      setDid(storedDid);
+    };
+    fetchDid();
   }, []);
 
   useEffect(() => {
