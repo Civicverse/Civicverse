@@ -26,20 +26,27 @@
 - **SupportXMR Integration:** Embedded a live SupportXMR community pool dashboard pre-synced with the sovereign vault address for real-time payout tracking.
 - **Treasury Tax:** Implemented a simulated 1% automated tax on all community mining rewards to fund public works.
 
-### 4. Codebase & Routing Cleanup
-- **Route Consolidation:** Updated all internal links to use `/vault` and `/mining-pool`.
-- **Legacy Removal:** Deleted unused components (`MnemonicPage.tsx`, `LoginPage.tsx`, `WalletGenerationPage.tsx`).
-- **Store Optimization:** Updated `gameStore.ts` to support multi-step authentication and temporary mnemonic state management.
+## 📋 v1.3+ Operational Blueprint Roadmap
 
-## 📋 Next Steps (Priority Queue)
+### 🟢 Priority 1: Short-Term (Identity & Resilience)
+- [ ] **PoP Implementation**: Add "Verify Your CivicID (Get Blue Check)" button on Civic Vault. Simple UI for 3-peer attestations.
+- [ ] **Real Metrics**: Hook reputation/skills to future CivicWatch contributions (currently placeholders).
+- [ ] **PWA Transition**: Turn the app into a PWA (manifest + service worker) for offline resilience.
+- [ ] **Action Queuing**: Add local queuing for votes and job submissions to sync when online.
+- [ ] **Vault Tools**: Implement QR-code based CivicID export and encrypted JSON backup.
 
-### 1. Identity & Reputation
-- [ ] **Proof-of-Personhood (PoP):** Implement the "Birth-Origin Attestation" flow with peer-to-peer verification logic.
-- [ ] **CivicID Export:** Build the encrypted JSON/QR export utility for cross-device portability.
+### 🟡 Priority 2: Medium-Term (AI & Decentralization)
+- [ ] **Ollama AI Enforcement**: Local AI service for strict rule execution in governance and mission validation.
+- [ ] **CivicWatch Evolution**: Live map (Leaflet/Three.js) with geo-verification and payout simulations.
+- [ ] **IPFS Integration**: Anchoring mission proofs and identity metadata to decentralized storage nodes.
+- [ ] **Social Recovery**: UI for 3–5 guardians with threshold encryption hints.
+- [ ] **Monero Flows**: Tie balance display to existing miner integration; add P2P send/receive.
 
-### 2. Decentralized Storage & Economy
-- [ ] **IPFS Identity Backup:** Move encrypted vault backups from local storage to community-governed IPFS nodes.
-- [ ] **UBI Engine Execution:** Finalize the treasury-to-citizen disbursement loop based on governance votes.
+### 🔴 Priority 3: Long-Term (Hardware & Scaling)
+- [ ] **Hardware Node**: Full Raspberry Pi node support with Mesh/LoRaWAN sync for field operation.
+- [ ] **L2 + zkSNARKs**: Ethereum L2 integration for anonymous voting and community treasury transparency.
+- [ ] **UE5 Sharding**: Deep integration with UE5 Shards via Foyer bridging.
+- [ ] **UBI Engine**: Finalize the treasury-to-citizen disbursement loop based on governed rules.
 
 ---
 *Onboarding unified. Civic Vault active. Community Mining Pool functional. Protocol ready for sovereign expansion.*

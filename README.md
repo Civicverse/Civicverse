@@ -2,7 +2,38 @@
 
 CivicVerse is a protocol-level infrastructure for decentralized humanity. It enables sovereign identity, peer-to-peer coordination, and a real-world impact marketplace without intermediaries or centralized extraction.
 
-This is the **v1.2-NIGHTLY** build featuring the in progress **CivicWatch Load Board**, **Quadratic Governance**, and the **Community Hub**.
+This is the **v1.3-ULTRA** build featuring the **Unified Sovereign Onboarding**, **MMORPG Civic Vault**, and **Community Mining Integration**.
+
+---
+
+## 🧬 How CivicVerse Works (Locked Blueprint)
+
+CivicVerse operates on the principle of **Digital Sovereignty**. Unlike traditional platforms, your identity and assets are generated and stored exclusively on your device.
+
+1.  **Sovereign CivicID**: Your identity is an Ed25519 keypair derived from a BIP-39 memetic seed phrase. You don't "sign up"; you "generate" your presence on the protocol.
+2.  **Non-Custodial Vault**: All keys are encrypted locally (AES-256-GCM) and never leave your hardware.
+3.  **Proof-of-Personhood (PoP)**: Trust is built through peer-to-peer attestations, not central authority.
+4.  **Impact Economy**: Real-world civic actions (CivicWatch) are verified and rewarded via the Community Treasury, funded by the Community Mining Pool.
+
+---
+
+## 🗺 User Journey
+
+```mermaid
+graph TD
+    A[TOS Screen] -->|Accept| B[Welcome Screen]
+    B -->|Create| C[Setup Username/Pass]
+    C --> D[Seed Phrase Display]
+    D -->|Verify 3 Words| E[Civic Vault]
+    B -->|Restore| F[Import Seed Phrase]
+    F --> E
+    B -->|Unlock| G[Password Unlock]
+    G --> E
+    E --> H[3D Foyer]
+    E --> I[CivicWatch Load Board]
+    E --> J[Governance]
+    E --> K[Mining Pool]
+```
 
 ---
 
@@ -11,105 +42,57 @@ This is the **v1.2-NIGHTLY** build featuring the in progress **CivicWatch Load B
 - **Monorepo Structure**: Managed via NPM Workspaces.
 - **Frontend**: React + TypeScript + Three.js + TailwindCSS (Vite).
 - **Backend**: Node.js Express API + WebSocket Multiplayer Server.
-- **Hub Page**: `FoyerPage.tsx` acts as the unified coordination layer for identity, missions, and governance.
-- **Identity (The Civilian Vault)**: Local-only, Ed25519-based identity encrypted with PBKDF2 + AES-256-GCM, stored in IndexedDB (Secure Storage).
-- **Governance**: Quadratic Voting Protocol (`Cost = Weight²`) with AI Watchdog auditing and Community Treasury management.
+- **Civic Vault**: An MMORPG-style character dashboard serving as the primary hub for identity, stats, and portal access.
+- **Identity**: Local-only, Ed25519-based identity encrypted with PBKDF2 + AES-256-GCM.
+- **Mining Pool**: Integrated SupportXMR dashboard for real-time community contribution tracking.
 
 ---
 
 ## 🚀 Startup Guide
 
 ### 1. Prerequisites
-- **Node.js**: v20.x or higher (LTS recommended).
+- **Node.js**: v20.x or higher.
 - **NPM**: v10.x or higher.
-- **Docker**: Optional, required for production-ready stack.
 
-### 2. Initial Setup (.git procedure)
-To set up the development environment from scratch:
-
+### 2. Initial Setup
 ```bash
-# 1. Clone the repository
 git clone https://github.com/Civicverse/Civicverse-nightly-v0.0.git
 cd Civicverse-nightly-v0.0
-
-# 2. Install dependencies for the entire monorepo
-# This installs root, frontend, and backend dependencies in one go.
 npm install
-
-# 3. Configure environment variables
-# Copy the example environment file and adjust if necessary
-cp .env.example .env
 ```
 
-### 3. Spinning it Up (Development)
-The nightly build uses `concurrently` to launch the full stack (Frontend, API, and Multiplayer Server) in a single command.
-
+### 3. Spinning it Up
 ```bash
-# Start the full development stack
 npm start
 ```
-- **Community Hub**: [http://localhost:3000](http://localhost:3000)
+- **CivicVault/Frontend**: [http://localhost:5173](http://localhost:5173)
 - **API Terminal**: [http://localhost:3003/api/status](http://localhost:3003/api/status)
-- **Multiplayer Relay**: `ws://localhost:8080`
-
-### 4. One-Click Docker Launch (Modular Node)
-For easy deployment, use the provided launch script. This sets up a containerized, modular node system with persistent data storage.
-
-```bash
-# Ensure Docker daemon is running (on Linux: sudo systemctl start docker)
-# Then run the one-click launcher
-./launch.sh
-```
-
-This will:
-- Build and start the backend and frontend in containers
-- Mount the `./data` directory for persistent storage
-- Expose ports 3000 (frontend), 3003 (API), 8080 (multiplayer)
-
-To stop: `docker compose down`
-
-### 5. Production Deployment (VPS)
-The stack is pre-configured for seamless VPS deployment via Docker Compose.
-
-```bash
-# Launch the production-ready stack
-docker-compose -f docker-compose.prod.yml up --build -d
-```
 
 ---
 
-## 🛠 For Contributors: Next Build Instructions
+## 🛠 Roadmap: v1.3+ Operational Blueprint
 
-We are transitioning from protocol design to operational infrastructure. Here are the priorities for the next build cycle.
+### 🟢 Short-Term (1–2 Weeks)
+- **PoP Implementation**: Add "Verify Your CivicID" flow with 3-peer attestation logic.
+- **Vault Enhancements**: Connect reputation/skills to real CivicWatch contribution metrics.
+- **Offline Resilience**: Transition to PWA (Service Workers) and implement local action queuing.
+- **Vault Tools**: Implement QR-code based CivicID export and encrypted JSON backup.
 
-### 🏗 Priority Queue (Next Steps)
+### 🟡 Medium-Term
+- **Ollama AI Enforcement**: Local AI service for governance rule execution and mission validation.
+- **CivicWatch Evolution**: Live Leaflet/Three.js map with geo-verification and payout simulations.
+- **IPFS Integration**: Anchoring mission proofs and identity metadata to decentralized storage.
+- **Social Recovery**: UI for 3–5 guardians with threshold encryption hints.
 
-1.  **Decentralized Storage Integration**
-    *   **IPFS for Proofs**: Transition mission verification images and instructional video metadata from local storage to IPFS.
-    *   **Sovereign Backup**: Implement encrypted identity backups to community-governed nodes as per the whitepaper.
-
-2.  **Marketplace & Economy**
-    *   **P2P Marketplace**: Synchronize the marketplace module with the global ledger to enable direct peer-to-peer commerce.
-    *   **UBI Engine Execution**: Connect the Community Treasury to the UBI engine for automated disbursements based on passed governance votes.
-
-3.  **Field Optimization (PWA)**
-    *   **Mobile Readiness**: Optimize the CivicWatch interface for field use with offline-first PWA capabilities and native GPS locking.
-
-### 🧪 Contribution Workflow
-- **Branching**: Create feature branches from `main` (e.g., `feat/ipfs-integration`).
-- **Standard**: Follow conventional commits and ensure `npm run build` passes before submission.
+### 🔴 Long-Term
+- **Hardware Integration**: Full Raspberry Pi node support with Mesh/LoRaWAN sync.
+- **L2 Governance**: Ethereum L2 + zkSNARKs for anonymous voting and treasury transparency.
+- **UE5 Bridge**: Portals to persistent high-fidelity shards via UE5 Foyer bridging.
+- **UBI Engine**: Fully governed 1% micro-tax routing to protocol citizens.
 
 ---
 
 ## 💎 Support the Vision
+Every bit of hashpower contributed to the **Community Mining Pool** directly funds the **Community Treasury**. 1% of all pool proceeds are routed to fund real-world missions deployed on the CivicWatch board.
 
-A huge **thank you** to the citizens supporting the **Community Wallet**. Every bit of hashpower contributed helps us build the infrastructure for decentralized humanity and secures the Community Treasury. Your support directly funds the missions deployed on the CivicWatch board.
-
----
-
-## 📜 Core Mandates
-1. **No Extraction**: No hidden fees, no data harvesting.
-2. **Non-Custodial**: User always owns the keys.
-3. **Sovereign**: Your identity belongs to you, not the platform.
-
-**Build for humanity.**
+**Build for humanity. Own your future.**
