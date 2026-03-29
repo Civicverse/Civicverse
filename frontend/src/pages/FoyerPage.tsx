@@ -566,12 +566,12 @@ export default function FoyerPage() {
                       Connect directly with other citizens. No central authority. Communications encrypted end-to-end.
                     </p>
                   </AnimatedCard>
-                  <AnimatedCard delay={300} onClick={() => nav('/gaming-rig')} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-pink-500/50 transition-colors cursor-pointer">
-                    <h3 className="text-pink-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
-                      <span>🖥️</span> Gaming Rig Avatar
+                  <AnimatedCard delay={300} onClick={() => nav('/mining-pool')} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-orange-500/50 transition-colors cursor-pointer">
+                    <h3 className="text-orange-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>⛏️</span> Community Mining Pool
                     </h3>
                     <p className="text-gray-400 leading-relaxed font-medium">
-                      Customize your own epic gaming PC with ARGB lighting, waifu LCD displays, and interactive controls. Click to explore.
+                      Contribute compute power to the XMR network to fund the Community Treasury and earn local rewards.
                     </p>
                   </AnimatedCard>
             </div>
@@ -611,11 +611,10 @@ export default function FoyerPage() {
 
         {/* Action Button */}
         <div className="flex justify-center pb-12">
-           <button 
-             onClick={() => nav('/wallet')}
+           <button
+             onClick={() => nav('/vault')}
              className="bg-blue-600 hover:bg-blue-700 text-white font-black py-6 px-16 rounded-[2rem] shadow-2xl shadow-blue-900/40 transition-all hover:scale-105 uppercase italic tracking-tighter text-2xl flex items-center gap-4 active:scale-95"
-           >
-             <Shield className="w-8 h-8" />
+           >             <Shield className="w-8 h-8" />
              Access Identity Vault
            </button>
         </div>

@@ -3,16 +3,14 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import TOSPage from './pages/TOSPage'
 import WelcomePage from './pages/WelcomePage'
 import SignupPage from './pages/SignupPage'
-import MnemonicPage from './pages/MnemonicPage'
-import WalletPage from './pages/WalletPage'
+import CivicVaultPage from './pages/CivicVaultPage'
 import FoyerPage from './pages/FoyerPage'
-import LoginPage from './pages/LoginPage'
 import SignInPage from './pages/SignInPage'
 import { CharacterCreatorPage } from './pages/CharacterCreatorPage'
 import { MissionsPage } from './pages/MissionsPage'
 import CivicWatchPage from './pages/CivicWatchPage'
 import { GovernancePage } from './pages/GovernancePage'
-import GamingRigPage from './pages/GamingRigPage'
+import MiningPoolPage from './pages/MiningPoolPage'
 import { MainLayout } from './layouts/MainLayout'
 import { useGameStore } from './store/gameStore'
 
@@ -23,11 +21,8 @@ export default function App() {
   const isAuthenticated = useGameStore(state => state.isAuthenticated);
 
   useEffect(() => {
-    console.log('[App] Initializing store...');
     initialize();
   }, [initialize]);
-
-  console.log('[App] Render state:', { isInitialized, tosAccepted, isAuthenticated });
 
   if (!isInitialized) {
     return (
@@ -55,8 +50,6 @@ export default function App() {
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/signin" element={<SignInPage />} />
-        <Route path="/login" element={<SignInPage />} />
-        <Route path="/mnemonic" element={<MnemonicPage />} />
         <Route path="*" element={<Navigate to="/welcome" replace />} />
       </Routes>
     );
@@ -66,17 +59,15 @@ export default function App() {
   return (
     <MainLayout>
       <Routes>
-        <Route path="/wallet" element={<WalletPage />} />
+        <Route path="/vault" element={<CivicVaultPage />} />
         <Route path="/wardrobe" element={<CharacterCreatorPage />} />
         <Route path="/missions" element={<MissionsPage />} />
         <Route path="/civicwatch" element={<CivicWatchPage />} />
         <Route path="/governance" element={<GovernancePage />} />
-        <Route path="/gaming-rig" element={<GamingRigPage />} />
+        <Route path="/mining-pool" element={<MiningPoolPage />} />
         <Route path="/foyer" element={<FoyerPage />} />
-        <Route path="/welcome" element={<WelcomePage />} />
-        <Route path="/mnemonic" element={<MnemonicPage />} />
-        <Route path="/" element={<Navigate to="/foyer" replace />} />
-        <Route path="*" element={<Navigate to="/foyer" replace />} />
+        <Route path="/" element={<Navigate to="/vault" replace />} />
+        <Route path="*" element={<Navigate to="/vault" replace />} />
       </Routes>
     </MainLayout>
   );

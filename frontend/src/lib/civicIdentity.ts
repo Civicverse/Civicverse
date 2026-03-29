@@ -54,7 +54,7 @@ export class CivicIdentity {
    * Create new identity (generates keypair client-side)
    * Enforces password protection.
    */
-  static async create(username: string, password?: string): Promise<CivicIdentity> {
+  static async create(username: string, password?: string): Promise<{ identity: CivicIdentity, mnemonic: string }> {
     if (!password) {
       throw new Error("SECURITY ERROR: Password is required to create a sovereign identity.");
     }
@@ -112,7 +112,7 @@ export class CivicIdentity {
     
     await secureStorage.setItem('civicverse:did', did);
 
-    return identity;
+    return { identity, mnemonic };
   }
 
   /**

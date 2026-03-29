@@ -17,7 +17,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   const menuItems = [
     { path: '/foyer', label: '3D Foyer', icon: Home },
     { path: '/civicwatch', label: 'CivicWatch', icon: Users },
-    { path: '/wallet', label: 'Wallet', icon: Wallet },
+    { path: '/vault', label: 'Civic Vault', icon: Wallet },
+    { path: '/mining-pool', label: 'Mining Pool', icon: Landmark },
     { path: '/governance', label: 'Governance', icon: Landmark },
   ];
 

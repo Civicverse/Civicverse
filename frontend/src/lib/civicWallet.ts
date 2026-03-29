@@ -96,16 +96,16 @@ export class CivicWallet {
    * Create new wallet for Civic Identity
    * Generates 12-word mnemonic and derives addresses for all supported chains
    */
-  static async create(identity: CivicIdentity, password?: string): Promise<CivicWallet> {
+  static async create(identity: CivicIdentity, password?: string, existingMnemonic?: string): Promise<CivicWallet> {
     if (!password) {
       throw new Error("SECURITY ERROR: Password is required to create a wallet.");
     }
 
-    // Generate BIP-39 mnemonic (12 words)
-    const mnemonic = bip39.generateMnemonic(wordlist, 128);
+    // Generate BIP-39 mnemonic (12 words) if not provided
+    const mnemonic = existingMnemonic || bip39.generateMnemonic(wordlist, 128);
     
     if (!bip39.validateMnemonic(mnemonic, wordlist)) {
-      throw new Error('Invalid mnemonic generated');
+      throw new Error('Invalid mnemonic provided');
     }
     
     // Derive addresses from mnemonic for all chains

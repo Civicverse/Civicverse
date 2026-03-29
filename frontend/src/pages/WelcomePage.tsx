@@ -21,65 +21,81 @@ export default function WelcomePage() {
           <NeonText size="5xl" gradient={true} className="block mb-4">
             ∞ CIVICVERSE
           </NeonText>
-          <p className="text-l md:text-xl text-neon-cyan tracking-widest mb-2">
-            DECENTRALIZED IDENTITY PROTOCOL
+          <p className="text-l md:text-xl text-neon-cyan tracking-widest mb-2 uppercase">
+            Sovereign Identity Protocol
           </p>
           <p className="text-sm text-gray-400">
-            Non-Custodial • Offline-First • Sovereign
+            Non-Custodial • Human-First • Decentralized
           </p>
         </div>
 
         {/* Main content */}
         <AnimatedCard delay={100} className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 gradient-text">
-            Welcome to the Future of Identity
+          <h2 className="text-2xl font-bold mb-4 gradient-text text-center">
+            Your Gateway to Digital Sovereignty
           </h2>
-          <p className="text-gray-300 mb-4 leading-relaxed">
-            Civicverse is a decentralized identity and wallet system that runs entirely on your device.
+          <p className="text-gray-300 mb-4 leading-relaxed text-center">
+            In the Civicverse, your identity is yours alone. No central authority, no data harvesting, no permission required.
           </p>
-          <p className="text-gray-300 mb-4 leading-relaxed">
-            CivicVerse provides <span className="text-neon-cyan font-bold">sovereign control</span> with optional recovery paths governed by the community.
-          </p>
+          
           <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-neon-cyan/20">
             <div className="text-center">
-              <p className="text-2xl font-bold text-neon-cyan mb-1">🔐</p>
-              <p className="text-sm text-gray-400">AES-256 Encrypted</p>
+              <div className="text-2xl mb-1">🛡️</div>
+              <p className="text-[10px] uppercase tracking-tighter text-gray-400 font-bold">Encrypted</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-neon-pink mb-1">🌐</p>
-              <p className="text-sm text-gray-400">Offline First</p>
+              <div className="text-2xl mb-1">🧬</div>
+              <p className="text-[10px] uppercase tracking-tighter text-gray-400 font-bold">Portable</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-neon-purple mb-1">⚡</p>
-              <p className="text-sm text-gray-400">Local Only</p>
+              <div className="text-2xl mb-1">⚡</div>
+              <p className="text-[10px] uppercase tracking-tighter text-gray-400 font-bold">Sovereign</p>
             </div>
           </div>
         </AnimatedCard>
 
         {/* Choice buttons */}
-        <div className="space-y-3 animate-slide-up" style={{ animationDelay: '200ms' }}>
+        <div className="space-y-4 animate-slide-up" style={{ animationDelay: '200ms' }}>
           <AnimatedButton
             variant="primary"
             size="lg"
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full py-6 flex flex-col items-center justify-center gap-1 group"
             onClick={() => nav('/signup')}
           >
-            <span className="text-xl">✨</span> Create New Identity
+            <div className="flex items-center gap-2">
+               <span className="text-2xl group-hover:scale-110 transition-transform">✨</span> 
+               <span className="text-xl font-bold uppercase tracking-wider">Create New CivicID</span>
+            </div>
+            <span className="text-[10px] text-white/60 font-mono tracking-widest">GENERATE_LOCAL_VAULT</span>
           </AnimatedButton>
-          <AnimatedButton
-            variant="secondary"
-            size="lg"
-            className="w-full flex items-center justify-center gap-2"
-            onClick={() => nav('/signin')}
-          >
-            <span className="text-xl">🔑</span> Unlock Existing Wallet
-          </AnimatedButton>
+          
+          <div className="grid grid-cols-2 gap-3">
+             <AnimatedButton
+                variant="secondary"
+                size="md"
+                className="w-full flex items-center justify-center gap-2 py-4"
+                onClick={() => nav('/signup', { state: { mode: 'restore' } })}
+              >
+                <span className="text-lg">🔑</span> 
+                <span className="text-sm font-bold uppercase">Restore</span>
+              </AnimatedButton>
+
+              <AnimatedButton
+                variant="secondary"
+                size="md"
+                className="w-full flex items-center justify-center gap-2 py-4"
+                onClick={() => nav('/signin')}
+              >
+                <span className="text-lg">🔓</span> 
+                <span className="text-sm font-bold uppercase">Unlock</span>
+              </AnimatedButton>
+          </div>
         </div>
 
         {/* Footer info */}
-        <div className="mt-10 text-center text-xs text-gray-500 space-y-2">
-          <p>Your password is your only key. Your Memetic Wallet Password is your recovery.</p>
-          <p>Lose both? Your identity is gone forever. Choose wisely.</p>
+        <div className="mt-12 text-center text-[10px] text-gray-500 space-y-2 uppercase tracking-[0.2em] opacity-60">
+          <p>Local-Only Storage • BIP-39 Standard • Ed25519</p>
+          <p>© 2026 Civicverse Protocol Foundation</p>
         </div>
       </div>
     </div>

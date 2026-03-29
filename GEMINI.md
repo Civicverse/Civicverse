@@ -1,38 +1,44 @@
-# Civicverse Development State - v1.2-NIGHTLY (GOVERNANCE + HUB)
+# Civicverse Development State - v1.3-ULTRA (SOVEREIGN ONBOARDING + VAULT)
 
 ## 🚀 Active Environment
-- **Local Dev:** `npm start` (Frontend: 3000, API: 3003, WS: 8080)
-- **Production Stack (Ready):** `docker-compose -f docker-compose.prod.yml up --build`
-- **Hub Page:** `FoyerPage.tsx` consolidated as the protocol coordination layer.
+- **Local Dev:** `npm start` (Frontend: 5173/3000, API: 3003, WS: 8080)
+- **Deployment Hub:** `/home/civic_operator_0/Civicverse-nightly-v0.0`
 - **Identity Vault:** Secured with IndexedDB + PBKDF2/AES-256-GCM.
+- **Onboarding:** Unified Sovereign Flow (TOS → Create/Restore → Seed Verify → Vault).
 
-## 🛠 Recent Achievements (2026-03-16)
+## 🛠 Recent Achievements (2026-03-29)
 
-### 1. CivicWatch Smart Load Board
-- **Functional Mission Hub:** Integrated a real-time job board into the Community Hub (Foyer).
-- **Rich Content Support:** Added support for instructional videos (YouTube/External) and multi-step verification requirements for missions.
-- **Permissionless Posting:** Enabled any citizen to deploy mission contracts to the board directly from the UI.
+### 1. Unified Sovereign Onboarding
+- **Unified Step:** Consolidated "Create User" and "Wallet Generation" into a single, cohesive CivicID creation flow.
+- **Mandatory Seed Verification:** Implemented a required 3-word seed phrase verification step during creation to ensure users have a physical backup.
+- **Restoration Flow:** Integrated BIP-39 seed phrase restoration directly into the welcome entry point.
+- **Sovereign UX:** Redesigned `WelcomePage.tsx` and `SignupPage.tsx` with high-fidelity, protocol-first aesthetics.
 
-### 2. Governance Protocol (Whitepaper v1.0 Compliance)
-- **Identity Levels (PoP):** Implemented Verification Levels (1 = Unverified, 2 = Blue Check). Added a Proof-of-Personhood simulation modal for upgrading identities.
-- **Quadratic Voting:** Fully functional `Cost = Weight²` voting system with commitment modals and credit-based weighting.
-- **Community Treasury:** Added transparent treasury tracking audited by Craig AI with support for allocation proposals.
-- **AI Watchdog & Audit:** Integrated automated compliance checks and audit logs for all governance transactions.
+### 2. Civic Vault Redesign (MMORPG Style)
+- **Character-Centric Hub:** Redesigned the "Wallet" into a "Civic Vault" acting as a personal character dashboard.
+- **Floating 3D Avatar:** Implemented a box-less, floating 3D avatar layout using `CharacterViewer` at the top center with a live GIF background.
+- **Stat Dashboard:** Added high-visibility panels for XMR Balance, Reputation (Trust Score), Citizen Level, and Badges.
+- **Portal Navigation:** Integrated glowing portal cards for quick access to Foyer, CivicWatch, Governance, and Mining Pool.
 
-### 3. Production & Deployment Optimization
-- **Hub Consolidation:** Merged CivicWatch and Governance into a single unified Hub entry point (`FoyerPage`).
-- **Nginx & Docker Fixes:** Resolved service naming conflicts in `docker-compose.prod.yml` and `nginx.conf` to ensure seamless VPS deployment.
-- **API Proxying:** Refactored all frontend services to use relative `/api` paths for compatibility across dev and production environments.
+### 3. Community Mining Pool Integration
+- **Infrastructure Branding:** Renamed "Gaming Rig" to "Community Mining Pool" throughout the protocol to align with decentralized infrastructure goals.
+- **Dashboard Hub:** Created `MiningPoolPage.tsx` with integrated XMRig monitoring and Treasury contribution stats.
+- **Treasury Tax:** Implemented a simulated 1% automated tax on all community mining rewards to fund public works.
+
+### 4. Codebase & Routing Cleanup
+- **Route Consolidation:** Updated all internal links to use `/vault` and `/mining-pool`.
+- **Legacy Removal:** Deleted unused components (`MnemonicPage.tsx`, `LoginPage.tsx`, `WalletGenerationPage.tsx`).
+- **Store Optimization:** Updated `gameStore.ts` to support multi-step authentication and temporary mnemonic state management.
 
 ## 📋 Next Steps (Priority Queue)
 
-### 1. Decentralized Storage Integration
-- [ ] **IPFS for Proofs:** Transition from local storage to IPFS for mission proof images and instructional video metadata.
-- [ ] **Sovereign Backup:** Implement encrypted identity backups to community-governed nodes as per whitepaper.
+### 1. Identity & Reputation
+- [ ] **Proof-of-Personhood (PoP):** Implement the "Birth-Origin Attestation" flow with peer-to-peer verification logic.
+- [ ] **CivicID Export:** Build the encrypted JSON/QR export utility for cross-device portability.
 
-### 2. Marketplace & Economy
-- [ ] **P2P Marketplace:** Synchronize the marketplace module with the global ledger for peer-to-peer commerce.
-- [ ] **UBI Engine Execution:** Connect the treasury to the UBI engine for automated disbursement based on governance votes.
+### 2. Decentralized Storage & Economy
+- [ ] **IPFS Identity Backup:** Move encrypted vault backups from local storage to community-governed IPFS nodes.
+- [ ] **UBI Engine Execution:** Finalize the treasury-to-citizen disbursement loop based on governance votes.
 
 ---
-*Governance active. CivicWatch board functional. Hub consolidated. Protocol ready for VPS deployment.*
+*Onboarding unified. Civic Vault active. Community Mining Pool functional. Protocol ready for sovereign expansion.*

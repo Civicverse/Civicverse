@@ -30,9 +30,8 @@ export function CharacterCreatorPage() {
       await updateCharacter(config);
       const confirm = window.confirm("Mint this avatar configuration to your local identity vault?");
       if (confirm) {
-          navigate('/wallet');
-      }
-    } catch (e: any) {
+         navigate('/vault');
+      }    } catch (e: any) {
       alert("Save failed: " + e.message);
     } finally {
       setSaving(false);

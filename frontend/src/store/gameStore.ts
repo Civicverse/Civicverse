@@ -98,7 +98,8 @@ export interface GameState {
   initialize: () => Promise<void>;
   setTosAccepted: (accepted: boolean) => void;
   login: (civicId: string, password: string) => Promise<void>;
-  signup: (username: string, civicId: string, password: string) => Promise<void>;
+  signup: (username: string, civicId: string, password: string, mnemonic?: string) => Promise<void>;
+  setAuthenticated: (authenticated: boolean) => void;
   logout: () => void;
   updateCharacter: (config: CharacterConfig) => Promise<void>;
 
@@ -363,7 +364,7 @@ export const useGameStore = create<GameState>((set) => ({
     }
   },
 
-  signup: async (username, civicId, password) => {
+  signup: async (username, civicId, password, mnemonic) => {
     set({ loading: true });
     try {
       if (!password || password.length < 8) {
@@ -374,13 +375,14 @@ export const useGameStore = create<GameState>((set) => ({
 
       // Create real Civic Identity with Ed25519 keypair and password encryption
       console.debug('[signup] creating Civic Identity...');
-      const identity = await CivicIdentity.create(username, password);
+      const { identity, mnemonic: newMnemonic } = await CivicIdentity.create(username, password);
       const realCivicId = identity.did;
       console.debug('[signup] Civic Identity created:', realCivicId);
 
       // Create non-custodial HD wallet with password encryption
+      // Use provided mnemonic if it exists (for restoration)
       console.debug('[signup] creating HD wallet...');
-      const civicWallet = await CivicWallet.create(identity, password);
+      const civicWallet = await CivicWallet.create(identity, password, mnemonic);
       const multiChainAddresses = civicWallet.getAllAddresses();
       console.debug('[signup] HD wallet created with addresses:', Object.keys(multiChainAddresses));
 
@@ -411,7 +413,7 @@ export const useGameStore = create<GameState>((set) => ({
       };
 
       set({
-        isAuthenticated: true,
+        isAuthenticated: false, // Keep false until verified in UI
         user,
         wallet,
         multiChainAddresses,
@@ -426,7 +428,7 @@ export const useGameStore = create<GameState>((set) => ({
       (window as any)._cv_session_pass = password;
 
       await secureStorage.setItem('civicId', realCivicId);
-      await secureStorage.setItem('isAuthenticated', '1');
+      // Removed immediate isAuthenticated: '1' storage
       await secureStorage.setItem('civicverse:publicKey', identity.publicKey);
       await secureStorage.setItem('civicverse:multichain', JSON.stringify(multiChainAddresses));
       try {
@@ -443,6 +445,13 @@ export const useGameStore = create<GameState>((set) => ({
       console.error('[signup] Signup failed:', error);
       set({ loading: false, isAuthenticated: false, user: null, wallet: null, multiChainAddresses: null });
       throw error;
+    }
+  },
+
+  setAuthenticated: (authenticated) => {
+    set({ isAuthenticated: authenticated });
+    if (authenticated) {
+      secureStorage.setItem('isAuthenticated', '1');
     }
   },
 

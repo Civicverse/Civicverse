@@ -158,15 +158,9 @@ export default function TOSPage() {
             <AnimatedButton
               variant="secondary"
               size="lg"
-              onClick={() => {
-                try {
-                  window.close()
-                } catch {
-                  alert('You must accept the terms to proceed.')
-                }
-              }}
+              onClick={() => window.open('https://github.com/Civicverse/Civicverse-nightly-v0.0#blueprint', '_blank')}
             >
-              ✕ Exit
+              📜 Blueprint
             </AnimatedButton>
           </div>
 
