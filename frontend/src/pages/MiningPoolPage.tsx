@@ -71,6 +71,28 @@ export default function MiningPoolPage() {
               </AnimatedButton>
            </div>
         </div>
+
+        {/* SupportXMR Community Pool Dashboard */}
+        <div className="mt-12 animate-slide-up" style={{ animationDelay: '300ms' }}>
+           <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
+                 <div className="flex items-center gap-3">
+                    <span className="text-xl">📊</span>
+                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-neon-orange">Network Node Statistics</h3>
+                 </div>
+                 <div className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">
+                    Connected_To: SupportXMR_Global
+                 </div>
+              </div>
+              <iframe
+                src="https://supportxmr.com/#/dashboard?address=438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp"
+                title="Support XMR Mining Pool Dashboard"
+                className="w-full h-[800px] border-0 bg-[#0a0c10]"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-popups-to-escape-sandbox allow-pointer-lock"
+                allow="clipboard-read; clipboard-write"
+              />
+           </div>
+        </div>
       </div>
     </div>
   )

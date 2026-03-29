@@ -23,6 +23,7 @@
 ### 3. Community Mining Pool Integration
 - **Infrastructure Branding:** Renamed "Gaming Rig" to "Community Mining Pool" throughout the protocol to align with decentralized infrastructure goals.
 - **Dashboard Hub:** Created `MiningPoolPage.tsx` with integrated XMRig monitoring and Treasury contribution stats.
+- **SupportXMR Integration:** Embedded a live SupportXMR community pool dashboard pre-synced with the sovereign vault address for real-time payout tracking.
 - **Treasury Tax:** Implemented a simulated 1% automated tax on all community mining rewards to fund public works.
 
 ### 4. Codebase & Routing Cleanup
