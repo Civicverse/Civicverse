@@ -103,6 +103,6 @@ The Foyer is a Godot 4.3+ project located in `/godot-foyer`. It integrates as a 
 ---
 
 ## 💎 Support the Vision
-Every bit of hashpower contributed to the **Community Mining Pool** directly funds the **Community Treasury**. 1% of all pool proceeds are routed to fund real-world missions deployed on the CivicWatch board.
+Every bit of hashpower contributed to the **Community Treasury** funds developments.
 
 **Build for humanity. Own your future.**
