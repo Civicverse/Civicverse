@@ -1,13 +1,30 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
 import { CharacterViewer } from '../components/3d/CharacterViewer'
+import { Shield } from 'lucide-react'
 
 export default function CivicVaultPage() {
   const nav = useNavigate()
   const { user, wallet, logout, tempMnemonic } = useGameStore()
   const [showSeed, setShowSeed] = useState(false)
+  const [aiStatus, setAiStatus] = useState({ status: 'checking', model: '' })
+
+  useEffect(() => {
+    const checkAI = async () => {
+      try {
+        const res = await fetch('http://localhost:3003/api/ai/status')
+        const data = await res.json()
+        setAiStatus(data)
+      } catch (e) {
+        setAiStatus({ status: 'offline', model: '' })
+      }
+    }
+    checkAI()
+    const interval = setInterval(checkAI, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   if (!user || !wallet) {
     return (
@@ -60,9 +77,18 @@ export default function CivicVaultPage() {
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-40 h-8 bg-neon-cyan/20 blur-2xl rounded-full" />
             
             {/* Status floating tag */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 border border-neon-cyan/50 backdrop-blur-md p-2 rounded-xl shadow-xl whitespace-nowrap">
-               <div className="text-[10px] uppercase tracking-widest text-neon-cyan font-bold">
-                 CITIZEN_LVL_{user.level}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+               <div className="bg-black/60 border border-neon-cyan/50 backdrop-blur-md p-2 rounded-xl shadow-xl whitespace-nowrap">
+                  <div className="text-[10px] uppercase tracking-widest text-neon-cyan font-bold">
+                    CITIZEN_LVL_{user.level}
+                  </div>
+               </div>
+               
+               <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border backdrop-blur-md text-[8px] font-black uppercase tracking-tighter ${
+                 aiStatus.status === 'online' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'
+               }`}>
+                  <Shield className="w-2.5 h-2.5" />
+                  AI_WATCHDOG: {aiStatus.status === 'online' ? `READY [${aiStatus.model || '7B'}]` : 'OFFLINE'}
                </div>
             </div>
           </div>

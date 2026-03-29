@@ -2,25 +2,31 @@ const http = require('http');
 
 class AIService {
   constructor() {
-    this.ollamaUrl = 'http://localhost:11434/api/generate';
-    this.model = 'phi3:mini'; // Using phi3:mini for faster inference in dev
+    this.ollamaUrl = process.env.OLLAMA_URL || 'http://ollama:11434/api/generate';
+    this.model = process.env.OLLAMA_MODEL || 'gemma2:9b'; // High-accuracy 7B-class model
   }
 
   async verifyJobProof(jobDescription, proofText) {
     const prompt = `
-      You are an AI verification node for Civicverse, a decentralized civic engagement platform.
-      Your task is to verify if a user's proof of work matches the job description.
+      [PROTOCOL_INTEGRITY_ENFORCEMENT]
+      Scope: CivicWatch Mission Verification
+      Role: Stateless Executor (Human-voted rules only)
 
-      Job Description: ${jobDescription}
-      User's Submitted Proof: ${proofText}
+      RULESET:
+      - Valid submissions must contain clear evidence of the described activity.
+      - Reject any submission that is non-responsive or clearly unrelated.
+      - Use professional, objective reasoning.
 
-      Analyze the proof. Does it reasonably demonstrate that the job was completed?
+      MISSION: ${jobDescription}
+      SUBMISSION: ${proofText}
+
+      TASK: Verify if the submission complies with the mission parameters.
       
-      Respond ONLY with a JSON object in the following format:
+      Respond ONLY with this JSON structure:
       {
-        "verified": true/false,
-        "confidence": 0.0 to 1.0,
-        "reasoning": "Short explanation of your decision"
+        "verified": boolean,
+        "confidence": float (0.0-1.0),
+        "reasoning": "Clear, concise technical audit log"
       }
     `;
 
@@ -46,7 +52,7 @@ class AIService {
       });
 
       const options = {
-        hostname: 'localhost',
+        hostname: process.env.OLLAMA_HOST || 'ollama',
         port: 11434,
         path: '/api/generate',
         method: 'POST',

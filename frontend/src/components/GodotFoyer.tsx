@@ -118,18 +118,31 @@ export const GodotFoyer: React.FC<GodotFoyerProps> = ({ onExit }) => {
     head.position.y = 2.3;
     playerGroup.add(head);
 
+    // Arms
+    const armGeo = new THREE.BoxGeometry(0.3, 1, 0.3);
+    const leftArm = new THREE.Mesh(armGeo, bodyMat);
+    leftArm.position.set(-0.7, 1.5, 0);
+    playerGroup.add(leftArm);
+
+    const rightArmGroup = new THREE.Group();
+    rightArmGroup.position.set(0.7, 1.8, 0);
+    const rightArm = new THREE.Mesh(armGeo, bodyMat);
+    rightArm.position.y = -0.4;
+    rightArmGroup.add(rightArm);
+    playerGroup.add(rightArmGroup);
+
     // THE BIG STICK
     const stickGroup = new THREE.Group();
     const stickGeo = new THREE.CylinderGeometry(0.1, 0.1, 4, 8);
     const stickMat = new THREE.MeshPhongMaterial({ color: 0x4a3b2a });
     const stick = new THREE.Mesh(stickGeo, stickMat);
-    stick.position.y = 2; // Stick extends upward from hand
+    stick.position.y = 1.5; // Stick extends upward from hand
     stickGroup.add(stick);
     
-    // Attach stick to body (simulating hand)
-    stickGroup.position.set(0.8, 1.5, 0.3);
+    // Attach stick to right arm
+    stickGroup.position.set(0, -0.8, 0);
     stickGroup.rotation.x = Math.PI / 2;
-    playerGroup.add(stickGroup);
+    rightArmGroup.add(stickGroup);
 
     scene.add(playerGroup);
 
@@ -202,11 +215,11 @@ export const GodotFoyer: React.FC<GodotFoyerProps> = ({ onExit }) => {
       // Swinging Animation
       if (isSwinging) {
         swingTimer += delta * 15;
-        // Swing forward and back
-        stickGroup.rotation.x = Math.PI / 2 + Math.sin(swingTimer) * 1.5;
+        // Swing arm and stick
+        rightArmGroup.rotation.x = -Math.sin(swingTimer) * 2;
         if (swingTimer > Math.PI) {
           isSwinging = false;
-          stickGroup.rotation.x = Math.PI / 2;
+          rightArmGroup.rotation.x = 0;
         }
       }
 

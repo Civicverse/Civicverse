@@ -148,6 +148,41 @@ app.post('/api/miner/config', (req, res) => {
 
 // --- Governance & Treasury ---
 const governanceService = require('./services/governance-service');
+const aiService = require('./services/ai-service');
+
+app.get('/api/ai/status', async (req, res) => {
+  try {
+    // Check if Ollama is responsive
+    const options = {
+      hostname: process.env.OLLAMA_HOST || 'ollama',
+      port: 11434,
+      path: '/api/tags',
+      method: 'GET'
+    };
+    const http = require('http');
+    const statusReq = http.request(options, (statusRes) => {
+      let body = '';
+      statusRes.on('data', (chunk) => body += chunk);
+      statusRes.on('end', () => {
+        try {
+          const json = JSON.parse(body);
+          const models = json.models || [];
+          res.json({ 
+            status: 'online', 
+            model: aiService.model,
+            availableModels: models.map(m => m.name)
+          });
+        } catch (e) {
+          res.json({ status: 'offline', error: 'invalid_response' });
+        }
+      });
+    });
+    statusReq.on('error', () => res.json({ status: 'offline' }));
+    statusReq.end();
+  } catch (e) {
+    res.json({ status: 'offline', error: e.message });
+  }
+});
 
 app.get('/api/governance/status', (req, res) => {
   res.json({

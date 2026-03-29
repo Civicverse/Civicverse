@@ -68,6 +68,16 @@ shape = SubResource("BoxShape3D_k6m7")
 
 [node name="Buildings" type="Node3D" parent="Environment"]
 
+[node name="Props" type="Node3D" parent="Environment"]
+
+[node name="Kiosk" type="CSGBox3D" parent="Environment/Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1, -5)
+size = Vector3(2, 2, 2)
+
+[node name="Bench" type="CSGBox3D" parent="Environment/Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.25, 0)
+size = Vector3(2, 0.5, 1)
+
 [node name="UniversePortal" type="Area3D" parent="Environment"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
 

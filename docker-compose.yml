@@ -22,6 +22,24 @@ services:
     networks:
       - civicnet
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: civicverse_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+    networks:
+      - civicnet
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
 networks:
   civicnet:
     driver: bridge
