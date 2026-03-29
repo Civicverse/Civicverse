@@ -6,6 +6,7 @@ node_modules/
 # Production
 /dist
 /build
+/frontend/public/foyer-dist/
 *.js.map
 
 # Environment variables

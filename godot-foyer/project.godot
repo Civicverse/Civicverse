@@ -1,0 +1,26 @@
+config_version=5
+
+[application]
+
+config/name="CivicVerse Foyer"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+config/icon="res://icon.svg"
+
+[display]
+
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[gui]
+
+theme/custom_font="res://assets/fonts/Inter-Bold.ttf"
+
+[rendering]
+
+renderer/rendering_method="mobile"
+textures/vram_compression/import_etc2_astc=true
+environment/defaults/default_clear_color=Color(0.0392157, 0.0470588, 0.0627451, 1)
+
+[javascript_bridge]
+enabled=true

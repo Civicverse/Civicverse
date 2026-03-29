@@ -25,7 +25,7 @@ export default function CivicVaultPage() {
   ]
 
   const portals = [
-    { title: 'Enter Foyer', desc: 'Main Community Hub', icon: '🌐', path: '/foyer', color: 'border-neon-cyan' },
+    { title: 'Gathering Grounds', desc: 'Main Community Hub', icon: '🌐', path: '/foyer', color: 'border-neon-cyan' },
     { title: 'CivicWatch', desc: 'Missions & Jobs', icon: '📋', path: '/civicwatch', color: 'border-neon-pink' },
     { title: 'Governance', desc: 'Quadratic Voting', icon: '🏛️', path: '/governance', color: 'border-neon-purple' },
     { title: 'Mining Pool', desc: 'Community Rewards', icon: '⛏️', path: '/mining-pool', color: 'border-neon-orange' },

@@ -68,6 +68,16 @@ npm start
 - **CivicVault/Frontend**: [http://localhost:5173](http://localhost:5173)
 - **API Terminal**: [http://localhost:3003/api/status](http://localhost:3003/api/status)
 
+### 4. Godot Foyer (Immersive Hub)
+The Foyer is a Godot 4.3+ project located in `/godot-foyer`. It integrates as a 3D immersive feature within the React hub.
+- **Build/Export**:
+  ```bash
+  npm run build:foyer
+  ```
+  *Requires Godot 4.3+ in PATH.* This exports the project to `frontend/public/foyer-dist/`.
+- **Character Carryover**: Your CivicID and avatar customization from the Vault are passed into Godot via `JavaScriptBridge`.
+- **Multiplayer**: Basic WebSocket-based player sync (lite implementation).
+
 ---
 
 ## 🛠 Roadmap: v1.3+ Operational Blueprint

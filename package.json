@@ -11,6 +11,7 @@
     "start": "npx concurrently \"npm run start:backend\" \"npm run start:frontend\"",
     "dev": "bash ./scripts/dev.sh",
     "build": "npm run build --workspaces",
+    "build:foyer": "cd godot-foyer && godot --headless --export-release \"Web\" ../frontend/public/foyer-dist/index.html",
     "start:backend": "npm start --workspace=backend",
     "start:frontend": "npm run dev --workspace=frontend",
     "clean": "rm -rf node_modules backend/node_modules frontend/node_modules frontend/dist && rm -f package-lock.json backend/package-lock.json frontend/package-lock.json && echo 'Clean complete!'",

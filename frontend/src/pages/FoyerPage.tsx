@@ -31,13 +31,13 @@ import {
   FileText,
   DollarSign
 } from 'lucide-react';
-import { AnimatedCard, NeonText, GradientOrb } from '../components';
+import { AnimatedCard, NeonText, GradientOrb, GodotFoyer } from '../components';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FoyerPage() {
   const nav = useNavigate();
   const { user, updateUser, wallet } = useGameStore();
-  const [activeTab, setActiveTab] = useState<'overview' | 'marketplace' | 'community' | 'governance'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'marketplace' | 'community' | 'governance' | 'foyer'>('overview');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [treasuryBalance, setTreasuryBalance] = useState<number>(0);
@@ -281,7 +281,9 @@ export default function FoyerPage() {
             { id: 'community' as const, label: 'Missions', icon: <Briefcase className="w-5 h-5" /> }, 
             { id: 'governance' as const, label: 'Governance', icon: <Landmark className="w-5 h-5" /> },
             { id: 'marketplace' as const, label: 'Marketplace', icon: <ShoppingBag className="w-5 h-5" /> },
-          ].map(tab => (
+            { id: 'foyer' as const, label: 'Enter Foyer', icon: <UsersIcon className="w-5 h-5" /> },
+            ].map(tab => (
+
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -299,6 +301,17 @@ export default function FoyerPage() {
 
         {/* Content Area */}
         <div className="min-h-[450px] mb-12">
+
+          {/* --- FOYER TAB --- */}
+          {activeTab === 'foyer' && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full h-[80vh] min-h-[600px] mb-12"
+            >
+              <GodotFoyer onExit={() => setActiveTab('overview')} />
+            </motion.div>
+          )}
           
           {/* --- JOB BOARD (COMMUNITY TAB) --- */}
           {activeTab === 'community' && (
@@ -549,7 +562,7 @@ export default function FoyerPage() {
 
           {/* --- OVERVIEW TAB --- */}
           {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-slide-up">
                   <AnimatedCard delay={100} className="bg-[#161b22] border-gray-800 rounded-3xl p-10 shadow-xl group hover:border-blue-500/50 transition-colors">
                     <h3 className="text-blue-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
                       <span>🔐</span> Zero-Custody
@@ -573,6 +586,20 @@ export default function FoyerPage() {
                     <p className="text-gray-400 leading-relaxed font-medium">
                       Contribute compute power to the XMR network to fund the Community Treasury and earn local rewards.
                     </p>
+                  </AnimatedCard>
+                  <AnimatedCard delay={400} onClick={() => setActiveTab('foyer')} className="bg-[#161b22] border-blue-500/30 rounded-3xl p-10 shadow-xl group hover:border-blue-500 transition-colors cursor-pointer relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+                       <UsersIcon className="w-16 h-16 text-blue-500" />
+                    </div>
+                    <h3 className="text-blue-400 font-black mb-4 text-xl uppercase italic tracking-tight flex items-center gap-3">
+                      <span>🏙️</span> Immersive Foyer
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed font-medium">
+                      Enter the 3D lobby city. Meet other citizens, customize your avatar, and explore the social arena.
+                    </p>
+                    <div className="mt-6 flex items-center gap-2 text-blue-500 font-black text-xs uppercase tracking-widest italic">
+                       Launch Shard →
+                    </div>
                   </AnimatedCard>
             </div>
           )}
