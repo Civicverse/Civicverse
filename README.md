@@ -1,108 +1,71 @@
-# ∞ CivicVerse: Non-Custodial Identity & Impact Protocol
+# 🌌 Civicverse v1.3-ULTRA: SOVEREIGN NEON
 
-CivicVerse is a protocol-level infrastructure for decentralized humanity. It enables sovereign identity, peer-to-peer coordination, and a real-world impact marketplace without intermediaries or centralized extraction.
+Welcome to **Civicverse**, the decentralized metaverse coordination layer. This repository contains the complete infrastructure for a sovereign digital humanity, including a web-based identity vault and the **NEON REIGN** Godot-powered Foyer.
 
-This is the **v1.3-ULTRA** build featuring the **Unified Sovereign Onboarding**, **MMORPG Civic Vault**, and **Community Mining Integration**.
+## 🚀 Quick Start (One-Click Launch)
 
----
+Ensure you have **Docker** and **Node.js 18+** installed.
 
-## 🧬 How CivicVerse Works (Locked Blueprint)
-
-CivicVerse operates on the principle of **Digital Sovereignty**. Unlike traditional platforms, your identity and assets are generated and stored exclusively on your device.
-
-1.  **Sovereign CivicID**: Your identity is an Ed25519 keypair derived from a BIP-39 memetic seed phrase. You don't "sign up"; you "generate" your presence on the protocol.
-2.  **Non-Custodial Vault**: All keys are encrypted locally (AES-256-GCM) and never leave your hardware.
-3.  **Proof-of-Personhood (PoP)**: Trust is built through peer-to-peer attestations, not central authority.
-4.  **Impact Economy**: Real-world civic actions (CivicWatch) are verified and rewarded via the Community Treasury, funded by the Community Mining Pool.
-
----
-
-## 🗺 User Journey
-
-```mermaid
-graph TD
-    A[TOS Screen] -->|Accept| B[Welcome Screen]
-    B -->|Create| C[Setup Username/Pass]
-    C --> D[Seed Phrase Display]
-    D -->|Verify 3 Words| E[Civic Vault]
-    B -->|Restore| F[Import Seed Phrase]
-    F --> E
-    B -->|Unlock| G[Password Unlock]
-    G --> E
-    E --> H[3D Foyer]
-    E --> I[CivicWatch Load Board]
-    E --> J[Governance]
-    E --> K[Mining Pool]
-```
-
----
-
-## 🏗 Architectural Overview
-
-- **Monorepo Structure**: Managed via NPM Workspaces.
-- **Frontend**: React + TypeScript + Three.js + TailwindCSS (Vite).
-- **Backend**: Node.js Express API + WebSocket Multiplayer Server.
-- **Civic Vault**: An MMORPG-style character dashboard serving as the primary hub for identity, stats, and portal access.
-- **Identity**: Local-only, Ed25519-based identity encrypted with PBKDF2 + AES-256-GCM.
-- **Mining Pool**: Integrated SupportXMR dashboard for real-time community contribution tracking.
-
----
-
-## 🚀 Startup Guide
-
-### 1. Prerequisites
-- **Node.js**: v20.x or higher.
-- **NPM**: v10.x or higher.
-
-### 2. Initial Setup
 ```bash
-git clone https://github.com/Civicverse/Civicverse-nightly-v0.0.git
+# Clone the repository
+git clone git@github.com:Civicverse/Civicverse-nightly-v0.0.git
 cd Civicverse-nightly-v0.0
-npm install
+
+# Launch all services (Frontend, Backend, Godot Foyer Bridge)
+./launch.sh
 ```
 
-### 3. Spinning it Up
-```bash
-npm start
-```
-- **CivicVault/Frontend**: [http://localhost:5173](http://localhost:5173)
-- **API Terminal**: [http://localhost:3003/api/status](http://localhost:3003/api/status)
-
-### 4. Godot Foyer (Immersive Hub)
-The Foyer is a Godot 4.3+ project located in `/godot-foyer`. It integrates as a 3D immersive feature within the React hub.
-- **Build/Export**:
-  ```bash
-  npm run build:foyer
-  ```
-  *Requires Godot 4.3+ in PATH.* This exports the project to `frontend/public/foyer-dist/`.
-- **Character Carryover**: Your CivicID and avatar customization from the Vault are passed into Godot via `JavaScriptBridge`.
-- **Multiplayer**: Basic WebSocket-based player sync (lite implementation).
+- **Frontend:** [http://localhost:3000](http://localhost:3000)
+- **Civic Vault:** Access your sovereign identity and PoP status.
+- **NEON REIGN Foyer:** Centrally integrated into the Hub.
 
 ---
 
-## 🛠 Roadmap: v1.3+ Operational Blueprint
+## 🧬 Core Infrastructure
 
-### 🟢 Short-Term (1–2 Weeks)
-- **PoP Implementation**: Add "Verify Your CivicID" flow with 3-peer attestation logic.
-- **Vault Enhancements**: Connect reputation/skills to real CivicWatch contribution metrics.
-- **Offline Resilience**: Transition to PWA (Service Workers) and implement local action queuing.
-- **Vault Tools**: Implement QR-code based CivicID export and encrypted JSON backup.
+### 1. Sovereign Identity (Civic Vault)
+- **Non-Custodial:** Your keys, your identity. Encrypted locally with PBKDF2/AES-256.
+- **Proof-of-Personhood (PoP):** 3-person physical peer verification flow.
+  - **Green X (1/3 & 2/3):** Initial attestations.
+  - **Purple Check (3/3):** Fully verified CivicID. Unlocks monetary features.
+- **Identity Export:** Encrypted JSON backups and QR-based DID sharing.
 
-### 🟡 Medium-Term
-- **Ollama AI Enforcement**: Local AI service for governance rule execution and mission validation.
-- **CivicWatch Evolution**: Live Leaflet/Three.js map with geo-verification and payout simulations.
-- **IPFS Integration**: Anchoring mission proofs and identity metadata to decentralized storage.
-- **Social Recovery**: UI for 3–5 guardians with threshold encryption hints.
+### 2. NEON REIGN - The Foyer (Godot 4.3.1)
+The central 3D hub for Civicverse.
+- **Visuals:** Hyper-realistic cell-shaded world with bold ink outlines and neon emissives.
+- **Portal Shards:** Seamless additive loading into owner-created worlds (Store, School, Social, BR).
+- **Battle Royale:** Integrated 16-32 player shooter mechanics within the Foyer city.
+- **CivicFeed:** Real-time social layer (X-style) with integrated reputation and VOIP.
 
-### 🔴 Long-Term
-- **Hardware Integration**: Full Raspberry Pi node support with Mesh/LoRaWAN sync.
-- **L2 Governance**: Ethereum L2 + zkSNARKs for anonymous voting and treasury transparency.
-- **UE5 Bridge**: Portals to persistent high-fidelity shards via UE5 Foyer bridging.
-- **UBI Engine**: Fully governed 1% micro-tax routing to protocol citizens.
+### 3. P2P Monetary Protocols
+- **Monero Integration:** Native XMR support for privacy-preserving transactions.
+- **P2P Gambling:** Bet CVT tokens on Foyer matches with a 1% microtax funding the UBI pool.
+- **Community Mining:** SupportXMR integrated mining dashboard.
 
 ---
 
-## 💎 Support the Vision
-Every bit of hashpower contributed to the **Community Treasury** funds developments.
+## 🛠 Developer & Contributor Guide
 
-**Build for humanity. Own your future.**
+### Repository Structure
+- `/frontend`: React + Vite + Tailwind (The Hub UI).
+- `/backend`: Node.js + Express + Socket.io (Multiplayer & State Relay).
+- `/godot-foyer`: Godot 4.3.1 Forward+ source project.
+- `/contracts`: Solidity interfaces for future L2 anchoring.
+
+### Next Steps for Contributors
+1. **PoP Jobs:** Implement the CivicWatch job-based verification path.
+2. **Shard Expansion:** Create new `.tscn` shards in `godot-foyer/scenes/shards/`.
+3. **PWA Transition:** Add service worker for offline-first vault access.
+4. **IPFS Storage:** Hook avatar metadata to decentralized storage.
+
+### Git Workflow
+1. Create a feature branch: `git checkout -b feature/neon-upgrade`.
+2. Commit changes using atomic, descriptive messages.
+3. Push and open a Pull Request.
+
+---
+
+## 📜 Vision
+**Civicverse** is built for a future where identity is not granted by governments, but recognized by peers. We are building the infrastructure for a decentralized, sovereign humanity.
+
+**Sovereignty Awaits.**
