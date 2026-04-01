@@ -94,7 +94,7 @@ class GovernanceService {
     if (prop.status !== 'voting') throw new Error('Proposal is not active');
     
     // Identity Level Check based on Whitepaper
-    // Verified CivicID (Blue Check / Level 2) is required for full governance.
+    // Verified CivicID (Purple Checkmark / Level 2) is required for full governance.
     // Level 1 can participate in Real-Time Polls but maybe restricted in parameter changes.
     if (voterLevel < 2 && prop.type === 'parameter_change') {
         throw new Error('Verification Level 2 required for Protocol Parameter changes.');

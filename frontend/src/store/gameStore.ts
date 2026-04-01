@@ -21,7 +21,8 @@ export interface CivicUser {
   avatar: string;
   trustScore: number;
   level: number;
-  verificationLevel: number; // 1 = Unverified, 2 = Verified (Blue Check)
+  verificationLevel: number; // 1 = Basic, 2 = Verified (Purple Check)
+  attestationCount: number; // 0-3
   character: CharacterConfig;
   stats?: {
     environmental?: number;
@@ -257,6 +258,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   setTosAccepted: (accepted: boolean) => {
     set({ tosAccepted: accepted });
+    localStorage.setItem('civicverse_tos_accepted', accepted ? 'true' : 'false');
   },
 
   login: async (civicId, password) => {
@@ -293,7 +295,8 @@ export const useGameStore = create<GameState>((set) => ({
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${realCivicId}`,
         trustScore: 75,
         level: 3,
-        verificationLevel: 1, // Default to level 1
+        verificationLevel: (identity as any).verificationLevel || 1,
+        attestationCount: (identity as any).attestationCount || 0,
         character: identity.characterConfig || {
           skinColor: '#e0ac69',
           hairColor: '#4a3b2a',
@@ -392,7 +395,8 @@ export const useGameStore = create<GameState>((set) => ({
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${realCivicId}`,
         trustScore: 50,
         level: 1,
-        verificationLevel: 1, // Default to level 1
+        verificationLevel: 1, 
+        attestationCount: 0,
         character: identity.characterConfig || {
           skinColor: '#e0ac69',
           hairColor: '#4a3b2a',
@@ -473,15 +477,31 @@ export const useGameStore = create<GameState>((set) => ({
     console.debug('[auth] logout - session and wallet cleared');
   },
 
-  updateUser: (user) =>
-    set((state) => ({
-      user: state.user ? { ...state.user, ...user } : null,
-    })),
+  updateUser: (userUpdates) =>
+    set((state) => {
+      const newUser = state.user ? { ...state.user, ...userUpdates } : null;
+      if (newUser) {
+        localStorage.setItem('civicverse_user', JSON.stringify({ 
+          user: newUser, 
+          wallet: state.wallet, 
+          multiChainAddresses: state.multiChainAddresses 
+        }));
+      }
+      return { user: newUser };
+    }),
 
-  updateWallet: (wallet) =>
-    set((state) => ({
-      wallet: state.wallet ? { ...state.wallet, ...wallet } : null,
-    })),
+  updateWallet: (walletUpdates) =>
+    set((state) => {
+      const newWallet = state.wallet ? { ...state.wallet, ...walletUpdates } : null;
+      if (newWallet) {
+        localStorage.setItem('civicverse_user', JSON.stringify({ 
+          user: state.user, 
+          wallet: newWallet, 
+          multiChainAddresses: state.multiChainAddresses 
+        }));
+      }
+      return { wallet: newWallet };
+    }),
 
   // Apply a global microtax (1%) to an amount, credit treasury, return net
   applyMicrotax: (amount: number) => {

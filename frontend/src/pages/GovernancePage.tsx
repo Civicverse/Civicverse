@@ -42,6 +42,9 @@ export function GovernancePage() {
 
   const handleVote = async (proposalId: string, choice: 'yes' | 'no') => {
     if (!user?.civicId) return alert('Connect identity to vote');
+    if (user.verificationLevel !== 2) {
+      return alert('ACCESS DENIED: Governance participation requires a Verified CivicID (Purple Check). Please complete your peer verification in the Civic Vault.');
+    }
     
     const weight = getVoteWeight(proposalId);
     const proposal = proposals.find(p => p.id === proposalId);
@@ -97,6 +100,9 @@ export function GovernancePage() {
     e.preventDefault();
     if (!formData.title.trim() || !formData.description.trim()) return;
     if (!user?.civicId) return alert('Connect identity to propose');
+    if (user.verificationLevel !== 2) {
+      return alert('ACCESS DENIED: Broadcasting proposals requires a Verified CivicID (Purple Check). Please complete your peer verification in the Civic Vault.');
+    }
 
     try {
       await governanceApi.createProposal({

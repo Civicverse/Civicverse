@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, AnimatedInput, NeonText, GradientOrb, LoadingSpinner } from '../components'
+import { AlertCircle } from 'lucide-react'
 
 export default function SignupPage() {
   const nav = useNavigate()
@@ -24,9 +25,12 @@ export default function SignupPage() {
   const [seedCheckWords, setSeedCheckWords] = useState<{ index: number, word: string }[]>([])
   const [userCheckInputs, setUserCheckInputs] = useState<string[]>(['', '', ''])
   const [hasWrittenSeed, setHasWrittenSeed] = useState(false)
+  const [tosAccepted, setTosAccepted] = useState(false)
+  const [showTosModal, setShowTosModal] = useState(false)
 
   const handleInitialSetup = async () => {
     setError('')
+    if (!tosAccepted) return setError('You must accept the Terms of Service to continue.')
     if (username.length < 3) return setError('Username must be 3+ characters')
     if (password.length < 8) return setError('Password must be 8+ characters')
     if (password !== confirm) return setError('Passwords do not match')
@@ -158,13 +162,27 @@ export default function SignupPage() {
                 </div>
               )}
 
+              <div className="flex flex-col items-center gap-4 pt-4 border-t border-white/5">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input 
+                    type="checkbox" 
+                    className="w-5 h-5 accent-neon-cyan bg-black border-neon-cyan/40 rounded"
+                    checked={tosAccepted}
+                    onChange={(e) => setTosAccepted(e.target.checked)}
+                  />
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400 group-hover:text-white transition-colors">
+                    I accept the <button onClick={(e) => { e.preventDefault(); setShowTosModal(true); }} className="text-neon-cyan underline font-black">Terms of Service</button>
+                  </span>
+                </label>
+              </div>
+
               <div className="pt-4">
                 <AnimatedButton
                   variant="primary"
                   size="lg"
-                  className="w-full py-4 uppercase font-bold tracking-widest"
+                  className="w-full py-4 uppercase font-bold tracking-widest disabled:opacity-40"
                   onClick={handleInitialSetup}
-                  disabled={loading}
+                  disabled={loading || !tosAccepted}
                 >
                   {loading ? <LoadingSpinner size="sm" /> : (mode === 'create' ? 'Generate Identity' : 'Restore Identity')}
                 </AnimatedButton>
@@ -265,6 +283,55 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
+      <TOSModal 
+        isOpen={showTosModal} 
+        onClose={() => setShowTosModal(false)} 
+        onAccept={() => { setTosAccepted(true); setShowTosModal(false); }} 
+      />
     </div>
   )
+}
+
+function TOSModal({ isOpen, onClose, onAccept }: { isOpen: boolean, onClose: () => void, onAccept: () => void }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+      <AnimatedCard className="max-w-2xl w-full border-neon-cyan p-8 max-h-[80vh] overflow-y-auto relative">
+          <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition">✕</button>
+          <h3 className="text-2xl font-black italic uppercase tracking-tighter text-neon-cyan mb-6">Terms of Service</h3>
+          
+          <div className="space-y-6 text-sm text-gray-300 leading-relaxed font-medium">
+            <section>
+                <h4 className="text-white font-bold uppercase tracking-widest text-[10px] mb-2">1. Sovereign Participation</h4>
+                <p>By using CivicVerse, you opt-in to a decentralized civic infrastructure. You are solely responsible for your private keys and data.</p>
+            </section>
+            <section>
+                <h4 className="text-white font-bold uppercase tracking-widest text-[10px] mb-2">2. Monetary Restrictions</h4>
+                <p>All monetary features (payouts, tips, transfers) strictly require a Verified CivicID obtained through the Peer-to-Peer attestation process. Basic access is limited to non-monetary exploration.</p>
+            </section>
+            <section>
+                <h4 className="text-white font-bold uppercase tracking-widest text-[10px] mb-2">3. Non-Custodial Nature</h4>
+                <p>The protocol does not hold, manage, or have access to your funds. All transactions are peer-to-peer or governed by employer-deployed smart contracts.</p>
+            </section>
+            <section>
+                <h4 className="text-white font-bold uppercase tracking-widest text-[10px] mb-2">4. Community Governance</h4>
+                <p>Decisions are made via voted constraints. AI execution is strictly limited by these community-voted rules.</p>
+            </section>
+            <div className="bg-neon-cyan/10 border border-neon-cyan/30 p-4 rounded-xl flex items-start gap-3 mt-8">
+                <AlertCircle className="w-5 h-5 text-neon-cyan shrink-0" />
+                <p className="text-[10px] text-neon-cyan font-bold uppercase leading-relaxed">
+                  Acceptance of these terms constitutes explicit opt-in to the CivicVerse ecosystem and its rules.
+                </p>
+            </div>
+          </div>
+          
+          <button 
+          onClick={onAccept}
+          className="w-full mt-8 bg-neon-cyan hover:bg-white text-black font-black py-4 rounded-xl transition uppercase italic tracking-tight"
+          >
+            Accept & Close
+          </button>
+      </AnimatedCard>
+    </div>
+  );
 }

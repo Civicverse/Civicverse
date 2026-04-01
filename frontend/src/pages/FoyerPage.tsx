@@ -169,7 +169,7 @@ export default function FoyerPage() {
   const handleCreateProposal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!did) return alert('Please connect identity first.');
-    if (user?.verificationLevel !== 2) return alert('Verification Level 2 (Blue Check) required to create proposals.');
+    if (user?.verificationLevel !== 2) return alert('Verification Level 2 (Purple Checkmark) required to create proposals.');
 
     try {
       await governanceApi.createProposal({
@@ -266,7 +266,7 @@ export default function FoyerPage() {
                     onClick={() => setShowVerifyModal(true)}
                     className="text-[10px] font-black uppercase tracking-widest text-yellow-500 hover:text-yellow-400 transition-colors"
                   >
-                    Get Blue Check (PoP)
+                    Get Purple Checkmark (PoP)
                   </button>
                 )}
               </div>
@@ -714,11 +714,11 @@ export default function FoyerPage() {
 
               {verifyStep === 'complete' && (
                 <div className="text-center py-6">
-                  <div className="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/30">
-                    <CheckCircle className="w-10 h-10 text-blue-400" />
+                  <div className="w-20 h-20 bg-neon-purple/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-neon-purple/30">
+                    <CheckCircle className="w-10 h-10 text-neon-purple" />
                   </div>
                   <h2 className="text-3xl font-black italic uppercase text-white mb-2 tracking-tighter">Identity Verified</h2>
-                  <p className="text-blue-400 font-black text-xs uppercase tracking-[0.3em] mb-8">Level 2 Secured • Blue Check Minted</p>
+                  <p className="text-neon-purple font-black text-xs uppercase tracking-[0.3em] mb-8">Level 2 Secured • Purple Checkmark Minted</p>
                   <button 
                     onClick={() => setShowVerifyModal(false)}
                     className="w-full bg-gray-100 hover:bg-white text-gray-900 font-black py-4 rounded-2xl text-lg italic uppercase tracking-tighter transition-all"

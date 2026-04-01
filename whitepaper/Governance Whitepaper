@@ -97,7 +97,7 @@ It is **offline-first, portable, privacy-preserving, and socially scarce**.
 ## 2️⃣ Guild-Based PoP
 
 - **Guilds** are invite-only groups of **max 30 members**  
-- Only **peer-attested members** can mint verified blue check CivicIDs  
+- Only **peer-attested members** can mint verified purple checkmark CivicIDs  
 - Attestations are **cryptographically signed** and portable  
 - Supports **offline-first verification**, synced later  
 
@@ -122,7 +122,7 @@ It is **offline-first, portable, privacy-preserving, and socially scarce**.
      - Offline interactions, synced later
 
 4. **Verified CivicID Issued**  
-   - Soulbound NFT blue check minted  
+   - Soulbound NFT purple checkmark minted  
    - Eligible for governance, voting, and verified-only interactions
 
 ---
@@ -135,7 +135,7 @@ It is **offline-first, portable, privacy-preserving, and socially scarce**.
 | 🎮 **Gamified Verification** | Mini-games, quests, cooperative challenges |
 | 🎥 **Livestreamed Verification** | Verified by multiple live witnesses remotely |
 
-> Events create **social scarcity**, making blue checks trustworthy.
+> Events create **social scarcity**, making purple checkmarks trustworthy.
 
 ---
 

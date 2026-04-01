@@ -31,11 +31,11 @@ export default function WelcomePage() {
 
         {/* Main content */}
         <AnimatedCard delay={100} className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 gradient-text text-center">
-            Your Gateway to Digital Sovereignty
+          <h2 className="text-2xl font-bold mb-4 gradient-text text-center italic uppercase tracking-tighter">
+            Digital Sovereignty Awaits
           </h2>
-          <p className="text-gray-300 mb-4 leading-relaxed text-center">
-            In the Civicverse, your identity is yours alone. No central authority, no data harvesting, no permission required.
+          <p className="text-gray-300 mb-6 leading-relaxed text-center text-sm">
+            In the Civicverse, your identity is yours alone. No central authority, no data harvesting, no permission required. Join the parallel civilian-owned layer for identity and governance.
           </p>
           
           <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-neon-cyan/20">

@@ -23,6 +23,52 @@ class CivicWatchService {
         isStreaming: false,
         stats: { environmental: 10, civic: 2 },
         createdAt: Date.now()
+      },
+      {
+        id: 'job_2',
+        title: 'Street Light Audit',
+        description: 'Identify and report non-functional street lights in District 4.',
+        type: 'paid',
+        reward: 120,
+        category: 'civic',
+        location: { lat: 34.0532, lng: -118.2447, address: 'District 4, West End' },
+        status: 'open',
+        assignee: null,
+        issuer: 'did:civic:city_maint',
+        requirements: ['Locate broken lights', 'Provide GPS coordinates', 'Photo of light pole ID'],
+        stats: { civic: 15, logistics: 5 },
+        createdAt: Date.now()
+      },
+      {
+        id: 'job_3',
+        title: 'Elderly Grocery Delivery',
+        description: 'Pick up and deliver groceries to local seniors.',
+        type: 'volunteer',
+        reward: 80,
+        category: 'social',
+        location: { lat: 34.0512, lng: -118.2427, address: 'Old Town Hub' },
+        status: 'open',
+        assignee: null,
+        issuer: 'did:civic:social_services',
+        requirements: ['Pickup groceries', 'Hand-deliver to recipient', 'Confirm receipt'],
+        stats: { social: 20, empathy: 10 },
+        createdAt: Date.now()
+      },
+      {
+        id: 'job_4',
+        title: 'Infrastructure Integrity Survey',
+        description: 'Perform detailed inspection of bridge supports.',
+        type: 'paid',
+        reward: 450,
+        category: 'logistics',
+        location: { lat: 34.0542, lng: -118.2457, address: 'North Bridge' },
+        status: 'open',
+        assignee: null,
+        issuer: 'did:civic:eng_dept',
+        requirements: ['Photo of all supports', 'Check for visible cracks', 'Submit engineering notes'],
+        ppeRequired: true,
+        stats: { logistics: 30, civic: 10 },
+        createdAt: Date.now()
       }
     ];
     this.verifications = new Map();
