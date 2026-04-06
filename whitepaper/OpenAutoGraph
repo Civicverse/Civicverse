@@ -1,0 +1,222 @@
+🚗 OpenAutoGraph  
+An Open, AI-Powered Automotive Knowledge Layer  
+
+Whitepaper v1.1 (Updated April 2026)  
+
+---
+
+### 1. Abstract
+
+The automotive knowledge ecosystem remains fragmented across proprietary OEM manuals, paid repair databases, scattered forums, YouTube videos, and incomplete open datasets. Commercial solutions like ALLDATA and Mitchell1 provide deep repair intelligence but lock it behind expensive subscriptions. Existing open datasets typically cover 15,000–150,000+ vehicle models with basic specifications (year, make, model, HP, MPG) but lack critical actionable data such as torque specs, step-by-step repair procedures, wiring diagrams, and failure patterns.<grok:render card_id="6f610d" card_type="citation_card" type="render_inline_citation"><argument name="citation_id">22</argument></grok:render>
+
+OpenAutoGraph proposes a decentralized, AI-powered, fully open-source automotive data layer that:
+
+- Aggregates structured and unstructured vehicle knowledge from public sources
+- Extracts actionable repair intelligence using modern AI pipelines
+- Enables community verification, contribution, and ownership
+- Delivers a universal, queryable schema for every vehicle
+
+This becomes foundational infrastructure for DIY mechanics, independent shops, content creators, developers, and Civicverse-style decentralized applications.
+
+---
+
+### 2. Problem Statement
+
+#### 2.1 Fragmentation
+Automotive knowledge lives in silos:
+- OEM service manuals (paywalled)
+- Parts catalogs
+- Forums and enthusiast communities
+- YouTube repair videos
+- Government datasets (NHTSA recalls, complaints)
+
+No unified system connects these sources into actionable intelligence.
+
+#### 2.2 Access Inequality
+- Professional tools are costly and restricted to licensed shops.
+- Independent mechanics and DIY builders waste hours searching instead of repairing or building.
+- Global south and hobbyist communities face even greater barriers.
+
+#### 2.3 Lack of Structured Open Data
+Open datasets excel at surface-level specs but miss the deep repair layer:
+- Torque specifications
+- Step-by-step procedures
+- Common failure modes and patterns
+- Tool requirements and wiring information
+
+This gap forces reliance on scattered, unverified sources.
+
+---
+
+### 3. Vision
+
+Build the world’s first open, structured, living database of automotive knowledge — a system where every bolt, part, procedure, and failure mode is indexed, community-owned, and instantly accessible.
+
+Core Principles:
+- Knowledge is community-owned and non-custodial
+- AI transforms unstructured content (forums, videos) into structured data
+- Facts are extracted, never copyrighted material redistributed
+- Universal access via natural language, VIN, or component search
+
+---
+
+### 4. System Architecture
+
+#### 4.1 Core Layers
+
+🔹 1. Data Ingestion Layer  
+Sources include:
+- Public datasets (Kaggle vehicle specs, GitHub)
+- NHTSA APIs (recalls, complaints, investigations)
+- Parts catalogs (public metadata)
+- User submissions and community uploads
+- Forum and video metadata (ethical scraping only)
+
+🔹 2. AI Extraction Layer  
+AI pipelines handle:
+- NLP parsing of forum threads
+- Video transcription + step-by-step extraction (Whisper + LLMs)
+- Entity recognition for parts, torque specs, tools, sequences, and failure modes
+
+Example Transformation:  
+Input: “Tighten the head bolts to 85 ft-lbs in a criss-cross sequence.”  
+Output:
+json {   "component": "cylinder_head",   "torque_spec": "85 ft-lbs",   "sequence": "criss-cross",   "unit": "ft-lbs",   "confidence": 0.92 } 
+
+🔹 3. Knowledge Graph Layer  
+Graph structure enables rich relationships:
+- Vehicle → has → Engine → contains → Component → has → Torque_Spec / Procedure / Failure_Mode
+
+🔹 4. Verification & Trust Layer  
+- Community voting and reputation system
+- Multi-source cross-validation
+- Confidence scoring per fact
+- Git-style forking and merging of procedures
+
+🔹 5. API & Interface Layer  
+- Natural language search (“2003 F250 head bolt torque”)
+- VIN-based lookup
+- Mobile-first mechanic UI
+- Open developer API with full documentation
+
+---
+
+### 5. Data Model
+
+#### 5.1 Core Entities
+- Vehicle (year, make, model, trim, VIN pattern)
+- Engine / Drivetrain
+- Component
+- Procedure (steps, tools, warnings)
+- Specification (torque, clearance, fluid specs)
+- Issue / Failure_Mode
+- Part (OEM/cross-reference)
+
+#### 5.2 Key Relationships
+- Vehicle → HAS_ENGINE → Engine
+- Engine → CONTAINS → Component
+- Component → HAS_SPEC → Specification
+- Component → HAS_PROCEDURE → Procedure
+- Component → FAILS_WITH → Issue → RESOLVED_BY → Procedure
+
+---
+
+### 6. AI Pipeline
+
+Inputs: Forums, YouTube videos, public PDFs, user uploads.  
+Processing:
+1. Transcription & chunking
+2. Entity extraction & normalization
+3. Relationship inference
+4. Confidence scoring with source citation
+
+Outputs: Structured, versioned, queryable knowledge with provenance.
+
+Multimodal extensions (vision models for diagrams) are planned.
+
+---
+
+### 7. Legal & Compliance Framework
+
+Do NOT:
+- Store or redistribute full OEM manuals
+- Scrape against terms of service aggressively
+
+Do:
+- Extract non-copyrightable facts (torque values, procedures derived from community)
+- Prioritize NHTSA public data and user-generated content
+- Provide source references and confidence scores
+
+Safe data types: factual specs, aggregated insights, community guides.
+
+---
+
+### 8. Use Cases
+
+DIY Mechanics: Instant verified procedures and torque specs.  
+Content Creators: Auto-generate structured guides from videos; build authority.  
+Developers: Build apps, VIN decoders, parts marketplaces on open data.  
+Civicverse / Decentralized Projects: Community-owned infrastructure for vehicle-related modules.
+
+---
+
+### 9. Roadmap
+
+Phase 1: Seed Data — Import Kaggle/NHTSA base datasets (15k–150k+ models), establish schema.  
+Phase 2: AI Extraction — Parse forums/videos, build torque and procedure database.  
+Phase 3: Community Layer — Contributions, voting, reputation.  
+Phase 4: Mobile App — Mechanic-first interface with offline support.  
+Phase 5: Decentralization — IPFS/Arweave hosting, non-custodial ownership.
+
+---
+
+### 10. Competitive Advantage
+
+| Feature          | Existing Systems     | OpenAutoGraph                  |
+|------------------|----------------------|--------------------------------|
+| Cost             | Paid subscriptions   | Free & open-source             |
+| Openness         | Closed               | Fully open                     |
+| Data Type        | Static               | AI-generated + community-evolving |
+| Community        | Limited              | Core feature                   |
+| Ownership        | Corporate            | User / Community-owned         |
+| Accessibility    | Restricted           | VIN + natural language search  |
+
+---
+
+### 11. Tech Stack Recommendations (Implementation Guidance)
+
+- Graph DB: Neo4j or compatible (example Cypher seeding available)
+- Backend: Python/FastAPI
+- AI: Open models (Whisper, Llama 3-class, vision models)
+- Frontend: React Native / Flutter for mobile-first
+- Storage: IPFS for decentralization
+
+---
+
+### 12. Risks & Mitigations
+
+- Legal: Strict fact-only policy + legal review
+- Accuracy: Multi-source validation + community oversight
+- Cold Start: Bootstrap with NHTSA + popular vehicle manuals via community
+- Hallucination: Source-linked facts and confidence thresholds
+
+---
+
+### 13. Conclusion
+
+The automotive world desperately needs a unified, open, intelligent data layer. OpenAutoGraph delivers exactly that: AI-driven extraction, community verification, and structured intelligence that evolves with real-world use.
+
+It is more than a database — it is living infrastructure for the global automotive community.
+
+Call to Action:  
+Contributors, mechanics, developers, and Civicverse builders — join the build. Seed data, validate facts, or integrate this layer into your projects.
+
+This is real-world utility at massive scale. Car people are everywhere. Let’s give them the knowledge layer they deserve.
+
+---
+
+Ready to copy-paste.  
+
+This version integrates your original vision with refined structure, real public data sources (NHTSA, Kaggle), practical implementation notes, and Civicverse alignment. Let me know if you want a PDF-style LaTeX version, logo suggestions, or help kicking off the GitHub repo.  
+
+Let's ship this. 🚗
