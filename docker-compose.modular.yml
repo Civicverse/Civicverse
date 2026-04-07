@@ -1,0 +1,148 @@
+services:
+  onboarding:
+    build:
+      context: ./
+      dockerfile: packages/civic-onboarding/Dockerfile
+    container_name: civic-onboarding
+    ports:
+      - "3001:3001"
+    networks:
+      - civic-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  vault:
+    build:
+      context: ./
+      dockerfile: packages/civic-vault/Dockerfile
+    container_name: civic-vault
+    ports:
+      - "3008:3008"
+    networks:
+      - civic-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  identity:
+    build:
+      context: ./
+      dockerfile: packages/civic-identity/Dockerfile
+    container_name: civic-identity
+    ports:
+      - "3009:3009"
+    networks:
+      - civic-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3009/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  watch:
+    build:
+      context: ./
+      dockerfile: packages/civic-watch/Dockerfile
+    container_name: civic-watch
+    ports:
+      - "3002:3002"
+    depends_on:
+      identity:
+        condition: service_healthy
+    networks:
+      - civic-internal
+
+  governance:
+    build:
+      context: ./
+      dockerfile: packages/civic-governance/Dockerfile
+    container_name: civic-governance
+    ports:
+      - "3004:3004"
+    depends_on:
+      identity:
+        condition: service_healthy
+    networks:
+      - civic-internal
+
+  mining:
+    build:
+      context: ./
+      dockerfile: packages/civic-mining/Dockerfile
+    container_name: civic-mining
+    ports:
+      - "3005:3005"
+    depends_on:
+      identity:
+        condition: service_healthy
+    networks:
+      - civic-internal
+
+  marketplace:
+    build:
+      context: ./
+      dockerfile: packages/civic-marketplace/Dockerfile
+    container_name: civic-marketplace
+    ports:
+      - "3006:3006"
+    depends_on:
+      identity:
+        condition: service_healthy
+    networks:
+      - civic-internal
+
+  foyer:
+    build:
+      context: ./
+      dockerfile: packages/civic-foyer/Dockerfile
+    container_name: civic-foyer
+    ports:
+      - "3007:3007"
+    depends_on:
+      identity:
+        condition: service_healthy
+    networks:
+      - civic-internal
+
+  frontend:
+    build:
+      context: ./
+      dockerfile: frontend/Dockerfile.modular
+    container_name: civicverse_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      identity:
+        condition: service_healthy
+    networks:
+      - civic-public
+      - civic-internal
+
+  redis:
+    image: redis:alpine
+    container_name: civicverse_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - civic-internal
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: civicverse_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+    networks:
+      - civic-internal
+
+networks:
+  civic-internal:
+    driver: bridge
+  civic-public:
+    driver: bridge

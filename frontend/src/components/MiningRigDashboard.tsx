@@ -89,7 +89,7 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
   useEffect(() => {
     let interval: number | null = null
     fetchStatus()
-    interval = window.setInterval(fetchStatus, 2000)
+    interval = window.setInterval(fetchStatus, 1000)
     return () => {
       if (interval) window.clearInterval(interval)
     }
@@ -135,8 +135,16 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
   }
 
   const hw = navigator.hardwareConcurrency || 4
-  const cpuTemp = systemInfo?.cpuTemp || 40
+  const cpuTemp = systemInfo?.cpuTemp || 0
   const cpuLoad = systemInfo?.currentLoad || 0
+  const gpus = systemInfo?.gpus || []
+  
+  // Real RAM usage calculation: (Total - Free) / Total
+  const totalMem = systemInfo?.totalMem || 0
+  const freeMem = systemInfo?.freeMem || 0
+  const usedMemBytes = totalMem - freeMem
+  const ramGB = (usedMemBytes / (1024 * 1024 * 1024)).toFixed(1)
+  const ramPct = totalMem > 0 ? ((usedMemBytes / totalMem) * 100).toFixed(1) : 0
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -146,7 +154,7 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
         <div className="flex items-center justify-between border-b border-neon-cyan/20 pb-2">
           <div>
             <h3 className="text-neon-pink font-bold text-xl">📡 Telemetry</h3>
-            <p className="text-gray-400 text-xs">Real-time Hardware Monitoring</p>
+            <p className="text-gray-400 text-[10px] uppercase">{systemInfo?.brand || 'Detecting...'}</p>
           </div>
           <div className={`px-2 py-1 rounded text-xs font-bold ${isMining ? 'bg-neon-green text-black animate-pulse' : 'bg-gray-700 text-gray-300'}`}>
             {isMining ? 'ONLINE' : 'OFFLINE'}
@@ -155,25 +163,41 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
 
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-dark-800/60 p-3 rounded border border-neon-pink/10">
-            <p className="text-gray-400 text-xs uppercase">Hash Rate</p>
+            <p className="text-gray-400 text-[10px] uppercase">Hash Rate</p>
             <p className="text-neon-pink font-bold text-2xl">{formatNumber(hashRate)} <span className="text-sm">H/s</span></p>
           </div>
           <div className="bg-dark-800/60 p-3 rounded border border-neon-pink/10">
-            <p className="text-gray-400 text-xs uppercase">CPU Temp</p>
+            <p className="text-gray-400 text-[10px] uppercase">CPU Temp</p>
             <p className={`font-bold text-2xl ${cpuTemp > 80 ? 'text-neon-red animate-pulse' : 'text-neon-blue'}`}>
-              {cpuTemp.toFixed(1)}°C
+              {cpuTemp > 0 ? `${cpuTemp.toFixed(1)}°C` : '--'}
             </p>
           </div>
           <div className="bg-dark-800/60 p-3 rounded border border-neon-pink/10">
-            <p className="text-gray-400 text-xs uppercase">CPU Load</p>
+            <p className="text-gray-400 text-[10px] uppercase">CPU Load</p>
             <p className="text-neon-purple font-bold text-2xl">{cpuLoad.toFixed(1)}%</p>
           </div>
           <div className="bg-dark-800/60 p-3 rounded border border-neon-pink/10">
-            <p className="text-gray-400 text-xs uppercase">RAM Usage</p>
-            <p className="text-neon-green font-bold text-lg">
-                {systemInfo ? `${(systemInfo.usedMem / 1024 / 1024 / 1024).toFixed(1)} GB` : '0 GB'}
-            </p>
+            <p className="text-gray-400 text-[10px] uppercase">RAM Usage</p>
+            <div className="flex items-baseline gap-1">
+                <p className="text-neon-green font-bold text-2xl">{ramGB}</p>
+                <span className="text-gray-500 text-[10px]">GB ({ramPct}%)</span>
+            </div>
           </div>
+          
+          {gpus.map((gpu: any, i: number) => (
+            <div key={i} className="col-span-2 bg-dark-800/60 p-3 rounded border border-neon-cyan/10">
+              <div className="flex justify-between items-start mb-1">
+                <p className="text-gray-400 text-[10px] uppercase truncate max-w-[150px]">{gpu.model}</p>
+                <p className="text-neon-blue font-bold text-sm">{gpu.temp > 0 ? `${gpu.temp}°C` : ''}</p>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="w-2/3 bg-dark-900 h-1 rounded-full overflow-hidden">
+                    <div className="h-full bg-neon-cyan" style={{ width: `${gpu.load}%` }} />
+                </div>
+                <p className="text-neon-cyan font-bold text-sm">{gpu.load.toFixed(0)}%</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="space-y-2 pt-2">
@@ -187,6 +211,11 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
                     style={{ width: `${systemInfo?.disk?.usedPct || 0}%` }}
                 />
             </div>
+            {systemInfo?.l3MB > 0 && (
+                <p className="text-[10px] text-gray-500 font-mono">
+                    L3 Cache: {systemInfo.l3MB.toFixed(1)}MB | Physical Cores: {systemInfo.physicalCores}
+                </p>
+            )}
         </div>
         
         <div className="bg-dark-800/40 p-3 rounded text-xs font-mono text-gray-400 h-32 overflow-y-auto border border-gray-800">
@@ -295,7 +324,10 @@ export function MiningRigDashboard({ walletAddress }: { walletAddress: string })
                     min="1"
                     max={hw}
                     value={config.threads}
-                    onChange={(e) => setConfig({...config, threads: Number(e.target.value), preset: 'medium' as any})} // clear preset visual if modified
+                    onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setConfig({...config, threads: val, preset: 'medium' as any}); // Setting to medium or null to indicate manual override
+                    }}
                     className="w-full h-2 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-neon-cyan"
                 />
             </div>

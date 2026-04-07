@@ -93,6 +93,11 @@ export default function CivicVaultPage() {
     }
   }
 
+  const handleSendXMR = () => {
+    alert('Simulated XMR Broadcast successful.');
+    setShowSendModal(false);
+  }
+
   const stats = [
     { label: 'Monero Balance', value: `${multiChainAddresses?.MONERO_BALANCE || '0.00'} XMR`, color: 'text-neon-pink' },
     { label: 'Civic Reputation', value: `${user.trustScore}/100`, color: 'text-neon-cyan' },
@@ -101,10 +106,10 @@ export default function CivicVaultPage() {
   ]
 
   const portals = [
-    { title: 'Gathering Grounds', desc: 'Main Community Hub', icon: '🌐', path: '/foyer', color: 'border-neon-cyan' },
-    { title: 'CivicWatch', desc: 'Missions & Jobs', icon: '📋', path: '/civicwatch', color: 'border-neon-pink' },
-    { title: 'Governance', desc: 'Quadratic Voting', icon: '🏛️', path: '/governance', color: 'border-neon-purple' },
-    { title: 'Mining Pool', desc: 'Community Rewards', icon: '⛏️', path: '/mining-pool', color: 'border-neon-orange' },
+    { title: 'Gathering Grounds', desc: 'Main Hub', icon: '🌐', path: '/foyer', color: 'border-neon-cyan' },
+    { title: 'CivicWatch', desc: 'Missions', icon: '📋', path: '/civicwatch', color: 'border-neon-pink' },
+    { title: 'Governance', desc: 'Voting', icon: '🏛️', path: '/governance', color: 'border-neon-purple' },
+    { title: 'Mining Pool', desc: 'Rewards', icon: '⛏️', path: '/mining-pool', color: 'border-neon-orange' },
   ]
 
   return (
@@ -150,133 +155,125 @@ export default function CivicVaultPage() {
                   onClick={startVerification}
                   className="bg-neon-cyan hover:bg-white text-black text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-tighter transition-all"
                 >
-                  {verifying ? 'VERIFYING...' : 'VERIFY_CIVICID'}
+                  {verifying ? 'VERIFYING...' : 'VERIFY_CIVICID (GET PURPLE CHECK MARK)'}
                 </button>
               )}
            </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Left Column: Avatar & Portals */}
-          <div className="lg:col-span-4 space-y-8 animate-slide-up">
-            <div className="flex flex-col items-center">
-              <div className="w-64 h-80 relative cursor-pointer group mb-4">
-                <CharacterViewer config={user.character} animate={true} scale={1.2} />
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border backdrop-blur-md text-[8px] font-black uppercase tracking-tighter ${
-                    aiStatus.status === 'online' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'
-                  }`}>
-                      <Shield className="w-2.5 h-2.5" /> AI_WATCHDOG: {aiStatus.status === 'online' ? 'READY' : 'OFFLINE'}
-                  </div>
-                </div>
+        {/* Header Avatar & Identity Section (Top Center) */}
+        <div className="flex flex-col items-center mb-12 animate-slide-up">
+          <div className="w-64 h-80 relative cursor-pointer group mb-4">
+            <CharacterViewer config={user.character} animate={true} scale={1.2} />
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border backdrop-blur-md text-[8px] font-black uppercase tracking-tighter ${
+                aiStatus.status === 'online' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'
+              }`}>
+                  <Shield className="w-2.5 h-2.5" /> AI_WATCHDOG: {aiStatus.status === 'online' ? 'READY' : 'OFFLINE'}
               </div>
-              
-              <div className="text-center">
-                <NeonText size="5xl" gradient={true} className="block tracking-tighter uppercase font-black mb-1">
-                  {user.username}
-                </NeonText>
-                <code className="text-[9px] bg-white/5 border border-white/10 px-3 py-1 rounded-full text-gray-500 font-mono">
-                  {user.civicId}
-                </code>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3">
-              {portals.map((portal, i) => (
-                <button 
-                  key={i} 
-                  onClick={() => nav(portal.path)}
-                  className={`group relative text-left p-4 bg-white/5 border ${portal.color}/20 rounded-2xl hover:bg-white/10 hover:${portal.color}/50 backdrop-blur-md transition-all duration-300`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="text-2xl group-hover:scale-110 transition-transform">{portal.icon}</div>
-                    <div>
-                      <h3 className="text-sm font-black uppercase tracking-tight group-hover:text-white transition-colors">{portal.title}</h3>
-                      <p className="text-[10px] text-gray-500 font-medium">{portal.desc}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
             </div>
           </div>
+          
+          <div className="text-center">
+            <NeonText size="5xl" gradient={true} className="block tracking-tighter uppercase font-black mb-1">
+              {user.username}
+            </NeonText>
+            <code className="text-[9px] bg-white/5 border border-white/10 px-3 py-1 rounded-full text-gray-500 font-mono">
+              {user.civicId}
+            </code>
+          </div>
 
-          {/* Right Column: Stats, Assets & Tools */}
-          <div className="lg:col-span-8 space-y-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {stats.map((stat, i) => (
-                <div key={i} className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-2xl text-center">
-                  <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-1">{stat.label}</p>
-                  <p className={`text-lg font-black ${stat.color} tracking-tight`}>{stat.value}</p>
+          {/* Portal Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 w-full max-w-4xl">
+            {portals.map((portal, i) => (
+              <button 
+                key={i} 
+                onClick={() => nav(portal.path)}
+                className={`group relative text-center p-4 bg-white/5 border ${portal.color}/20 rounded-2xl hover:bg-white/10 hover:${portal.color}/50 backdrop-blur-md transition-all duration-300`}
+              >
+                <div className="text-2xl group-hover:scale-110 transition-transform mb-2">{portal.icon}</div>
+                <h3 className="text-xs font-black uppercase tracking-tight group-hover:text-white transition-colors">{portal.title}</h3>
+                <p className="text-[9px] text-gray-500 font-medium">{portal.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Dashboard Area */}
+        <div className="space-y-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
+          
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {stats.map((stat, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-2xl text-center">
+                <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-1">{stat.label}</p>
+                <p className={`text-lg font-black ${stat.color} tracking-tight`}>{stat.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Verification Info / PoP Details */}
+          <AnimatedCard className="border-l-4 border-neon-purple bg-black/40 backdrop-blur-xl p-6">
+             <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                   <Shield className="text-neon-purple w-5 h-5" />
+                   <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neon-purple">Proof of Personhood (PoP)</h3>
                 </div>
-              ))}
-            </div>
+                <span className="text-[10px] text-gray-500 font-mono italic">1_HUMAN_=_1_CIVICID</span>
+             </div>
 
-            {/* Verification Info / PoP Details */}
-            <AnimatedCard className="border-l-4 border-neon-purple bg-black/40 backdrop-blur-xl p-6">
-               <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2">
-                     <Shield className="text-neon-purple w-5 h-5" />
-                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-neon-purple">Proof of Personhood (PoP)</h3>
-                  </div>
-                  <span className="text-[10px] text-gray-500 font-mono italic">1_HUMAN_=_1_CIVICID</span>
-               </div>
+             <div className="space-y-4 text-xs font-medium text-gray-400 leading-relaxed uppercase tracking-tight">
+                <p>Verification requires meeting real humans in the physical world. No biometrics or government ID required.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                   <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                      <p className="text-white font-black mb-1">Step 1: Meet Person A</p>
+                      <p className="text-[10px]">Verified user generates a 6-digit code for you.</p>
+                   </div>
+                   <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                      <p className="text-white font-black mb-1">Step 2: Meet Person B</p>
+                      <p className="text-[10px]">Provide your new code to the next verified peer.</p>
+                   </div>
+                   <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                      <p className="text-white font-black mb-1">Step 3: Meet Person C</p>
+                      <p className="text-[10px]">Final verification grants your Purple Check ID.</p>
+                   </div>
+                </div>
+             </div>
+          </AnimatedCard>
 
-               <div className="space-y-4 text-xs font-medium text-gray-400 leading-relaxed uppercase tracking-tight">
-                  <p>Verification requires meeting real humans in the physical world. No biometrics or government ID required.</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                     <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-white font-black mb-1">Step 1: Meet Person A</p>
-                        <p className="text-[10px]">Verified user generates a 6-digit code for you.</p>
-                     </div>
-                     <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-white font-black mb-1">Step 2: Meet Person B</p>
-                        <p className="text-[10px]">Provide your new code to the next verified peer.</p>
-                     </div>
-                     <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <p className="text-white font-black mb-1">Step 3: Meet Person C</p>
-                        <p className="text-[10px]">Final verification grants your Purple Check ID.</p>
-                     </div>
-                  </div>
-               </div>
-            </AnimatedCard>
+          {/* Security Tools */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <AnimatedCard className="border-neon-purple p-6">
+                <h3 className="text-xs font-black uppercase tracking-widest text-neon-purple mb-4">Vault Resilience</h3>
+                <div className="space-y-4">
+                   <AnimatedButton variant="secondary" size="sm" className="w-full justify-between" onClick={() => setShowSeed(!showSeed)}>
+                      <span>{showSeed ? 'HIDE_SEED_PHRASE' : 'RECOVERY_PHRASE'}</span>
+                      <QrCode className="w-4 h-4" />
+                   </AnimatedButton>
+                   {showSeed && (
+                      <div className="bg-black/60 rounded-xl p-4 border border-neon-pink/30 animate-fade-in font-mono text-[10px] grid grid-cols-3 gap-2">
+                         {(tempMnemonic || 'SEED_LOCKED_ENCRYPTED').split(' ').map((w, i) => (
+                            <div key={i} className="text-neon-cyan"><span className="opacity-30">{i+1}.</span> {w}</div>
+                         ))}
+                      </div>
+                   )}
+                   <AnimatedButton variant="secondary" size="sm" className="w-full justify-between" onClick={handleExportBackup}>
+                      <span>EXPORT_ENCRYPTED_BACKUP</span>
+                      <ExternalLink className="w-4 h-4" />
+                   </AnimatedButton>
+                </div>
+             </AnimatedCard>
 
-            {/* Security Tools */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <AnimatedCard className="border-neon-purple p-6">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-neon-purple mb-4">Vault Resilience</h3>
-                  <div className="space-y-4">
-                     <AnimatedButton variant="secondary" size="sm" className="w-full justify-between" onClick={() => setShowSeed(!showSeed)}>
-                        <span>{showSeed ? 'HIDE_SEED_PHRASE' : 'RECOVERY_PHRASE'}</span>
-                        <QrCode className="w-4 h-4" />
-                     </AnimatedButton>
-                     {showSeed && (
-                        <div className="bg-black/60 rounded-xl p-4 border border-neon-pink/30 animate-fade-in font-mono text-[10px] grid grid-cols-3 gap-2">
-                           {(tempMnemonic || 'SEED_LOCKED_ENCRYPTED').split(' ').map((w, i) => (
-                              <div key={i} className="text-neon-cyan"><span className="opacity-30">{i+1}.</span> {w}</div>
-                           ))}
-                        </div>
-                     )}
-                     <AnimatedButton variant="secondary" size="sm" className="w-full justify-between" onClick={handleExportBackup}>
-                        <span>EXPORT_ENCRYPTED_BACKUP</span>
-                        <ExternalLink className="w-4 h-4" />
-                     </AnimatedButton>
-                  </div>
-               </AnimatedCard>
-
-               <div className="space-y-4">
-                  <AnimatedButton variant="secondary" className="w-full py-5 justify-between" onClick={() => nav('/wardrobe')}>
-                     <span className="font-black uppercase text-xs">👕 WARDROBE_LAB</span>
-                     <ArrowUpRight className="w-4 h-4" />
-                  </AnimatedButton>
-                  <AnimatedButton variant="danger" className="w-full py-5 justify-between" onClick={() => { logout(); nav('/welcome'); }}>
-                     <span className="font-black uppercase text-xs">🔒 LOCK_VAULT_SESSION</span>
-                     <span>✕</span>
-                  </AnimatedButton>
-               </div>
-            </div>
+             <div className="space-y-4">
+                <AnimatedButton variant="secondary" className="w-full py-5 justify-between" onClick={() => nav('/wardrobe')}>
+                   <span className="font-black uppercase text-xs">👕 WARDROBE_LAB</span>
+                   <ArrowUpRight className="w-4 h-4" />
+                </AnimatedButton>
+                <AnimatedButton variant="danger" className="w-full py-5 justify-between" onClick={() => { logout(); nav('/welcome'); }}>
+                   <span className="font-black uppercase text-xs">🔒 LOCK_VAULT_SESSION</span>
+                   <span>✕</span>
+                </AnimatedButton>
+             </div>
           </div>
         </div>
       </div>

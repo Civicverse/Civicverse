@@ -1,19 +1,21 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: civicverse_rebuilt_backend
     ports:
       - "3003:3003"
       - "8080:8080"
     volumes:
-      - ./data:/data
+      - ./data:/app/data
     networks:
       - civicnet
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
     container_name: civicverse_rebuilt_frontend
     ports:
       - 3000:80

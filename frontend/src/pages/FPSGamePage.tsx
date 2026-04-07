@@ -441,57 +441,73 @@ export function FPSGamePage() {
         e.preventDefault();
         playerBody.velocity.y = 12;
       }
-
-      if (key === 'c') {
-        e.preventDefault();
-        const direction = new THREE.Vector3();
-        camera.getWorldDirection(direction);
-
-        direction.x += (Math.random() - 0.5) * 0.05;
-        direction.y += (Math.random() - 0.5) * 0.05;
-        direction.z += (Math.random() - 0.5) * 0.05;
-        direction.normalize();
-
-        const bulletGeometry = new THREE.SphereGeometry(0.08, 6, 6);
-        const bulletMaterial = new THREE.MeshStandardMaterial({
-          color: 0xffff00,
-          emissive: 0xffff00,
-          emissiveIntensity: 0.8,
-        });
-        const bulletMesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
-        bulletMesh.position.copy(playerMesh.position);
-        scene.add(bulletMesh);
-
-        const bulletBody = new CANNON.Body({
-          mass: 0.05,
-          shape: new CANNON.Sphere(0.08),
-        });
-        bulletBody.position.copy(playerBody.position as any);
-        bulletBody.velocity.set(direction.x * 60, direction.y * 60, direction.z * 60);
-        world.addBody(bulletBody);
-
-        bulletsRef.current.push({
-          mesh: bulletMesh,
-          body: bulletBody,
-          life: 4,
-        });
-
-        setGameState((prev) => ({
-          ...prev,
-          ammo: Math.max(0, prev.ammo - 1),
-        }));
-
-        if (gameState.ammo <= 1) {
-          endGame();
-        }
-      }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
       keysPressed.current[e.key.toLowerCase()] = false;
     };
 
+    const handleShoot = () => {
+      if (!gameState.gameActive || gameState.ammo <= 0) return;
+
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
+
+      direction.x += (Math.random() - 0.5) * 0.02;
+      direction.y += (Math.random() - 0.5) * 0.02;
+      direction.z += (Math.random() - 0.5) * 0.02;
+      direction.normalize();
+
+      const bulletGeometry = new THREE.SphereGeometry(0.12, 8, 8);
+      const bulletMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00ffff,
+        emissive: 0x00ffff,
+        emissiveIntensity: 2,
+      });
+      const bulletMesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
+      bulletMesh.position.copy(playerMesh.position);
+      bulletMesh.position.y += 1.5; // Fire from eye level
+      scene.add(bulletMesh);
+
+      const bulletBody = new CANNON.Body({
+        mass: 0.1,
+        shape: new CANNON.Sphere(0.12),
+      });
+      bulletBody.position.copy(playerBody.position as any);
+      bulletBody.position.y += 1.5;
+      bulletBody.velocity.set(direction.x * 100, direction.y * 100, direction.z * 100);
+      world.addBody(bulletBody);
+
+      bulletsRef.current.push({
+        mesh: bulletMesh,
+        body: bulletBody,
+        life: 3,
+      });
+
+      // Recoil effect
+      mouseY -= 0.02; 
+      
+      // Muzzle flash
+      const flash = new THREE.PointLight(0x00ffff, 10, 5);
+      flash.position.copy(playerMesh.position);
+      flash.position.y += 1.5;
+      scene.add(flash);
+      setTimeout(() => scene.remove(flash), 50);
+
+      setGameState((prev) => ({
+        ...prev,
+        ammo: Math.max(0, prev.ammo - 1),
+      }));
+
+      if (gameState.ammo <= 1) {
+        endGame();
+      }
+    };
+
     renderer.domElement.addEventListener('mousemove', onMouseMove);
+    renderer.domElement.addEventListener('mousedown', (e) => {
+      if (e.button === 0) handleShoot();
+    });
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
 
@@ -538,20 +554,20 @@ export function FPSGamePage() {
       const vel = new CANNON.Vec3(0, playerBody.velocity.y, 0);
 
       if (keysPressed.current['w']) {
-        vel.x += forward.x * speed;
-        vel.z += forward.z * speed;
-      }
-      if (keysPressed.current['s']) {
         vel.x -= forward.x * speed;
         vel.z -= forward.z * speed;
       }
-      if (keysPressed.current['d']) {
-        vel.x += right.x * speed;
-        vel.z += right.z * speed;
+      if (keysPressed.current['s']) {
+        vel.x += forward.x * speed;
+        vel.z += forward.z * speed;
       }
-      if (keysPressed.current['a']) {
+      if (keysPressed.current['d']) {
         vel.x -= right.x * speed;
         vel.z -= right.z * speed;
+      }
+      if (keysPressed.current['a']) {
+        vel.x += right.x * speed;
+        vel.z += right.z * speed;
       }
 
       if (keysPressed.current['q']) {

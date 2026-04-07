@@ -1,0 +1,123 @@
+[gd_scene load_steps=2 format=3 uid="uid://c6f7m3y2p8x8n"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.05, 0.05, 0.1, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0, 0.5, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(1, 0, 0.5, 0.2)
+shadow_size = 10
+
+[node name="WalletGamblingUI" type="CanvasLayer"]
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="Control"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -300.0
+offset_right = 250.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 30.0
+offset_right = -30.0
+offset_bottom = -30.0
+
+[node name="BalanceLabel" type="Label" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+text = "Balance: 0.0 ETH"
+horizontal_alignment = 1
+
+[node name="AmountInput" type="LineEdit" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Bet Amount"
+
+[node name="AddressInput" type="LineEdit" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Opponent Address"
+
+[node name="BetButton" type="Button" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+text = "Place Bet"
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Control/Panel/VBoxContainer"]
+
+[connection signal="pressed" from="Control/Panel/VBoxContainer/BetButton" to="." method="_on_bet_pressed"]
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 0.5, 1)
+theme_override_font_sizes/font_size = 32
+text = "P2P GAMBLING VAULT"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="WalletInfo" type="VBoxContainer" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Control/Panel/VBoxContainer/WalletInfo"]
+layout_mode = 2
+text = "CURRENT BALANCE:"
+font_size = 14
+
+[node name="Balance" type="Label" parent="Control/Panel/VBoxContainer/WalletInfo"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "1,240.50 CVT"
+
+[node name="BetSection" type="VBoxContainer" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Control/Panel/VBoxContainer/BetSection"]
+layout_mode = 2
+text = "BET AMOUNT:"
+
+[node name="LineEdit" type="LineEdit" parent="Control/Panel/VBoxContainer/BetSection"]
+layout_mode = 2
+placeholder_text = "0.00"
+
+[node name="TaxInfo" type="Label" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 12
+text = "1% TREASURY TAX APPLIED TO ALL BETS
+FUNDS THE CIVIC UBI POOL"
+horizontal_alignment = 1
+
+[node name="BetButton" type="Button" parent="Control/Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 10
+theme_override_font_sizes/font_size = 24
+text = "BROADCAST BET"

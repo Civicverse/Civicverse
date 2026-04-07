@@ -1,0 +1,174 @@
+[gd_scene load_steps=3 format=3 uid="uid://uqvx4y5mvfnd"]
+
+[ext_resource type="Script" res://scripts/ui/FeedUI.gd" id="1_feedui"]
+[ext_resource type="Script" res://scripts/ui/CommunityHubManager.gd" id="1_hubmgr"]
+
+[node name="CommunityHub" type="Control"]
+script = ExtResource("1_hubmgr")
+layout_mode = 3
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+color = Color(0.03, 0.03, 0.05, 1)
+
+[node name="MainLayout" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+
+[node name="KillFeedPanel" type="PanelContainer" parent="MainLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(250, 0)
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainLayout/KillFeedPanel"]
+layout_mode = 3
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+
+[node name="KillFeedTitle" type="Label" parent="MainLayout/KillFeedPanel/VBoxContainer"]
+layout_mode = 2
+text = "⚔️ KILL FEED"
+add_theme_color_override/font_color = Color(1, 0.2, 0.2, 1)
+add_theme_font_size_override/font_size = 16
+
+[node name="Separator" type="HSeparator" parent="MainLayout/KillFeedPanel/VBoxContainer"]
+layout_mode = 2
+modulate = Color(0.5, 0, 0, 0.5)
+
+[node name="KillList" type="VBoxContainer" parent="MainLayout/KillFeedPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CentralFeed" type="VBoxContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Header" type="PanelContainer" parent="MainLayout/CentralFeed"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+
+[node name="HeaderContent" type="HBoxContainer" parent="MainLayout/CentralFeed/Header"]
+layout_mode = 3
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+
+[node name="Title" type="Label" parent="MainLayout/CentralFeed/Header/HeaderContent"]
+layout_mode = 2
+text = "🌃 NEON REIGN COMMUNITY HUB"
+add_theme_font_size_override/font_size = 20
+add_theme_color_override/font_color = Color(0, 1, 0.8, 1)
+
+[node name="Spacer" type="Control" parent="MainLayout/CentralFeed/Header/HeaderContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="OnlineStatus" type="Label" parent="MainLayout/CentralFeed/Header/HeaderContent"]
+layout_mode = 2
+text = "🟢 12,847 ONLINE"
+add_theme_font_size_override/font_size = 12
+add_theme_color_override/font_color = Color(0, 1, 0.5, 1)
+
+[node name="Feed" type="VBoxContainer" parent="MainLayout/CentralFeed"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_feedui")
+
+[node name="Navigation" type="PanelContainer" parent="MainLayout/CentralFeed"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 70)
+
+[node name="NavContent" type="HBoxContainer" parent="MainLayout/CentralFeed/Navigation"]
+layout_mode = 3
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+alignment = 1
+
+[node name="EnterFoyerBtn" type="Button" parent="MainLayout/CentralFeed/Navigation/NavContent"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 50)
+text = "ENTER THE FOYER ⬇️"
+add_theme_font_size_override/font_size = 14
+
+[node name="TrendsPanel" type="PanelContainer" parent="MainLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(280, 0)
+
+[node name="TrendsContent" type="VBoxContainer" parent="MainLayout/TrendsPanel"]
+layout_mode = 3
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+
+[node name="TrendsTitle" type="Label" parent="MainLayout/TrendsPanel/TrendsContent"]
+layout_mode = 2
+text = "📊 TRENDING NOW"
+add_theme_font_size_override/font_size = 14
+add_theme_color_override/font_color = Color(0, 1, 0.8, 1)
+
+[node name="TrendsList" type="VBoxContainer" parent="MainLayout/TrendsPanel/TrendsContent"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Separator2" type="HSeparator" parent="MainLayout/TrendsPanel/TrendsContent"]
+layout_mode = 2
+
+[node name="StreamsTitle" type="Label" parent="MainLayout/TrendsPanel/TrendsContent"]
+layout_mode = 2
+text = "🔴 LIVE STREAMS"
+add_theme_font_size_override/font_size = 12
+add_theme_color_override/font_color = Color(1, 0.2, 0.2, 1)
+
+[node name="StreamsList" type="VBoxContainer" parent="MainLayout/TrendsPanel/TrendsContent"]
+layout_mode = 2
+size_flags_vertical = 2
+
+[node name="Theme" type="Theme" parent="."]
+default_font_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.05, 0.05, 0.08, 0.9)
+border_color = Color(1, 0.2, 0.2, 0.4)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 12
+content_margin_top = 12
+content_margin_right = 12
+content_margin_bottom = 12

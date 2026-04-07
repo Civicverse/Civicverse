@@ -1,0 +1,40 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" uid="uid://c8n4y2p2r5d8x" path="res://scenes/player/Player.tscn" id="1_shard_p"]
+
+[sub_resource type="Environment" id="Environment_Shard"]
+background_mode = 1
+background_color = Color(0.05, 0.05, 0.1, 1)
+glow_enabled = true
+glow_intensity = 2.0
+glow_bloom = 0.5
+
+[sub_resource type="StandardMaterial3D" id="Material_Shard"]
+albedo_color = Color(0.1, 0.1, 0.2, 1)
+emission_enabled = true
+emission = Color(0, 0.5, 1, 1)
+emission_energy_multiplier = 2.0
+
+[node name="Shard" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_Shard")
+
+[node name="Floor" type="CSGBox3D" parent="."]
+use_collision = true
+size = Vector3(20, 0.1, 20)
+material = SubResource("Material_Shard")
+
+[node name="Wall1" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -10)
+use_collision = true
+size = Vector3(20, 5, 0.5)
+material = SubResource("Material_Shard")
+
+[node name="ReturnPortal" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -9.5)
+use_collision = true
+size = Vector3(2, 3, 0.2)
+
+[node name="Player" parent="." instance=ExtResource("1_shard_p")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 5)

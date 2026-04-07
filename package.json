@@ -5,20 +5,25 @@
   "private": true,
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "packages/*"
   ],
   "scripts": {
     "start": "npx concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:all": "npx concurrently \"npm run start:service --workspaces\" \"npm run start:frontend\"",
     "dev": "bash ./scripts/dev.sh",
     "build": "npm run build --workspaces",
-    "build:foyer": "cd godot-foyer && godot --headless --export-release \"Web\" ../frontend/public/foyer-dist/index.html",
+    "build:foyer": "npm run build:godot --workspace=@civicverse/civic-foyer",
     "start:backend": "npm start --workspace=backend",
     "start:frontend": "npm run dev --workspace=frontend",
     "clean": "rm -rf node_modules backend/node_modules frontend/node_modules frontend/dist && rm -f package-lock.json backend/package-lock.json frontend/package-lock.json && echo 'Clean complete!'",
     "docker:clean": "docker-compose down --volumes && docker container prune -f && docker image prune -f && echo 'Docker cleanup complete!'"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "tsx": "^4.19.3",
+    "@types/node": "^20.11.19",
+    "@types/express": "^4.17.21"
   },
   "overrides": {
     "esbuild": "0.25.0"

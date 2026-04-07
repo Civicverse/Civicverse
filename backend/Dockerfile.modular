@@ -1,0 +1,25 @@
+# --- Multi-stage Backend Build ---
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy root monorepo config
+COPY package.json package-lock.json ./
+# Copy workspace packages
+COPY packages ./packages
+# Copy backend
+COPY backend ./backend
+
+# Install dependencies for the whole monorepo
+RUN npm install
+# Build packages if necessary (simplified here for TS-node/ESM)
+# RUN npm run build --workspaces
+
+FROM node:20-alpine
+
+WORKDIR /app
+COPY --from=builder /app ./
+
+EXPOSE 3003 8080
+
+CMD ["npm", "start", "--workspace=backend"]

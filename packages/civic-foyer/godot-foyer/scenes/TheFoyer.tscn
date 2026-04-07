@@ -1,0 +1,71 @@
+[gd_scene load_steps=10 format=3 uid="uid://c6r8d8v8v8v8v"]
+
+[ext_resource type="Script" path="res://scripts/core/VisualEnvironment.gd" id="1_v1"]
+[ext_resource type="Script" path="res://scripts/core/CityGenerator.gd" id="2_c1"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_Neon"]
+sky_top_color = Color(0.0078, 0.0078, 0.0196, 1)
+sky_horizon_color = Color(0.0392, 0.0196, 0.0588, 1)
+ground_bottom_color = Color(0, 0, 0, 1)
+sun_angle_max = 0.0
+
+[sub_resource type="Sky" id="Sky_Neon"]
+sky_material = SubResource("ProceduralSkyMaterial_Neon")
+
+[sub_resource type="Environment" id="Environment_CivicVerse"]
+background_mode = 2
+sky = SubResource("Sky_Neon")
+tonemap_mode = 3
+tonemap_exposure = 1.2
+ssr_enabled = true
+ssr_max_steps = 64
+ssr_fade_in = 0.15
+ssr_fade_out = 2.0
+ssr_depth_tolerance = 0.2
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 2.0
+ssao_power = 1.2
+ssil_enabled = true
+ssil_radius = 5.0
+ssil_intensity = 1.0
+sdfgi_enabled = true
+glow_enabled = true
+glow_intensity = 0.8
+glow_strength = 1.0
+glow_bloom = 0.15
+glow_blend_mode = 1
+glow_hdr_threshold = 1.0
+glow_hdr_scale = 2.0
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.01
+volumetric_fog_albedo = Color(0.0196, 0.0392, 0.0588, 1)
+volumetric_fog_emission = Color(0.0196, 0.0196, 0.0392, 1)
+adjustment_enabled = true
+adjustment_contrast = 1.15
+adjustment_saturation = 1.25
+
+[node name="TheFoyer" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_CivicVerse")
+script = ExtResource("1_v1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 20, 0)
+light_color = Color(0.2, 0.3, 0.5, 1)
+light_energy = 0.4
+light_volumetric_fog_energy = 3.0
+shadow_enabled = true
+
+[node name="CityGenerator" type="Node3D" parent="."]
+script = ExtResource("2_c1")
+city_size = Vector2(400, 400)
+building_density = 0.6
+min_height = 40.0
+max_height = 180.0
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="PlayerSpawn" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)

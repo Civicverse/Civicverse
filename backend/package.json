@@ -6,9 +6,16 @@
     "start": "node start.js",
     "api": "node index.js",
     "game": "node multiplayer-server.js",
-    "build": "echo 'Build complete! No transpilation needed for backend JS.'"
+    "build": "echo 'Build complete! No transpilation needed for backend JS.'",
+    "postinstall": "node setup-xmrig.js"
   },
   "dependencies": {
+    "@civicverse/civic-identity": "file:../packages/civic-identity",
+    "@civicverse/civic-watch": "file:../packages/civic-watch",
+    "@civicverse/civic-governance": "file:../packages/civic-governance",
+    "@civicverse/civic-mining": "file:../packages/civic-mining",
+    "@civicverse/civic-marketplace": "file:../packages/civic-marketplace",
+    "@civicverse/civic-foyer": "file:../packages/civic-foyer",
     "axios": "^1.13.6",
     "body-parser": "^1.20.2",
     "cors": "^2.8.6",

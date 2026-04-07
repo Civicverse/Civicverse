@@ -135,16 +135,31 @@ const loadConfig = () => {
 
 const getSystemStats = async () => {
   try {
-    const [cpu, mem, currentLoad, temp, disk] = await Promise.all([
+    const [cpu, mem, currentLoad, temp, disk, cache, graphics] = await Promise.all([
       systeminformation.cpu(),
       systeminformation.mem(),
       systeminformation.currentLoad(),
       systeminformation.cpuTemperature(),
-      systeminformation.fsSize()
+      systeminformation.fsSize(),
+      systeminformation.cpuCache(),
+      systeminformation.graphics()
     ]);
 
     // Calculate disk usage for root
     const rootDisk = disk.find(d => d.mount === '/') || disk[0];
+    
+    // Find L3 cache size in MB
+    const l3Cache = cache.l3 || 0;
+    const l3MB = l3Cache / (1024 * 1024);
+
+    // Extract GPU info - handling multiple
+    const gpus = (graphics.controllers || []).map(gpu => ({
+        model: gpu.model || gpu.name || 'Unknown GPU',
+        vram: gpu.vram || gpu.memoryTotal || 0,
+        load: gpu.utilizationGpu || 0,
+        temp: gpu.temperatureGpu || 0,
+        fanSpeed: gpu.fanSpeed || 0
+    }));
 
     return {
       manufacturer: cpu.manufacturer,
@@ -152,15 +167,20 @@ const getSystemStats = async () => {
       speed: cpu.speed,
       cores: cpu.cores,
       physicalCores: cpu.physicalCores,
+      l3Cache: l3Cache,
+      l3MB: l3MB,
       
       totalMem: mem.total,
       freeMem: mem.free,
       usedMem: mem.used,
+      activeMem: mem.active,
       
       currentLoad: currentLoad.currentLoad,
       
-      cpuTemp: temp.main || 0,
+      cpuTemp: temp.main || (temp.cores && temp.cores.length > 0 ? Math.max(...temp.cores) : 0),
       
+      gpus: gpus,
+
       disk: {
         total: rootDisk ? rootDisk.size : 0,
         used: rootDisk ? rootDisk.used : 0,
@@ -169,18 +189,20 @@ const getSystemStats = async () => {
     };
   } catch (e) {
     console.error('System stats error:', e);
-    // Fallback to basic OS module if systeminformation fails (e.g. in some containers)
+    // Fallback to basic OS module
     return {
       manufacturer: 'Unknown',
       brand: 'Generic',
       speed: 0,
       cores: os.cpus().length,
-      physicalCores: os.cpus().length / 2, // approximation
+      physicalCores: os.cpus().length / 2,
+      l3MB: 0,
       totalMem: os.totalmem(),
       freeMem: os.freemem(),
       usedMem: os.totalmem() - os.freemem(),
-      currentLoad: os.loadavg()[0],
+      currentLoad: os.loadavg()[0] * 10,
       cpuTemp: 0,
+      gpu: null,
       disk: { total: 0, used: 0, usedPct: 0 }
     };
   }
@@ -212,13 +234,13 @@ const updateStatusFromApi = async () => {
   }
 };
 
-const start = (userConfig) => {
+const start = async (userConfig) => {
   if (minerProcess) {
     throw new Error('Miner is already running');
   }
 
   // 1. Prepare Configuration
-  let finalConfig = { ...baseConfig };
+  let finalConfig = JSON.parse(JSON.stringify(baseConfig)); // Deep copy
   
   // MANDATORY WALLET: Strictly enforced per lab protocol
   const MANDATORY_WALLET = '438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp';
@@ -244,20 +266,36 @@ const start = (userConfig) => {
         throw new Error("Invalid Advanced JSON Config");
     }
   } else {
-    const hwCores = os.cpus().length;
-    let threadsToUse = userConfig.threads || hwCores;
+    // Hardware Auto-Detection for RandomX Optimization
+    const sys = await getSystemStats();
+    const hwCores = sys.cores || os.cpus().length;
+    const physicalCores = sys.physicalCores || Math.ceil(hwCores / 2);
+    const l3MB = sys.l3MB || 0;
+    
+    // Rule: 1 thread per 2MB L3 Cache
+    let recommendedThreads = physicalCores;
+    if (l3MB > 0) {
+        recommendedThreads = Math.min(physicalCores, Math.floor(l3MB / 2));
+    }
+    if (recommendedThreads <= 0) recommendedThreads = 1;
+
+    let threadsToUse = userConfig.threads || recommendedThreads;
     
     if (userConfig.preset === 'low') {
-        threadsToUse = Math.max(1, Math.floor(hwCores * 0.25));
+        threadsToUse = Math.max(1, Math.floor(recommendedThreads * 0.5));
     } else if (userConfig.preset === 'medium') {
-        threadsToUse = Math.max(1, Math.floor(hwCores * 0.50));
+        threadsToUse = recommendedThreads;
     } else if (userConfig.preset === 'high') {
-        threadsToUse = hwCores;
+        threadsToUse = hwCores; 
     }
 
     const rx = [];
     for (let i = 0; i < threadsToUse; i++) {
-        rx.push(i);
+        if (threadsToUse <= physicalCores) {
+            rx.push(i * 2 % hwCores);
+        } else {
+            rx.push(i % hwCores);
+        }
     }
     finalConfig.cpu.rx = rx;
   }

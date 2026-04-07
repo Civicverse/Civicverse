@@ -1,16 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CivicIdentity from '../lib/civicIdentity';
+import { useGameStore } from '../store/gameStore';
+import { useMultiplayerStore } from '../services/multiplayer';
 import { 
   Shield, 
-  Zap
+  Zap,
+  MessageSquare,
+  Radio,
+  Eye,
+  Send,
+  Mic,
+  Settings,
+  Circle
 } from 'lucide-react';
-import { AnimatedCard, NeonText, GradientOrb, GodotFoyer } from '../components';
-import { motion } from 'framer-motion';
+import { GodotFoyer } from '../components';
 
 export default function FoyerPage() {
   const nav = useNavigate();
   const [did, setDid] = useState<string | null>(null);
+  const { user } = useGameStore();
+  const { connect, sendMessage, chatHistory, setIdentity } = useMultiplayerStore();
+  const [inputValue, setInputValue] = useState('');
   
   useEffect(() => {
     const fetchDid = async () => {
@@ -18,93 +29,157 @@ export default function FoyerPage() {
       setDid(storedDid);
     };
     fetchDid();
-  }, []);
+
+    // Connect to multiplayer server
+    const host = window.location.hostname;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${host}:8080/ws`;
+    connect(wsUrl);
+  }, [connect]);
+
+  useEffect(() => {
+    if (user?.username) {
+      setIdentity(user.username);
+    }
+  }, [user?.username, setIdentity]);
+
+  const handleSendMessage = () => {
+    if (!inputValue.trim() || !user) return;
+    sendMessage(inputValue);
+    setInputValue('');
+  };
 
   return (
-    <div className="relative min-h-screen bg-[#0a0c10] text-white overflow-hidden pb-24">
-      {/* Animated background orbs */}
-      <GradientOrb delay={0} size={400} />
-      <GradientOrb delay={2} size={300} />
-      <GradientOrb delay={4} size={350} />
-
-      {/* Grid background */}
-      <div className="absolute inset-0 grid-glow opacity-20 pointer-events-none" />
-
-      <div className="relative z-10 container mx-auto max-w-6xl py-12 px-4">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Shield className="text-blue-500 w-8 h-8" />
-            <div className="h-px w-12 bg-gray-800"></div>
-            <span className="text-xs font-bold text-blue-500 uppercase tracking-[0.3em]">Identity Sovereign</span>
-            <div className="h-px w-12 bg-gray-800"></div>
-            <Zap className="text-blue-500 w-8 h-8" />
+    <div className="h-[calc(100vh-0px)] bg-[#0a0c10] text-white flex flex-col overflow-hidden">
+      {/* Social Media Navigation Tabs */}
+      <div className="bg-[#161b22] border-b border-gray-800/50 px-6 py-3 shrink-0">
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-2">
+            <Shield className="text-blue-500 w-6 h-6" />
+            <span className="text-white font-bold text-lg">CivicVerse Hub</span>
           </div>
           
-          <NeonText size="6xl" gradient={true} className="block mb-4 italic tracking-tighter uppercase font-black">
-            ∞ CIVICVERSE HUB
-          </NeonText>
-          
-          <div className="flex flex-col items-center gap-2 mb-8">
-            <p className="text-blue-500 text-xl tracking-[0.25em] font-bold uppercase">
-              The Decentralized Coordination Layer
-            </p>
+          <nav className="flex items-center gap-6">
+            <button 
+              onClick={() => nav('/vault')}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              <span className="font-medium">Vault</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-400 hover:bg-gray-800/50 hover:text-white transition-colors">
+              <Eye className="w-4 h-4" />
+              <span className="font-medium">Explore</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-400 hover:bg-gray-800/50 hover:text-white transition-colors">
+              <Radio className="w-4 h-4" />
+              <span className="font-medium">Live</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-400 hover:bg-gray-800/50 hover:text-white transition-colors">
+              <MessageSquare className="w-4 h-4" />
+              <span className="font-medium">Messages</span>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* CivicWatch Live Stream - Left Side */}
+        <div className="w-80 bg-gradient-to-b from-[#1a1d23] to-[#0f1419] border-r border-gray-800/50 overflow-hidden shadow-2xl flex flex-col shrink-0">
+          <div className="p-3 border-b border-gray-800/50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-white font-bold flex items-center gap-1">
+                <Eye className="w-4 h-4 text-cyan-400" />
+                <span className="text-xs">CivicWatch Live</span>
+              </h3>
+              <div className="flex gap-1">
+                <button className="w-6 h-6 rounded bg-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/30">
+                  <Circle className="w-3 h-3 fill-current" />
+                </button>
+                <button className="w-6 h-6 rounded bg-gray-800/50 flex items-center justify-center text-gray-400 hover:bg-gray-700/50">
+                  <Settings className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 bg-black/50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                <Eye className="w-8 h-8 text-white" />
+              </div>
+              <p className="text-gray-400 text-sm">Live Stream</p>
+              <p className="text-cyan-400 text-xs mt-1">Community Events</p>
+            </div>
           </div>
         </div>
 
-        {/* Content Area - Centrally the Foyer Game */}
-        <div className="min-h-[600px] mb-12">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full h-[80vh] min-h-[600px] rounded-[3rem] overflow-hidden border border-gray-800 shadow-2xl shadow-blue-900/20"
-          >
-            <GodotFoyer onExit={() => nav('/vault')} />
-          </motion.div>
+        {/* Game - Fills center */}
+        <div className="flex-1 relative bg-black">
+          <GodotFoyer onExit={() => nav('/vault')} />
         </div>
 
-        {/* Vision Statement */}
-        <AnimatedCard delay={400} className="mb-16 border border-gray-800 bg-[#161b22] rounded-[2.5rem] p-12 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-          <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white mb-10 text-center">🚀 The Vision</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-             {[
-               { num: '01', title: 'Yours', desc: 'Generated locally, encrypted, non-custodial.' },
-               { num: '02', title: 'Portable', desc: 'Take your reputation across any platform.' },
-               { num: '03', title: 'Sovereign', desc: 'You own your data. You control your narrative.' },
-               { num: '04', title: 'Resistant', desc: 'Censorship-proof and fully peer-to-peer.' }
-             ].map((item, i) => (
-               <div key={i} className="text-center group">
-                  <div className="text-blue-500 font-black text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{item.num}</div>
-                  <h4 className="text-white font-bold uppercase mb-3 tracking-tight text-lg">{item.title}</h4>
-                  <p className="text-gray-500 text-sm leading-relaxed font-medium">{item.desc}</p>
-               </div>
-             ))}
+        {/* CivicWatch Live Stream - Right Side */}
+        <div className="w-80 bg-gradient-to-b from-[#1a1d23] to-[#0f1419] border-l border-gray-800/50 overflow-hidden shadow-2xl flex flex-col shrink-0">
+          <div className="p-3 border-b border-gray-800/50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-white font-bold flex items-center gap-1">
+                <MessageSquare className="w-4 h-4 text-cyan-400" />
+                <span className="text-xs">Chat</span>
+              </h3>
+              <div className="flex gap-1">
+                <button className="w-6 h-6 rounded bg-green-500/20 flex items-center justify-center text-green-400 hover:bg-green-500/30">
+                  <Mic className="w-3 h-3" />
+                </button>
+                <button className="w-6 h-6 rounded bg-gray-800/50 flex items-center justify-center text-gray-400 hover:bg-gray-700/50">
+                  <Settings className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
           </div>
-        </AnimatedCard>
 
-        {/* Action Button */}
-        <div className="flex justify-center pb-12">
-           <button
-             onClick={() => nav('/vault')}
-             className="bg-blue-600 hover:bg-blue-700 text-white font-black py-6 px-16 rounded-[2rem] shadow-2xl shadow-blue-900/40 transition-all hover:scale-105 uppercase italic tracking-tighter text-2xl flex items-center gap-4 active:scale-95"
-           >
-             <Shield className="w-8 h-8" />
-             Access Identity Vault
-           </button>
-        </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            <div className="flex gap-2 justify-center">
+              <div className="bg-cyan-500/20 text-cyan-400 text-[10px] uppercase tracking-widest px-2 py-1 rounded font-black">
+                System: Welcome to the Foyer
+              </div>
+            </div>
+            
+            {chatHistory.map((msg) => (
+              <div key={msg.id} className="flex gap-2">
+                <div className={`w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg text-xs shrink-0`}>
+                  {msg.username?.[0] || 'P'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="text-white font-bold text-[10px] truncate">{msg.username}</span>
+                    <span className="text-gray-500 text-[9px]">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <p className="text-gray-300 text-[11px] leading-tight break-words bg-white/5 p-2 rounded-lg border border-white/5">{msg.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
 
-        {/* Footer */}
-        <div className="text-center border-t border-gray-800 pt-10">
-          <p className="text-gray-600 text-[10px] font-bold uppercase tracking-[0.3em]">
-            Civicverse: Infrastructure for Decentralized Humanity
-          </p>
-          <div className="flex justify-center gap-4 mt-4 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500">
-             <div className="h-6 w-px bg-gray-700"></div>
-             <span className="text-[10px] font-mono text-blue-400">V0.9.2-NIGHTLY</span>
-             <div className="h-6 w-px bg-gray-700"></div>
-             <span className="text-[10px] font-mono text-white">EST. 2026</span>
-             <div className="h-6 w-px bg-gray-700"></div>
+          <div className="p-3 border-t border-gray-800/50 bg-[#0f1419]">
+            <form 
+              onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Type to the foyer..."
+                className="flex-1 bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none text-[11px] transition-all"
+              />
+              <button 
+                type="submit"
+                className="w-10 h-10 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center hover:shadow-[0_0_15px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-95 transition-all duration-200 shrink-0"
+              >
+                <Send className="w-4 h-4 text-white" />
+              </button>
+            </form>
           </div>
         </div>
       </div>

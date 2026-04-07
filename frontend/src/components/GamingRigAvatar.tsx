@@ -182,13 +182,15 @@ export const GamingRigAvatar: React.FC<GamingRigAvatarProps> = ({
     gpuGroup.add(gpuStrip)
 
 
-    // 4. LCD Panel (Front/Side)
+    // 4. LCD Panel - REMOVED per user request
+    /*
     const lcdGeo = new THREE.PlaneGeometry(1.5, 2.5)
     const lcdMat = new THREE.MeshBasicMaterial({ map: lcdTexture, side: THREE.DoubleSide })
     const lcd = new THREE.Mesh(lcdGeo, lcdMat)
     lcd.position.set(0.8, 0, 0)
     lcd.rotation.y = -Math.PI / 2
     rig.add(lcd)
+    */
 
     // 5. Fire Effect (Hidden by default)
     const fireGroup = new THREE.Group()
@@ -277,52 +279,14 @@ export const GamingRigAvatar: React.FC<GamingRigAvatarProps> = ({
         }
     }
 
-    // 2. Draw LCD
+    // 2. Draw LCD - REMOVED per user request
+    /*
     const ctx = lcdTexture.image.getContext('2d')
     if (ctx) {
         const w = 512, h = 512
-        
-        // Background
-        const grad = ctx.createLinearGradient(0, 0, 0, h)
-        if (temperature > 80) {
-            grad.addColorStop(0, '#550000')
-            grad.addColorStop(1, '#ff0000')
-        } else {
-            grad.addColorStop(0, '#001133')
-            grad.addColorStop(1, '#004488')
-        }
-        ctx.fillStyle = grad
-        ctx.fillRect(0, 0, w, h)
-
-        // Header
-        ctx.fillStyle = '#00ffaa'
-        ctx.font = 'bold 40px monospace'
-        ctx.fillText(`WORKER: ${workerName}`, 20, 60)
-
-        // Status
-        ctx.fillStyle = isMining ? '#00ff00' : '#ffff00'
-        ctx.fillText(`STATUS: ${isMining ? 'MINING' : 'IDLE'}`, 20, 120)
-
-        // Stats
-        ctx.fillStyle = '#ffffff'
-        ctx.font = '30px monospace'
-        ctx.fillText(`HASH: ${hashRate.toFixed(1)} H/s`, 20, 200)
-        ctx.fillText(`TEMP: ${temperature.toFixed(1)}°C`, 20, 250)
-        ctx.fillText(`LOAD: ${load.toFixed(0)}%`, 20, 300)
-
-        // Graph
-        ctx.strokeStyle = '#00ffaa'
-        ctx.lineWidth = 4
-        ctx.beginPath()
-        ctx.moveTo(20, 400)
-        for(let i=0; i<20; i++) {
-            const val = isMining ? Math.random() * 100 : 10
-            ctx.lineTo(20 + i * 24, 400 - val)
-        }
-        ctx.stroke()
-        
-        lcdTexture.needsUpdate = true
+        ...
     }
+    */
 
   }, [isMining, load, temperature, workerName, hashRate, lcdTexture])
 

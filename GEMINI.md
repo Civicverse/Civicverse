@@ -29,7 +29,7 @@
 ## 📋 v1.3+ Operational Blueprint Roadmap
 
 ### 🟢 Priority 1: Short-Term (Identity & Resilience)
-- [ ] **PoP Implementation**: Add "Verify Your CivicID (Get Blue Check)" button on Civic Vault. Simple UI for 3-peer attestations.
+- [ ] **PoP Implementation**: Add "Verify Your CivicID (Get Purple Check Mark)" button on Civic Vault. Simple UI for 3-peer attestations.
 - [ ] **Real Metrics**: Hook reputation/skills to future CivicWatch contributions (currently placeholders).
 - [ ] **PWA Transition**: Turn the app into a PWA (manifest + service worker) for offline resilience.
 - [ ] **Action Queuing**: Add local queuing for votes and job submissions to sync when online.

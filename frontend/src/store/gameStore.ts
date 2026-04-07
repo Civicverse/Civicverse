@@ -158,7 +158,7 @@ export const useGameStore = create<GameState>((set) => ({
   treasuryBalance: 0,
   missions: [],
   currentMission: null,
-  demoMode: true,
+  demoMode: false,
   loading: true,
   isInitialized: false,
   tempMnemonic: null,

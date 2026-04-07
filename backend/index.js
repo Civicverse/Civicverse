@@ -27,11 +27,15 @@ app.use(cors({
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Increased for development telemetry
   standardHeaders: true,
   legacyHeaders: false,
 })
-app.use('/api/', limiter)
+app.use('/api/', (req, res, next) => {
+  // Bypass rate limit for status checks
+  if (req.path === '/miner/status' || req.path === '/status') return next();
+  limiter(req, res, next);
+});
 
 app.use(bodyParser.json({ limit: '10mb' })) // Increased limit for image proofs
 
@@ -115,16 +119,21 @@ app.post('/api/jobs/verify', async (req, res) => {
 // --- Miner / Mining Control ---
 const minerService = require('./services/miner-service');
 
-app.get('/api/miner/status', (req, res) => {
-  res.json(minerService.getStatus());
+app.get('/api/miner/status', async (req, res) => {
+  try {
+    const status = await minerService.getStatus();
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post('/api/miner/start', (req, res) => {
+app.post('/api/miner/start', async (req, res) => {
   try {
-    const status = minerService.start(req.body);
+    const status = await minerService.start(req.body);
     res.json(status);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -132,8 +141,8 @@ app.post('/api/miner/stop', (req, res) => {
   try {
     const status = minerService.stop();
     res.json(status);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

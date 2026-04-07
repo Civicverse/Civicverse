@@ -25,8 +25,13 @@ let matchIdCounter = 0;
 const tosConsents = new Map();
 const fs = require('fs');
 const TOS_FILE = __dirname + '/tos_consents.json';
+const CHAT_FILE = __dirname + '/chat_history.json';
 
-// load existing consents if present
+// Chat history storage
+let chatHistory = [];
+const MAX_CHAT_HISTORY = 100;
+
+// Load existing consents if present
 try {
   if (fs.existsSync(TOS_FILE)) {
     const raw = fs.readFileSync(TOS_FILE, 'utf8');
@@ -37,6 +42,16 @@ try {
   console.error('Failed to load TOS consents:', err);
 }
 
+// Load existing chat history if present
+try {
+  if (fs.existsSync(CHAT_FILE)) {
+    const raw = fs.readFileSync(CHAT_FILE, 'utf8');
+    chatHistory = JSON.parse(raw || '[]');
+  }
+} catch (err) {
+  console.error('Failed to load chat history:', err);
+}
+
 // Combat constants
 const DAMAGE_PER_HIT = 25;
 const ATTACK_RANGE = 3;
@@ -45,6 +60,7 @@ const ATTACK_COOLDOWN = 500;
 class Player {
   constructor(id) {
     this.id = id;
+    this.username = `Guest_${id}`;
     this.position = { x: 0, y: 0, z: 0 };
     this.rotation = { x: 0, y: 0, z: 0 };
     this.health = 100;
@@ -59,6 +75,7 @@ class Player {
   toJSON() {
     return {
       id: this.id,
+      username: this.username,
       position: this.position,
       rotation: this.rotation,
       health: this.health,
@@ -82,6 +99,33 @@ function broadcastPlayers() {
       client.send(message);
     }
   });
+}
+
+// Broadcast chat message
+function broadcastChat(chatMsg) {
+  const message = JSON.stringify({
+    type: 'chat_message',
+    ...chatMsg,
+  });
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+
+  // Save to history
+  chatHistory.push(chatMsg);
+  if (chatHistory.length > MAX_CHAT_HISTORY) {
+    chatHistory.shift();
+  }
+
+  // Persist to file
+  try {
+    fs.writeFileSync(CHAT_FILE, JSON.stringify(chatHistory, null, 2));
+  } catch (err) {
+    console.error('Failed to persist chat history:', err);
+  }
 }
 
 // Check if attack hits another player
@@ -194,6 +238,12 @@ wss.on('connection', (ws) => {
     playerId: playerId,
   }));
 
+  // Send chat history
+  ws.send(JSON.stringify({
+    type: 'chat_history',
+    history: chatHistory,
+  }));
+
   // Broadcast initial player list
   broadcastPlayers();
 
@@ -207,6 +257,27 @@ wss.on('connection', (ws) => {
           if (players.has(playerId)) {
             players.get(playerId).position = message.position;
             players.get(playerId).rotation = message.rotation;
+          }
+          break;
+
+        case 'player_identity':
+          if (players.has(playerId)) {
+            players.get(playerId).username = message.username || `Guest_${playerId}`;
+            broadcastPlayers();
+          }
+          break;
+
+        case 'chat_message':
+          if (players.has(playerId)) {
+            const player = players.get(playerId);
+            const chatMsg = {
+              id: Date.now().toString(),
+              playerId: playerId,
+              username: player.username,
+              text: message.text,
+              timestamp: new Date().toISOString()
+            };
+            broadcastChat(chatMsg);
           }
           break;
 
