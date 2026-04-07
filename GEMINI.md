@@ -1,29 +1,29 @@
-# Civicverse Development State - v1.3-ULTRA (SOVEREIGN ONBOARDING + VAULT)
+# Civicverse Development State - v1.3 (ONBOARDING + VAULT)
 
 ## 🚀 Active Environment
 - **Local Dev:** `npm start` (Frontend: 5173/3000, API: 3003, WS: 8080)
 - **Deployment Hub:** `/home/civic_operator_0/Civicverse-nightly-v0.0`
 - **Identity Vault:** Secured with IndexedDB + PBKDF2/AES-256-GCM.
-- **Onboarding:** Unified Sovereign Flow (TOS → Create/Restore → Seed Verify → Vault).
+- **Onboarding:** Unified Flow (TOS → Create/Restore → Seed Verify → Vault).
 
 ## 🛠 Recent Achievements (2026-03-29)
 
-### 1. Unified Sovereign Onboarding
+### 1. Unified Onboarding
 - **Unified Step:** Consolidated "Create User" and "Wallet Generation" into a single, cohesive CivicID creation flow.
 - **Mandatory Seed Verification:** Implemented a required 3-word seed phrase verification step during creation to ensure users have a physical backup.
 - **Restoration Flow:** Integrated BIP-39 seed phrase restoration directly into the welcome entry point.
-- **Sovereign UX:** Redesigned `WelcomePage.tsx` and `SignupPage.tsx` with high-fidelity, protocol-first aesthetics.
+- **Vault UX:** Redesigned `WelcomePage.tsx` and `SignupPage.tsx` with high-fidelity, protocol-first aesthetics.
 
 ### 2. Civic Vault Redesign (MMORPG Style)
 - **Character-Centric Hub:** Redesigned the "Wallet" into a "Civic Vault" acting as a personal character dashboard.
 - **Floating 3D Avatar:** Implemented a box-less, floating 3D avatar layout using `CharacterViewer` at the top center with a live GIF background.
 - **Stat Dashboard:** Added high-visibility panels for XMR Balance, Reputation (Trust Score), Citizen Level, and Badges.
-- **Portal Navigation:** Integrated glowing portal cards for quick access to Foyer, CivicWatch, Governance, and Mining Pool.
+- **Portal Navigation:** Integrated cards for quick access to Foyer, CivicWatch, Governance, and Community Mining Pool.
 
 ### 3. Community Mining Pool Integration
-- **Infrastructure Branding:** Renamed "Gaming Rig" to "Community Mining Pool" throughout the protocol to align with decentralized infrastructure goals.
-- **Dashboard Hub:** Created `MiningPoolPage.tsx` with integrated XMRig monitoring and Treasury contribution stats.
-- **SupportXMR Integration:** Embedded a live SupportXMR community pool dashboard pre-synced with the sovereign vault address for real-time payout tracking.
+- **Infrastructure Branding:** Renamed all legacy references to "Community Mining Pool" throughout the protocol to align with decentralized infrastructure goals.
+- **XMRig Dashboard:** Enhanced `MiningPoolPage.tsx` with real-time XMRig monitoring, CPU/GPU telemetry, and Treasury contribution stats.
+- **SupportXMR Integration:** Embedded a live SupportXMR community pool dashboard pre-synced with the vault address for real-time payout tracking.
 - **Treasury Tax:** Implemented a simulated 1% automated tax on all community mining rewards to fund public works.
 
 ## 📋 v1.3+ Operational Blueprint Roadmap
@@ -49,4 +49,4 @@
 - [ ] **UBI Engine**: Finalize the treasury-to-citizen disbursement loop based on governed rules.
 
 ---
-*Onboarding unified. Civic Vault active. Community Mining Pool functional. Protocol ready for sovereign expansion.*
+*Onboarding unified. Civic Vault active. Community Mining Pool functional. Protocol ready for expansion.*

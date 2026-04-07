@@ -1,12 +1,12 @@
 # @civicverse/civic-foyer
 
-The Foyer is the immersive 3D community hub for CivicVerse, built with Godot 4.3+ (NEON REIGN) and integrated with the React frontend.
+The Foyer is the immersive 3D community hub for CivicVerse, built with Godot 4.3+ and integrated with the React frontend.
 
 ## Structure
 
 ```
 packages/civic-foyer/
-├── godot-foyer/          # Godot 4.3+ project (NEON REIGN game)
+├── godot-foyer/          # Godot 4.3+ project
 ├── src/                  # Backend service (Express.js)
 ├── Dockerfile            # Container configuration
 └── package.json          # NPM scripts
@@ -33,7 +33,7 @@ Starts the Express server on port 3007 for foyer-related APIs.
 ## Game Features
 
 - **Avatar System**: Loads CivicID data from React frontend
-- **Neon Visuals**: Hyper-realistic cell-shade shader with rim lighting
+- **Stylized Visuals**: High-fidelity cell-shade shader for a clean look
 - **Portal System**: Navigate to different shards (mini-worlds)
 - **Social Arena**: Chat, emotes, and community interactions
 - **Multiplayer Ready**: WebSocket support for real-time player sync

@@ -1,10 +1,10 @@
 # 🎨 Civicverse Frontend: The Hub
 
 ## 🚀 Overview
-The Civicverse frontend, known as **The Hub**, is a React-powered dashboard and non-custodial wallet interface. It serves as the primary entry point for users to manage their **CivicID**, access the **Civic Vault**, and bridge into the **NEON REIGN** Godot Foyer.
+The Civicverse frontend, known as **The Hub**, is a React-powered dashboard and non-custodial wallet interface. It serves as the primary entry point for users to manage their **CivicID**, access the **Civic Vault**, and bridge into the Godot Foyer.
 
 ### 🎯 Key Features
-- **Sovereign Vault:** Secure local encryption (PBKDF2/AES-256) for identity secrets.
+- **Civic Vault:** Secure local encryption (PBKDF2/AES-256) for identity secrets.
 - **PoP Verification:** Integrated UI for the Proof-of-Personhood peer verification flow.
 - **Mining Dashboard:** Real-time telemetry for community mining and treasury stats.
 - **Foyer Bridge:** Seamless integration with the Godot-powered 3D Hub.
@@ -14,7 +14,7 @@ The Civicverse frontend, known as **The Hub**, is a React-powered dashboard and 
 ## 🏗 Technology Stack
 - **Framework:** React 18
 - **Build Tool:** Vite
-- **Styling:** Tailwind CSS (Modern, Neon aesthetic)
+- **Styling:** Tailwind CSS (Modern aesthetic)
 - **State Management:** React Hooks & Context API
 - **Local Storage:** IndexedDB (for secure vault data)
 
@@ -46,4 +46,4 @@ The application will be available at `http://localhost:3000` by default.
 ---
 
 ## 🤝 Contribution
-When contributing to the frontend, maintain the "Neon Reign" aesthetic. Ensure all components are responsive and all identity-related operations are performed locally and securely.
+When contributing to the frontend, maintain the established aesthetic. Ensure all components are responsive and all identity-related operations are performed locally and securely.

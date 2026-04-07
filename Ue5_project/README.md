@@ -32,4 +32,4 @@ The `/Ue5_project` directory contains the high-fidelity 3D assets and world shar
 ---
 
 ## 🤝 Contribution
-Contributors to the UE5 project should focus on optimization and modularity. Ensure all assets use the Nanite workflow where appropriate and that shaders align with the "Neon Reign" aesthetic (high contrast, emissive neon, bold silhouettes).
+Contributors to the UE5 project should focus on optimization and modularity. Ensure all assets use the Nanite workflow where appropriate and that shaders align with the established high-contrast, stylized aesthetic.

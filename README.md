@@ -1,64 +1,15 @@
-# 🌌 Civicverse v1.3-ULTRA: SOVEREIGN NEON
+# 🌌 Civicverse v1.3: THE FOYER
 
-```text
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@###888&&&&&&&&888###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#8&&ooooooooo&&ooooo::oo&&8#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#8&oooo&88#####@@@@@@###88&oo:oo&##@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#8oooo&8##@@@@@@@@@@@@@@@@@@@@##8&o::o&#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@#&ooo8##@@@@@@@@@@@@@@@@@@@@@@@@@@@@##&o:o&#@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@#&oo&8#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#8&:o&#@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@#&oo&8#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@8&:o&#@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@#8oo&8#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#8o:o&#@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@#&:o&#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#&::&#@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@#o:o8@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@8&&8@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@#o:o#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@#o:o#@@@@@@@@@@@@@##888888##@@@@@@@@@@@@@@@@@@@@@@@@@#88888#@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@#&oo#@@@@@@@@@@@#8&oo::o:o::oo&#@@@@@@@@@@@@@@@@@@@@@#&::::o8@@8&@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@8oo8@@@@@@@@@@#&o:o&&8####88&o:o&8@@@@@@@@@@@@@@@@@@@8::&8##@@#o:8@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@#oo&#@@@@@@@@#&o:o8##@@@###@@@#8&:o&#@@@@@@@@@@@@@@@@#o:o#@@@@@#o:o#@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@&:o#@@@@@@@@#o:o8####8&&ooo&8##@#8o:&#@@@@@@@@@@@@@@#&:o8@@@@@@@8o:8@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@#oo&#@@@@@@@#o:o####&o::ooooo:o&#@@8o:&#@@@@@@@@@@@@@8::&#@#8@@@@#o:o#@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@8oo8@@@@@@@#o:o###8o:o8######&o:o##@8o:8@@@@@@@@@@@@#o:o###&8@@@@@&:o#@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@8oo#@@@@@@@8oo8##8o:&#@@@@@@@@8o&#@@#&:o#@@@@@@@@@@#&:o###88@@@@@@8o:8@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@&oo#@@@@@@@&:o###&:o#@@@@@@@@@@@@@@@@#o:&#@@@@@@@@#8::8##8&@@@@@@@#o:&@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@&o&#@@@@@@#o:&###o:8@@@@@@@@@@@@@@@@@@8o:8#@@@@@@@#o:&###&#@@@@@@@#o:&@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@&:&#@@@@@@#o:&###o:8@@@@@@@@@@@@@@@@@@@&:o#@@@@@@#&:o###&8@@@@@@@@#o:&@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@&oo#@@@@@@#o:&###o:&#@@@@@@@@@@@@@@@@@@#o:o#@@@@#8::8##8&@@@@@@@@@#o:&@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@8oo##@@@@@@&:o###&:o8@@@@@@@@@@@@@@@@@@@8o:8#####o:o###&#@@@@@@@@@8::8@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@#oo8#@@@@@@#oo&###&:o8#@@@@@@@##@@@@@@@@@&:o####&:o8##&#@@@@@@@@@@&:o#@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@#o:&#@@@@@@@8:o8###&::o&8###8&o:&@@@@@@@@#o:&##8o:&##88@@@@@@@@@@#o:o@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@8oo8@@@@@@@#&:o8###8&o:::o:::o8#@@@@@@@@@8::8#o:o##88@@@@@@@@@@@8::8@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@#o:&#@@@@@@@#&::&#####88&&&88###8#@@@@@@@#&:oo:o8##&#@@@@@@@@@@#o:o#@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@8oo8#@@@@@@@#8o:o&8###@######8o:o#@@@@@@@#o:::8##&8@@@@@@@@@@@&::8@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@#&:o##@@@@@@@@#8o::o&&88&&&oo:o&8#@@@@@@@@#o::&&&&@@@@@@@@@@@8::&@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@#&:o##@@@@@@@@@#8&ooooooooo&8##@@@@@@@@@@@8oo:::#@@@@@@@@@@8o:&#@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@#o:&##@@@@@@@@@@@@########@@@@@@@@@@@@@@@@##8:&#@@@@@@@@@8o:o#@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@#&::o8#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#&&@@@@@@@@#8::&#@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@8oo:o8#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@88#@@@@@@@#&::&#@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@&&#8o:o8#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@##@@@@@@#8o:o8@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@&&@#8&:o&##@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#8o::&#@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@##@@@#8o:o&8#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#8&::&#@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@#&:::o8##@@@@@@@@@@@@@@@@@@@@@@@@@@@@##&o::&#@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@#oooo:oo&8###@@@@@@@@@@@@@@@@@@@##8&oo:o&#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@#&###&oo::oo&88##############8&&oo::::&#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@#o#@@@##8&oo::::oooooooooooo:::oo&88o:#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@#o#@@@@@@@###8&&&oooo::ooooo&8###@@@8o#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#@@@@@@@@@@@@@@@###8o&####@@@@@@@@@8o#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@&8@@@@@@@@@@@@@8:#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-```
+<p align="center">
+  <img src="logo_purple.svg" width="600" alt="Civicverse Logo">
+</p>
 
 <p align="center">
   <a href="https://github.com/Civicverse/Civicverse-nightly-v0.0/actions/workflows/ci-cd.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/Civicverse/Civicverse-nightly-v0.0/ci-cd.yml?style=for-the-badge&logo=github-actions&label=CI/CD" alt="CI/CD Status">
   </a>
   <img src="https://img.shields.io/github/license/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=orange" alt="License">
-  <img src="https://img.shields.io/github/package-json/v/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=blueviolet&label=Sovereign%20V" alt="Version">
+  <img src="https://img.shields.io/github/package-json/v/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=blueviolet&label=Civicverse%20V" alt="Version">
 </p>
 
 <p align="center">
@@ -86,12 +37,12 @@
 ---
 
 ## 🏛 Project Overview
-**Civicverse** is a decentralized metaverse coordination layer designed to empower sovereign digital humanity. It provides the infrastructure for non-custodial identity, peer-to-peer economic protocols, and a hyper-realistic 3D social hub.
+**Civicverse** is a decentralized metaverse coordination layer designed to empower digital humanity. It provides the infrastructure for non-custodial identity, peer-to-peer economic protocols, and a hyper-realistic 3D social hub.
 
 ### 🎯 Mission & Aims
-- **Sovereign Identity:** Establish a world where identity is recognized by peers, not granted by central authorities.
-- **Economic Resilience:** Integrate privacy-preserving P2P monetary flows (Monero) and community-driven resource allocation (Mining Pools).
-- **Decentralized Coordination:** Build a "Civic Vault" that acts as both a wallet and a character-centric dashboard for navigating the metaverse.
+- **Decentralized Identity:** Establish a world where identity is recognized by peers, not granted by central authorities.
+- **Economic Resilience:** Community-driven resource allocation via the Mining Pool.
+- **Coordination Hub:** Build a "Civic Vault" that acts as both a wallet and a character-centric dashboard for navigating the metaverse.
 
 ---
 
@@ -100,8 +51,8 @@
 | Component | Status | Description |
 | :--- | :--- | :--- |
 | **Local CivicID** | ✅ **Working** | Local clientside identity creation, encryption, and vault storage. |
-| **Monero Integration** | 🛠 In Progress | XMR balance tracking and P2P transaction UI. |
-| **Godot Foyer** | 🛠 In Progress | 3D Hub visuals and basic movement; multiplayer relay in development. |
+| **Community Mining Pool**| 🛠 In Progress | XMRig integration for XMR mining and real-time telemetry. |
+| **The Foyer** | 🛠 In Progress | 3D Hub visuals and basic movement; multiplayer relay in development. |
 | **CivicWatch (PoP)** | 🛠 In Progress | Peer-to-peer attestation flow and job-based verification. |
 | **UE5 Shards** | 🛠 In Progress | High-fidelity world sharding and additive loading. |
 
@@ -163,7 +114,7 @@ We welcome contributors of all skill levels. Here is how you can align with our 
 
 ### For Creators
 1. **World Building:** Design new 3D shards for the Foyer.
-2. **UI/UX:** Refine the "Neon Reign" aesthetic in the React frontend.
+2. **UI/UX:** Refine the Hub aesthetic in the React frontend.
 
 ### Workflow
 1. **Fork & Branch:** `git checkout -b feature/your-feature-name`
@@ -178,8 +129,8 @@ We welcome contributors of all skill levels. Here is how you can align with our 
 - [**backend/**](./backend/README.md) - Node.js API and Socket.io relay.
 - [**frontend/**](./frontend/README.md) - React/Vite dashboard and Vault UI.
 - [**packages/**](./packages/README.md) - Modular protocol logic (Identity, Mining, etc.).
-- [**contracts/**](./contracts/README.md) - Sovereign protocol smart contracts.
+- [**contracts/**](./contracts/README.md) - Protocol smart contracts.
 - [**Ue5_project/**](./Ue5_project/README.md) - Unreal Engine 5 high-fidelity shards.
 
 ---
-*Sovereignty is not given; it is claimed through code.*
+*Identity is claimed through code.*
