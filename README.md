@@ -4,11 +4,11 @@
   <img src="logo_purple.svg" width="100%" style="display: block; margin: 0 auto;" alt="Civicverse Logo">
 </p>
 
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 <p align="center">
   <b>The Decentralized Metaverse Coordination Layer</b>
 </p>
-
-<br><br><br><br><br><br><br><br><br><br>
 
 <p align="center">
   <a href="https://github.com/Civicverse/Civicverse-nightly-v0.0/actions/workflows/ci-cd.yml">
