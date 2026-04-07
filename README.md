@@ -1,7 +1,7 @@
 # 🌌 Civicverse v1.3: THE FOYER
 
 <p align="center">
-  <img src="logo_purple.svg" width="600" alt="Civicverse Logo">
+  <img src="logo_purple.svg" width="800" style="max-width: 100%; height: auto;" alt="Civicverse Logo">
 </p>
 
 <p align="center">
