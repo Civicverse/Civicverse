@@ -1,19 +1,19 @@
 # 🌌 Civicverse v1.3: THE FOYER
 
 <p align="center">
-  <a href="https://github.com/Civicverse/Civicverse-nightly-v0.0/actions/workflows/ci-cd.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/Civicverse/Civicverse-nightly-v0.0/ci-cd.yml?style=for-the-badge&logo=github-actions&label=CI/CD" alt="CI/CD Status">
-  </a>
-  <img src="https://img.shields.io/github/license/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=orange" alt="License">
-  <img src="https://img.shields.io/github/package-json/v/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=blueviolet&label=Civicverse%20V" alt="Version">
-</p>
-
-<p align="center">
   <img src="logo_purple.svg" width="100%" alt="Civicverse Logo">
 </p>
 
 <p align="center">
   <b>The Decentralized Metaverse Coordination Layer</b>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Civicverse/Civicverse-nightly-v0.0/actions/workflows/ci-cd.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/Civicverse/Civicverse-nightly-v0.0/ci-cd.yml?style=for-the-badge&logo=github-actions&label=CI/CD" alt="CI/CD Status">
+  </a>
+  <img src="https://img.shields.io/github/license/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=orange" alt="License">
+  <img src="https://img.shields.io/github/package-json/v/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=blueviolet&label=Civicverse%20V" alt="Version">
 </p>
 
 <p align="center">
