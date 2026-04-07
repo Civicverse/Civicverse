@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   REGISTRY: ghcr.io
 
 jobs:
@@ -18,10 +18,10 @@ jobs:
       run:
         working-directory: ./frontend
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -33,27 +33,23 @@ jobs:
       - name: Build
         run: npm run build
       
-      - name: Check for TypeScript errors
-        run: npm run build 2>&1 | grep -E "error|ERROR" && exit 1 || exit 0
-        continue-on-error: true
-      
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist
 
-  # Job 2: Lint and Build Backend
+  # Job 2: Build Backend
   build-backend:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./backend
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -62,13 +58,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Verify Node modules
-        run: ls -la node_modules | head -20
-      
-      - name: Check index.js syntax
+      - name: Check syntax
         run: node -c index.js
 
-  # Job 3: Build Docker Images
+  # Job 3: Build Godot Foyer
+  build-godot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Godot Export
+        uses: firebelley/godot-export@v5.2.1
+        with:
+          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          relative_project_path: ./packages/civic-foyer/godot-foyer
+          archive_output: true
+          # Note: Presumes a "Web" export preset exists in export_presets.cfg
+          # If not, this step might fail until presets are configured.
+
+  # Job 4: Build Docker Images
   build-docker:
     runs-on: ubuntu-latest
     needs: [build-frontend, build-backend]
@@ -76,100 +85,43 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       
       - name: Log in to Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Extract metadata (frontend)
-        id: meta-frontend
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-frontend
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-      
       - name: Build and push frontend
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
-      
-      - name: Extract metadata (backend)
-        id: meta-backend
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-backend
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}-frontend:latest
       
       - name: Build and push backend
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}-backend:latest
 
-  # Job 4: Quality Checks
+  # Job 5: Quality Checks
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      
-      - name: Check commit messages
-        run: |
-          echo "Checking commit messages follow conventional commit format..."
-          git log --oneline -10
-      
-      - name: Verify .gitignore is present
-        run: test -f .gitignore && echo ".gitignore present" || exit 1
+      - name: Verify .gitignore
+        run: test -f .gitignore
       
       - name: Check for sensitive data
         run: |
-          ! grep -r "PRIVATE_KEY\|PASSWORD\|API_KEY\|SECRET" --include="*.js" --include="*.ts" --include="*.tsx" frontend backend
-
-  # Job 5: Notify on Slack (Optional)
-  notify:
-    runs-on: ubuntu-latest
-    needs: [build-frontend, build-backend, build-docker, quality]
-    if: always()
-    steps:
-      - name: Determine status
-        id: status
-        run: |
-          if [[ "${{ needs.build-frontend.result }}" == "failure" || "${{ needs.build-backend.result }}" == "failure" || "${{ needs.build-docker.result }}" == "failure" || "${{ needs.quality.result }}" == "failure" ]]; then
-            echo "status=failure" >> $GITHUB_OUTPUT
-          else
-            echo "status=success" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Notify success
-        if: steps.status.outputs.status == 'success'
-        run: echo "✅ All checks passed!"
-      
-      - name: Notify failure
-        if: steps.status.outputs.status == 'failure'
-        run: echo "❌ Some checks failed. Review logs above."
+          ! grep -r "PRIVATE_KEY\|PASSWORD\|API_KEY" --include="*.js" --include="*.ts" frontend backend

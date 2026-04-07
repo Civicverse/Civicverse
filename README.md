@@ -1,71 +1,100 @@
 # 🌌 Civicverse v1.3-ULTRA: SOVEREIGN NEON
 
-Welcome to **Civicverse**, the decentralized metaverse coordination layer. This repository contains the complete infrastructure for a sovereign digital humanity, including a web-based identity vault and the **NEON REIGN** Godot-powered Foyer.
+## 🏛 Project Overview
+**Civicverse** is a decentralized metaverse coordination layer designed to empower sovereign digital humanity. It provides the infrastructure for non-custodial identity, peer-to-peer economic protocols, and a hyper-realistic 3D social hub.
 
-## 🚀 Quick Start (One-Click Launch)
+### 🎯 Mission & Aims
+- **Sovereign Identity:** Establish a world where identity is recognized by peers, not granted by central authorities.
+- **Economic Resilience:** Integrate privacy-preserving P2P monetary flows (Monero) and community-driven resource allocation (Mining Pools).
+- **Decentralized Coordination:** Build a "Civic Vault" that acts as both a wallet and a character-centric dashboard for navigating the metaverse.
 
-Ensure you have **Docker** and **Node.js 18+** installed.
+---
 
+## 🚦 System Status
+
+| Component | Status | Description |
+| :--- | :--- | :--- |
+| **Local CivicID** | ✅ **Working** | Local clientside identity creation, encryption, and vault storage. |
+| **Monero Integration** | 🛠 In Progress | XMR balance tracking and P2P transaction UI. |
+| **Godot Foyer** | 🛠 In Progress | 3D Hub visuals and basic movement; multiplayer relay in development. |
+| **CivicWatch (PoP)** | 🛠 In Progress | Peer-to-peer attestation flow and job-based verification. |
+| **UE5 Shards** | 🛠 In Progress | High-fidelity world sharding and additive loading. |
+
+---
+
+## 🚀 Getting Started (Step-by-Step)
+
+### 1. Prerequisites
+- **Node.js 20+** & **npm 10+**
+- **Docker & Docker Compose**
+- **Git**
+
+### 2. Installation
 ```bash
 # Clone the repository
-git clone git@github.com:Civicverse/Civicverse-nightly-v0.0.git
+git clone https://github.com/Civicverse/Civicverse-nightly-v0.0.git
 cd Civicverse-nightly-v0.0
 
-# Launch all services (Frontend, Backend, Godot Foyer Bridge)
-./launch.sh
+# Install dependencies for the entire monorepo
+npm install
 ```
 
-- **Frontend:** [http://localhost:3000](http://localhost:3000)
-- **Civic Vault:** Access your sovereign identity and PoP status.
-- **NEON REIGN Foyer:** Centrally integrated into the Hub.
+### 3. Configuration
+```bash
+# Copy the example environment file
+cp .env.example .env
+# Edit .env to add your local configuration if necessary
+```
+
+### 4. Local Startup
+You can launch all services using the provided script:
+```bash
+# Give execution permissions
+chmod +x launch.sh
+
+# Start the complete stack
+./launch.sh
+```
+Alternatively, start components manually:
+```bash
+# Start Backend (API & WebSocket)
+npm run start:backend
+
+# Start Frontend (Vite Dev Server)
+npm run start:frontend
+```
 
 ---
 
-## 🧬 Core Infrastructure
+## 🤝 Contribution Path
 
-### 1. Sovereign Identity (Civic Vault)
-- **Non-Custodial:** Your keys, your identity. Encrypted locally with PBKDF2/AES-256.
-- **Proof-of-Personhood (PoP):** 3-person physical peer verification flow.
-  - **Green X (1/3 & 2/3):** Initial attestations.
-  - **Purple Check (3/3):** Fully verified CivicID. Unlocks monetary features.
-- **Identity Export:** Encrypted JSON backups and QR-based DID sharing.
+We welcome contributors of all skill levels. Here is how you can align with our development path:
 
-### 2. NEON REIGN - The Foyer (Godot 4.3.1)
-The central 3D hub for Civicverse.
-- **Visuals:** Hyper-realistic cell-shaded world with bold ink outlines and neon emissives.
-- **Portal Shards:** Seamless additive loading into owner-created worlds (Store, School, Social, BR).
-- **Battle Royale:** Integrated 16-32 player shooter mechanics within the Foyer city.
-- **CivicFeed:** Real-time social layer (X-style) with integrated reputation and VOIP.
+### For Developers
+1. **Explore the Monorepo:** Familiarize yourself with the `/packages` structure.
+2. **Identity Enhancement:** Help improve the `civic-identity` and `civic-vault` packages.
+3. **Godot Mastery:** Contribute to the `civic-foyer` Godot project in `packages/civic-foyer/godot-foyer`.
+4. **Security Audits:** Help us refine the `security.yml` workflows and audit local encryption methods.
 
-### 3. P2P Monetary Protocols
-- **Monero Integration:** Native XMR support for privacy-preserving transactions.
-- **P2P Gambling:** Bet CVT tokens on Foyer matches with a 1% microtax funding the UBI pool.
-- **Community Mining:** SupportXMR integrated mining dashboard.
+### For Creators
+1. **World Building:** Design new 3D shards for the Foyer.
+2. **UI/UX:** Refine the "Neon Reign" aesthetic in the React frontend.
 
----
-
-## 🛠 Developer & Contributor Guide
-
-### Repository Structure
-- `/frontend`: React + Vite + Tailwind (The Hub UI).
-- `/backend`: Node.js + Express + Socket.io (Multiplayer & State Relay).
-- `/godot-foyer`: Godot 4.3.1 Forward+ source project.
-- `/contracts`: Solidity interfaces for future L2 anchoring.
-
-### Next Steps for Contributors
-1. **PoP Jobs:** Implement the CivicWatch job-based verification path.
-2. **Shard Expansion:** Create new `.tscn` shards in `godot-foyer/scenes/shards/`.
-3. **PWA Transition:** Add service worker for offline-first vault access.
-4. **IPFS Storage:** Hook avatar metadata to decentralized storage.
-
-### Git Workflow
-1. Create a feature branch: `git checkout -b feature/neon-upgrade`.
-2. Commit changes using atomic, descriptive messages.
-3. Push and open a Pull Request.
+### Workflow
+1. **Fork & Branch:** `git checkout -b feature/your-feature-name`
+2. **Develop:** Follow the coding standards (TypeScript, Tailwind CSS).
+3. **Verify:** Ensure `npm run build` passes.
+4. **PR:** Submit a Pull Request with a clear description of changes.
 
 ---
 
-## 📜 Vision
-**Civicverse** is built for a future where identity is not granted by governments, but recognized by peers. We are building the infrastructure for a decentralized, sovereign humanity.
+## 📂 Directory Structure
 
-**Sovereignty Awaits.**
+- [**backend/**](./backend/README.md) - Node.js API and Socket.io relay.
+- [**frontend/**](./frontend/README.md) - React/Vite dashboard and Vault UI.
+- [**packages/**](./packages/README.md) - Modular protocol logic (Identity, Mining, etc.).
+- [**contracts/**](./contracts/README.md) - Sovereign protocol smart contracts.
+- [**Ue5_project/**](./Ue5_project/README.md) - Unreal Engine 5 high-fidelity shards.
+
+---
+*Sovereignty is not given; it is claimed through code.*
