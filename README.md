@@ -95,7 +95,7 @@ Civicverse operates as a **hybrid on/off-chain, local-first, fully non-custodial
 5. Vault detects event → user (or local relay) broadcasts Monero transaction (99% to recipient, 1% to treasury).
 6. Purple Check holders vote on treasury spending via on-chain governance.
 
-**Current Status**: Identity + Vault encryption and basic contracts are functional. Foyer multiplayer, full automated Monero relay, UE5 integration, and production CivicNode setups are in active development.
+**Current Status**: Identity + Vault encryption and basic contracts are semi functional. Foyer multiplayer, full automated Monero relay, UE5 integration, and production CivicNode setups are in active development.
 
 ---
 
