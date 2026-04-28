@@ -1,1 +1,35 @@
+# CVPN Protocol Whitepaper (v0.1)
+### A Minimal, Open, Peer-to-Peer Encrypted Tunnel Protocol
 
+---
+
+## 1. Abstract
+
+CVPN is a lightweight, fully open-source VPN protocol designed to provide encrypted, peer-to-peer network tunneling without reliance on centralized infrastructure, proprietary services, or external intermediaries. It prioritizes minimalism, verifiability, and secure-by-design primitives while avoiding unnecessary protocol complexity.
+
+CVPN is intended for implementation in user-controlled environments such as personal servers, edge devices, and decentralized mesh networks.
+
+---
+
+## 2. Design Goals
+
+CVPN is built around the following principles:
+
+- Zero trust by default  
+- No central authority  
+- No metadata collection  
+- Minimal attack surface  
+- Cryptographic simplicity using proven primitives  
+- Peer-to-peer routing capability  
+- Fully open specification and reference implementations  
+
+Non-goals:
+- Anonymous routing networks (e.g., onion routing)
+- Built-in censorship resistance layers
+- Proprietary optimizations or vendor dependencies
+
+---
+
+## 3. System Overview
+
+CVPN operates over a UDP transport layer with a virtual network interface (TUN device). All traffic is encapsulated, encrypted, and authenticated before transmission.
