@@ -1,35 +1,150 @@
 # CVPN Protocol Whitepaper (v0.1)
 ### A Minimal, Open, Peer-to-Peer Encrypted Tunnel Protocol
 
----
-
-## 1. Abstract
-
+## Abstract
 CVPN is a lightweight, fully open-source VPN protocol designed to provide encrypted, peer-to-peer network tunneling without reliance on centralized infrastructure, proprietary services, or external intermediaries. It prioritizes minimalism, verifiability, and secure-by-design primitives while avoiding unnecessary protocol complexity.
 
-CVPN is intended for implementation in user-controlled environments such as personal servers, edge devices, and decentralized mesh networks.
-
----
-
-## 2. Design Goals
-
-CVPN is built around the following principles:
-
+## Design Goals
 - Zero trust by default  
 - No central authority  
 - No metadata collection  
 - Minimal attack surface  
-- Cryptographic simplicity using proven primitives  
+- Use only proven cryptographic primitives  
 - Peer-to-peer routing capability  
-- Fully open specification and reference implementations  
+- Fully open specification  
 
 Non-goals:
 - Anonymous routing networks (e.g., onion routing)
 - Built-in censorship resistance layers
-- Proprietary optimizations or vendor dependencies
+- Proprietary systems or vendor dependencies  
 
----
+## System Overview
+CVPN operates over UDP with a TUN virtual network interface. All traffic is encapsulated, encrypted, and authenticated before transmission.
 
-## 3. System Overview
+Flow:
+Application → TUN Interface → Encryption Layer → UDP Transport → Peer Node
 
-CVPN operates over a UDP transport layer with a virtual network interface (TUN device). All traffic is encapsulated, encrypted, and authenticated before transmission.
+## Cryptography
+- Key Exchange: X25519 (Diffie-Hellman elliptic curve)
+- Encryption: ChaCha20-Poly1305 AEAD
+- Hashing: SHA-256
+- Key Derivation: HKDF-SHA256
+
+No custom cryptography is used.
+
+## Identity Model
+Each node has:
+- Long-term identity keypair
+- Ephemeral session keypairs (per connection)
+
+No accounts or central registry exist.
+
+## Handshake Protocol
+Client sends:
+- client_identity_public
+- client_ephemeral_public
+
+Server responds:
+- server_identity_public
+- server_ephemeral_public
+
+Shared secrets:
+S1 = DH(client_ephemeral_private, server_identity_public)  
+S2 = DH(client_identity_private, server_ephemeral_public)  
+S3 = DH(client_ephemeral_private, server_ephemeral_public)  
+
+Final session key:
+session_key = HKDF(S1 || S2 || S3)
+
+Properties:
+- Mutual authentication
+- Forward secrecy
+- Resistance to impersonation
+
+## Packet Format
+Nonce (96-bit) + Encrypted Payload + Auth Tag (128-bit)
+
+Encryption: ChaCha20-Poly1305
+
+## Network Layer
+Uses TUN interface:
+- Interface: cvpn0
+- Subnet: 10.99.0.0/24
+
+Routing handled by OS routing table.
+
+## Transport Layer
+- Protocol: UDP
+- Default port: 51820
+- Stateless packet delivery
+- Optional keepalive for NAT traversal
+
+## Routing Model
+Point-to-point tunnels and optional mesh extension:
+
+A ↔ B ↔ C
+
+Routing is local and policy-based.
+
+## Security Model
+Guarantees:
+- Confidentiality
+- Integrity
+- Mutual authentication
+- Forward secrecy
+
+Threat mitigation:
+- Sniffing → encrypted
+- MITM → prevented via identity keys
+- Replay → nonce tracking
+
+## Replay Protection
+Each peer stores recent nonces (sliding window 64–1024 entries).  
+Reject duplicates and stale packets.
+
+## Key Rotation
+Session keys rotate:
+- Time-based (default 30 min)
+- Traffic volume threshold
+- Manual renegotiation
+
+## NAT Traversal
+- UDP hole punching
+- Keepalive packets (15–25s)
+- Endpoint learning
+
+## Implementation Requirements
+- Must use approved crypto only
+- Must implement full handshake
+- Must support TUN interface
+- Must enforce replay protection
+- Must not log payloads or metadata by default
+- Must support offline operation
+
+## Minimal Stack
+- TUN interface
+- UDP socket layer
+- Handshake module
+- AEAD encryption module
+- Routing controller
+
+No external services required.
+
+## Extensibility
+Future extensions:
+- Multi-hop routing
+- Peer discovery
+- Mesh routing tables
+- Bandwidth control
+- QoS tagging
+
+## Limitations
+Does NOT include:
+- Anonymous routing network
+- Central recovery systems
+- Built-in DDoS resistance
+- Central identity management
+
+## Conclusion
+CVPN is a minimal, fully open, peer-to-peer encrypted networking protocol designed for sovereign, user-controlled communication infrastructure.
+
