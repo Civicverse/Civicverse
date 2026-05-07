@@ -46,7 +46,7 @@ Non-custodial identity • Peer-attested Purple Check soulbound NFTs • Monero 
 
 ## ✨ Vision
 
-Civicverse is a fully sovereign, decentralized metaverse coordination layer built for resilience in uncertain times. It is designed as civilian-owned infrastructure that can function even during internet blackouts, financial collapse, or censorship.
+Civicverse is a fully sovereign, decentralized gamified metaverse coordination layer for resilience in uncertain times in active development. It is designed as civilian owned infrastructure that can function even during internet blackouts, financial collapse, or censorship.
 
 Core principles:
 - True non-custodial ownership
@@ -103,7 +103,7 @@ Civicverse operates as a **hybrid on/off-chain, local-first, fully non-custodial
 
 ```bash
 # 1. Clone the repository
-git clone [https://github.com/Civicverse/Civicverse-nightly-v0.0.git](https://github.com/Civicverse/Civicverse-nightly-v0.0.git)
+git clone [https://github.com/Civicverse/Civicverse-nightly-v0.0.git
 cd Civicverse-nightly-v0.0
 
 # 2. Install all dependencies (monorepo)
