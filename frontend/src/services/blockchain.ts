@@ -1,6 +1,9 @@
 import { ethers } from 'ethers';
 
-const ETH_RPC = 'https://rpc.sepolia.org'; // Sepolia testnet for dev
+// Use Vite env var `VITE_ETH_RPC` when available to allow CORS-friendly RPC endpoints.
+// Default remains Sepolia public RPC but for local dev you should set `VITE_ETH_RPC`
+// in your `.env` to a provider that allows CORS (e.g. https://rpc.ankr.com/eth_sepolia).
+const ETH_RPC = (import.meta.env.VITE_ETH_RPC as string) || 'https://rpc.sepolia.org'; // Sepolia testnet for dev
 const KASPA_API = 'https://api.kaspa.org'; // Mainnet Kaspa API (read-only)
 
 export const blockchainService = {

@@ -40,6 +40,14 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Godot cache
+.godot/
+*.import
+
+# Miner artifacts
+data/miner/
+data/miner/*
+
 # Docker
 .docker/
 

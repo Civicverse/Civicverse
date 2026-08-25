@@ -48,6 +48,24 @@ func copy_address(address: String):
 	DisplayServer.clipboard_set(address)
 	emit_signal("copy_to_clipboard_success", "Wallet address copied!")
 
+func get_wallet_address() -> String:
+	return player_wallet_address if not player_wallet_address.is_empty() else "0xCivicUserWalletAddress"
+
+func display_store_payment(item_name: String, price: float, seller_wallet: String) -> Dictionary:
+	request_store_purchase(seller_wallet, price, item_name)
+	return {
+		"item": item_name,
+		"price": price,
+		"seller": seller_wallet,
+		"qr_uri": generate_qr_uri(seller_wallet, price)
+	}
+
+func copy_address_to_clipboard(address: String) -> void:
+	copy_address(address)
+
+func confirm_transaction_initiated(tx_hash: String, amount: float) -> void:
+	print("[WALLET MANAGER] Transaction logged: %s for %.2f CIVIC" % [tx_hash, amount])
+
 func generate_qr_uri(address: String, amount: float) -> String:
 	# Standards-compliant crypto URI (e.g. ethereum:0x... or monero:4...)
 	return "ethereum:%s?value=%s" % [address, str(amount)]

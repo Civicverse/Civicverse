@@ -27,6 +27,7 @@ var target_speed = 0.0
 var mouse_sensitivity = 0.002
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity") * 1.2
 var is_ads = false
+var is_sprinting = false
 var is_driving = false
 var current_vehicle = null
 
@@ -92,6 +93,16 @@ func _handle_movement(delta):
 
 	# AnimationTree Updates
 	_update_animation_tree(input_dir, delta)
+
+func _update_animation_tree(input_dir: Vector2, delta: float) -> void:
+	if not anim_tree or not anim_state: return
+	if input_dir.length() > 0.1:
+		if is_sprinting:
+			anim_state.travel("sprint")
+		else:
+			anim_state.travel("run")
+	else:
+		anim_state.travel("idle")
 
 func _handle_combat(delta):
 	# ADS (Aim Down Sights) - Right Click

@@ -3,6 +3,22 @@
 [ext_resource type="Script" res://scripts/ui/FeedUI.gd" id="1_feedui"]
 [ext_resource type="Script" res://scripts/ui/CommunityHubManager.gd" id="1_hubmgr"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.05, 0.05, 0.08, 0.9)
+border_color = Color(1, 0.2, 0.2, 0.4)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 12
+content_margin_top = 12
+content_margin_right = 12
+content_margin_bottom = 12
+
 [node name="CommunityHub" type="Control"]
 script = ExtResource("1_hubmgr")
 layout_mode = 3
@@ -156,19 +172,3 @@ size_flags_vertical = 2
 
 [node name="Theme" type="Theme" parent="."]
 default_font_size = 12
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
-bg_color = Color(0.05, 0.05, 0.08, 0.9)
-border_color = Color(1, 0.2, 0.2, 0.4)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-content_margin_left = 12
-content_margin_top = 12
-content_margin_right = 12
-content_margin_bottom = 12

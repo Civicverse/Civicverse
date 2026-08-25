@@ -14,7 +14,11 @@ export default function SignInPage() {
     setError('')
     setLoading(true)
     try {
+      // eslint-disable-next-line no-console
+      console.debug('[SignInPage] attempting login call');
       await login('', password)
+      // eslint-disable-next-line no-console
+      console.debug('[SignInPage] login resolved, navigating to /vault');
       nav('/vault')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unlock failed. Check your password.')

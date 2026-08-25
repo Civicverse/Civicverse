@@ -23,11 +23,12 @@ export const GradientOrb: React.FC<{ delay?: number; size?: number }> = ({
   size = 100,
 }) => (
   <div
-    className="absolute rounded-full blur-3xl opacity-20 pointer-events-none"
+    className="absolute rounded-full opacity-30 pointer-events-none"
     style={{
       width: size,
       height: size,
-      background: 'radial-gradient(circle, #00D9FF 0%, #B837F7 100%)',
+      background: 'radial-gradient(circle, rgba(0, 217, 255, 0.35) 0%, rgba(0, 217, 255, 0.08) 40%, transparent 75%)',
+      boxShadow: '0 0 80px rgba(0, 217, 255, 0.18), 0 0 160px rgba(0, 217, 255, 0.08)',
       animation: `float 6s ease-in-out infinite`,
       animationDelay: `${delay}s`,
     }}

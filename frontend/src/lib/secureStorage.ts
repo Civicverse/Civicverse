@@ -32,12 +32,18 @@ export const secureStorage = {
    */
   setItem: async (key: string, value: string): Promise<void> => {
     const db = await openDB();
+    // eslint-disable-next-line no-console
+    console.debug('[secureStorage] setItem', key, 'len=', value ? value.length : 0);
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const request = store.put(value, key);
       
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        // eslint-disable-next-line no-console
+        console.error('[secureStorage] setItem ERROR', key, request.error);
+        reject(request.error);
+      };
       request.onsuccess = () => resolve();
     });
   },
@@ -48,13 +54,24 @@ export const secureStorage = {
    */
   getItem: async (key: string): Promise<string | null> => {
     const db = await openDB();
+    // eslint-disable-next-line no-console
+    console.debug('[secureStorage] getItem', key);
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readonly');
       const store = tx.objectStore(STORE_NAME);
       const request = store.get(key);
       
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => {
+        // eslint-disable-next-line no-console
+        console.error('[secureStorage] getItem ERROR', key, request.error);
+        reject(request.error);
+      };
+      request.onsuccess = () => {
+        const result = request.result || null;
+        // eslint-disable-next-line no-console
+        console.debug('[secureStorage] getItem RESULT', key, result ? ('len=' + String(result.length)) : 'null');
+        resolve(result);
+      };
     });
   },
 
@@ -64,12 +81,18 @@ export const secureStorage = {
    */
   removeItem: async (key: string): Promise<void> => {
     const db = await openDB();
+    // eslint-disable-next-line no-console
+    console.debug('[secureStorage] removeItem', key);
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const request = store.delete(key);
       
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        // eslint-disable-next-line no-console
+        console.error('[secureStorage] removeItem ERROR', key, request.error);
+        reject(request.error);
+      };
       request.onsuccess = () => resolve();
     });
   },

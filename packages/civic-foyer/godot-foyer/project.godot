@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="NEON REIGN - The Foyer"
 run/main_scene="res://scenes/main_launcher.tscn"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/branding/icon.svg"
 
 [autoload]
@@ -28,6 +28,9 @@ WalletManager="*res://scripts/autoloads/WalletManager.gd"
 VehicleManager="*res://scripts/autoloads/VehicleManager.gd"
 LiveStreamManager="*res://scripts/autoloads/LiveStreamManager.gd"
 ReputationSystem="*res://scripts/autoloads/ReputationSystem.gd"
+WalletDisplayManager="*res://scripts/autoloads/WalletDisplayManager.gd"
+GameStateManager="*res://scripts/autoloads/GameStateManager.gd"
+AudioManager="*res://scripts/autoloads/AudioManager.gd"
 
 [display]
 

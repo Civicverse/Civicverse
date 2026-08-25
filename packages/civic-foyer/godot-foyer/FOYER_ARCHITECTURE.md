@@ -1,8 +1,8 @@
-# NEON REIGN: The Foyer - Complete Project Architecture & Implementation Guide
+# The Foyer - Complete Project Architecture & Implementation Guide
 
 ## 🎯 PROJECT OVERVIEW
 
-**NEON REIGN: The Foyer** is a premium, high-fidelity realistic multiplayer battle royale game built in Godot 4.3+ with AAA-quality visuals, realistic PBR character rendering, and a strict **off-platform on-chain transaction architecture**.
+**The Foyer** is a premium, high-fidelity realistic multiplayer battle royale game built in Godot 4.3+ with AAA-quality visuals, realistic PBR character rendering, and a strict **off-platform on-chain transaction architecture**.
 
 ### Core Design Principle: NO FUNDS THROUGH PLATFORM
 - **All transactions are strictly P2P/P2B/B2B on-chain OFF-PLATFORM**

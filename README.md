@@ -1,209 +1,219 @@
-# 🌌 Civicverse v1.3: THE FOYER
+# Civicverse
+
+A modular open-source 3D social hub, identity dashboard, and local multiplayer node.
 
 <p align="center">
-  <img src="logo_purple.svg" width="100%" style="display: block; margin: 0 auto;" alt="Civicverse Logo">
-</p>
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
-<p align="center">
-  <b>The Decentralized Metaverse Coordination Layer</b>
-</p>
-
-<p align="center">
-  <a href="https://github.com/Civicverse/Civicverse-nightly-v0.0/actions/workflows/ci-cd.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/Civicverse/Civicverse-nightly-v0.0/ci-cd.yml?style=for-the-badge&logo=github-actions&label=CI/CD" alt="CI/CD Status">
-  </a>
-  <img src="https://img.shields.io/github/license/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=orange" alt="License">
-  <img src="https://img.shields.io/github/package-json/v/Civicverse/Civicverse-nightly-v0.0?style=for-the-badge&color=blueviolet&label=Civicverse%20V" alt="Version">
-</p>
-
-<p align="center">
-  <a href="#-getting-started-step-by-step">
-    <img src="https://img.shields.io/badge/🚀%20Launch%20Project-007ACC?style=for-the-badge&logo=rocket" alt="Launch">
-  </a>
-  <a href="#-directory-structure">
-    <img src="https://img.shields.io/badge/📖%20Documentation-444444?style=for-the-badge&logo=read-the-docs" alt="Docs">
-  </a>
-  <a href="./frontend/README.md">
-    <img src="https://img.shields.io/badge/🔐%20Access%20Vault-FFD700?style=for-the-badge&logo=lock" alt="Vault">
-  </a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Privacy-Monero%20Integrated-FF6600?style=flat-square&logo=monero" alt="Monero">
-  <img src="https://img.shields.io/badge/Engine-Godot%204.3.1-478CBF?style=flat-square&logo=godot-engine&logoColor=white" alt="Godot">
-  <img src="https://img.shields.io/badge/High%20Fidelity-UE5%20Shards-000000?style=flat-square&logo=unreal-engine" alt="UE5">
+  <img src="images/CivicverseLogo.png" width="320" alt="Civicverse Logo">
 </p>
 
 ---
 
-**The Parallel Digital Nation You Actually Own**
-
-Non-custodial identity • Peer-attested Purple Check soulbound NFTs • Monero P2P economy • Godot + UE5 3D Foyer • Offline-first CivicNodes
-
----
-
-## ✨ Vision
-
-Civicverse is a fully sovereign, decentralized gamified metaverse coordination layer for resilience in uncertain times in active development. It is designed as civilian owned infrastructure that can function even during internet blackouts, financial collapse, or censorship.
-
-Core principles:
-- True non-custodial ownership
-- Peer-attested identity instead of corporate/government KYC
-- Privacy-first economics with Monero
-- Offline-first and solar-ready physical nodes
-- Community treasury funded by a voluntary 1% civic contribution on flows
+> [!WARNING]
+> **Project Status: Early Work-in-Progress (Pre-Alpha)**  
+> This project is actively being developed. The core components (frontend dashboard, backend API, WebSocket server, and Godot 3D hub) exist as standalone prototypes, but full end-to-end networked gameplay is not yet connected.
 
 ---
 
-## 📖 How the System Currently Works (April 2026 — Nightly v1.3)
+## 📍 Current Project State
 
-Civicverse operates as a **hybrid on/off-chain, local-first, fully non-custodial stack**.
+Civicverse is organized as a monorepo containing a web dashboard, an Express backend API, a Node.js WebSocket multiplayer server, and a Godot 4.3+ 3D client.
 
-### Core Layers
+### What is Currently Implemented
+- **Frontend Dashboard (`frontend/`)**: React 18 + Vite + Tailwind CSS web interface including character customizer, UI panels, mock vault, and prototype 3D canvas viewport.
+- **Backend API (`backend/index.js`)**: Express.js REST API running on port `3003` with local JSON file persistence for user identities, wallet backups, and mock task endpoints.
+- **Multiplayer Server (`backend/multiplayer-server.js`)**: WebSocket server on port `8080` handling basic player connection tracking, chat messages, and position broadcast stubs.
+- **3D Foyer Prototype (`packages/civic-foyer/godot-foyer/`)**: Godot 4.3+ project containing 3D environment scenes, character controllers, and GDScript logic for web-bridge integration.
+- **Windows Standalone Launcher (`Civicverse.exe`)**: Native C# launcher executable that manages background services, checks ports, launches the browser, and provides a system tray interface.
 
-**1. Identity Layer** (`packages/civic-identity` + `civic-vault`)
-- All identity data starts fully local and encrypted with PBKDF2 + AES-256.
-- Secrets never leave the user's device.
-- **Purple Check** soulbound (non-transferable) ERC-721 NFT is minted on an EVM L2 (Base or Arbitrum) only after 3 peer attestations via CivicWatch (Proof-of-Personhood system + local AI validation).
-- The Purple Check gates all monetary functions and governance.
+### What Still Needs to be Built for a Playable Base Game
+To turn the current prototype into a fully functional base game, the following milestones must be completed:
 
-**2. Economic Layer** (Smart Contracts + Monero)
-- Smart contracts only handle rules, gating, and emit events — they never hold funds.
-- Mandatory **1% treasury cut** is enforced on all jobs, tips, donations, gambling, and marketplace transactions.
-- When a payment is approved, contracts emit a `MoneroPaymentInstruction` event.
-- The user's **Civic Vault** (or local CivicNode) listens for these events and triggers private Monero (XMR) transactions from user-controlled wallets.
-- Community mining pool uses XMRig with telemetry feeding the treasury.
-
-**3. The Foyer — Coordination & Metaverse Hub**
-- Primary 3D world built in Godot 4.3.1 (HTML5 export available).
-- Premium high-fidelity shards in Unreal Engine 5.
-- Real-time multiplayer via Socket.io backend.
-- CivicWatch jobs, social spaces, skill-based earning, and governance participation all happen here.
-
-**4. Resilience Layer**
-- Contracts compiled to WASM for offline execution on CivicNodes.
-- Local Merkle-tree queues that sync when back online.
-- Raspberry Pi / solar-powered CivicNodes run the full stack locally and can form mesh networks via libp2p experiments.
-
-### Current End-to-End Citizen Flow
-1. Open Civic Vault → create locally encrypted identity.
-2. Request Purple Check → receive 3 peer attestations + AI review → NFT minted.
-3. Enter The Foyer → take CivicWatch jobs or participate in the economy.
-4. Job/proof validated → on-chain event emitted.
-5. Vault detects event → user (or local relay) broadcasts Monero transaction (99% to recipient, 1% to treasury).
-6. Purple Check holders vote on treasury spending via on-chain governance.
-
-**Current Status**: Identity + Vault encryption and basic contracts are semi functional. Foyer multiplayer, full automated Monero relay, UE5 integration, and production CivicNode setups are in active development.
+1. **Godot Web Bridge Integration**: Complete the Godot HTML5 export pipeline and implement stable two-way communication between the Godot WebGL canvas and the React frontend state.
+2. **Authoritative Network Synchronization**: Connect the 3D client (Godot / Three.js) directly to `backend/multiplayer-server.js` with client prediction, entity interpolation, and collision reconciliation.
+3. **Core Gameplay Loop**:
+   - Spawn point management and persistent player state across sessions.
+   - Interactive quest / task system connected to real server-backed data instead of mock JSON files.
+   - Real-time in-world interactions (player-to-player chat bubbles, area triggers, trading).
+4. **Database & Storage Layer**: Replace local flat JSON files (`data/identities/`, `data/wallets/`) with an embedded or production database (SQLite / PostgreSQL).
+5. **3D Assets & Level Design**: Finalize 3D meshes, textures, materials, and animations for the Foyer environment and avatar models.
 
 ---
 
-## 🚀 Getting Started — From Download to Running
+## 🚀 Detailed Startup Procedure
 
-```bash
-# 1. Clone the repository
-git clone [https://github.com/Civicverse/Civicverse-nightly-v0.0.git
-cd Civicverse-nightly-v0.0
-
-# 2. Install all dependencies (monorepo)
-npm install
-
-# 3. Set up environment
-cp .env.example .env
-# Edit .env if needed (RPC URLs, ports, etc.)
-
-# 4. Launch the full stack
-chmod +x launch.sh
-./launch.sh
-
----
-
-## 🚦 System Status
-
-| Component | Status | Description |
-| :--- | :--- | :--- |
-| **Local CivicID** | ✅ **Working** | Local clientside identity creation, encryption, and vault storage. |
-| **Community Mining Pool**| 🛠 In Progress | XMRig integration for XMR mining and real-time telemetry. |
-| **The Foyer** | 🛠 In Progress | 3D Hub visuals and basic movement; multiplayer relay in development. |
-| **CivicWatch (PoP)** | 🛠 In Progress | Peer-to-peer attestation flow and job-based verification. |
-| **UE5 Shards** | 🛠 In Progress | High-fidelity world sharding and additive loading. |
-
----
-
-## 🚀 Getting Started (Step-by-Step)
+Follow these step-by-step instructions to get Civicverse running locally from this repository (`https://github.com/Civicverse/Civicverse`).
 
 ### 1. Prerequisites
-- **Node.js 20+** & **npm 10+**
-- **Docker & Docker Compose**
-- **Git**
 
-### 2. Installation
+Ensure the following tools are installed on your machine:
+- **Node.js**: v18.x or v20.x ([Download Node.js](https://nodejs.org/))
+- **npm**: v9.x or higher (included with Node.js)
+- **Git**: ([Download Git](https://git-scm.com/))
+- *(Optional)* **Godot Engine 4.3+**: Required only if modifying or exporting the 3D Godot scene ([Download Godot](https://godotengine.org/))
+- *(Optional)* **Docker & Docker Compose**: Required only if running containerized services
+
+---
+
+### 2. Clone and Install
+
+Open a terminal (or PowerShell on Windows) and run:
+
 ```bash
-# Clone the repository
-git clone https://github.com/Civicverse/Civicverse-nightly-v0.0.git
-cd Civicverse-nightly-v0.0
+# Clone this repository
+git clone https://github.com/Civicverse/Civicverse.git
+cd Civicverse
 
-# Install dependencies for the entire monorepo
+# Install monorepo dependencies
 npm install
+
+# Build frontend production assets
+npm run build
 ```
 
-### 3. Configuration
-```bash
-# Copy the example environment file
-cp .env.example .env
-# Edit .env to add your local configuration if necessary
-```
+---
 
-### 4. Local Startup
-You can launch all services using the provided script:
-```bash
-# Give execution permissions
-chmod +x launch.sh
+### 3. Running the Project
 
-# Start the complete stack
-./launch.sh
-```
-Alternatively, start components manually:
+You can choose any of the following launch methods:
+
+#### Method A: Windows One-Click Executable (Recommended on Windows)
+Simply double-click **`Civicverse.exe`** in the root directory (or run `launch.bat`).
+
+- Automatically detects and verifies the Node.js runtime.
+- Automatically clears any stale port conflicts on ports `3000`, `3003`, and `8080`.
+- Launches the Backend API, Multiplayer Server, and Frontend simultaneously.
+- Opens your default web browser to `http://localhost:3000`.
+- Includes a live log console and system tray minimization.
+
+*(To recompile the executable from source on Windows: `npm run build:exe`)*
+
+---
+
+#### Method B: Monorepo All-in-One CLI (Cross-Platform)
+From the root repository directory:
+
 ```bash
-# Start Backend (API & WebSocket)
+npm start
+```
+This uses `concurrently` to start both the backend services and the Vite frontend dev server.
+
+---
+
+#### Method C: Manual Service-by-Service Startup
+If you want to run each service in its own terminal window for debugging:
+
+**Terminal 1 — Backend Services (API on 3003 & Multiplayer on 8080):**
+```bash
 npm run start:backend
+```
 
-# Start Frontend (Vite Dev Server)
+**Terminal 2 — Frontend Web Node (Port 3000):**
+```bash
 npm run start:frontend
 ```
 
 ---
 
-## 🤝 Contribution Path
+#### Method D: Docker Compose
+To run containerized services:
 
-We welcome contributors of all skill levels. Here is how you can align with our development path:
+```bash
+docker compose up --build
+```
 
-### For Developers
-1. **Explore the Monorepo:** Familiarize yourself with the `/packages` structure.
-2. **Identity Enhancement:** Help improve the `civic-identity` and `civic-vault` packages.
-3. **Godot Mastery:** Contribute to the `civic-foyer` Godot project in `packages/civic-foyer/godot-foyer`.
-4. **Security Audits:** Help us refine the `security.yml` workflows and audit local encryption methods.
-
-### For Creators
-1. **World Building:** Design new 3D shards for the Foyer.
-2. **UI/UX:** Refine the Hub aesthetic in the React frontend.
-
-### Workflow
-1. **Fork & Branch:** `git checkout -b feature/your-feature-name`
-2. **Develop:** Follow the coding standards (TypeScript, Tailwind CSS).
-3. **Verify:** Ensure `npm run build` passes.
-4. **PR:** Submit a Pull Request with a clear description of changes.
+To stop:
+```bash
+docker compose down
+```
 
 ---
 
-## 📂 Directory Structure
+### 4. Active Endpoints & Ports
 
-- [**backend/**](./backend/README.md) - Node.js API and Socket.io relay.
-- [**frontend/**](./frontend/README.md) - React/Vite dashboard and Vault UI.
-- [**packages/**](./packages/README.md) - Modular protocol logic (Identity, Mining, etc.).
-- [**contracts/**](./contracts/README.md) - Protocol smart contracts.
-- [**Ue5_project/**](./Ue5_project/README.md) - Unreal Engine 5 high-fidelity shards.
+When all services are running, the following endpoints are available:
+
+| Service | Protocol / Port | URL | Description |
+| :--- | :--- | :--- | :--- |
+| **Frontend Web Hub** | HTTP / `3000` | `http://localhost:3000` | Main user interface, character creator, and dashboard |
+| **Backend API Server** | HTTP / `3003` | `http://localhost:3003` | REST API for identity, wallet backup, and tasks |
+| **Multiplayer Server** | WS / `8080` | `ws://localhost:8080/ws` | Real-time WebSocket relay for player state & chat |
 
 ---
-*Identity is claimed through code.*
+
+## 🛠 Godot 3D Foyer Development
+
+To work directly on the 3D Foyer in Godot:
+
+1. Open **Godot Engine 4.3+**.
+2. Click **Import** and navigate to:
+   ```
+   packages/civic-foyer/godot-foyer/project.godot
+   ```
+3. Open the project.
+4. Main world scene is located at `scenes/Main.tscn` or `scenes/World.tscn`.
+5. To test web export builds:
+   - Ensure the Web export template is installed in Godot.
+   - Export destination: `frontend/public/foyer-dist/index.html`.
+
+---
+
+## 📁 Repository Structure
+
+```
+Civicverse/
+├── Civicverse.exe             # Windows standalone launcher executable
+├── CivicverseLauncher.cs      # C# source code for Windows launcher
+├── launch.bat                 # Windows batch launcher script
+├── launch.sh                  # Linux/macOS bash launcher script
+├── package.json               # Root monorepo configuration & scripts
+├── docker-compose.yml         # Container configuration
+│
+├── backend/                   # Express API & WebSocket services
+│   ├── index.js               # REST API server (Port 3003)
+│   ├── multiplayer-server.js  # WebSocket server (Port 8080)
+│   ├── start.js               # Concurrent backend process runner
+│   └── package.json
+│
+├── frontend/                  # React 18 + Vite Web Application
+│   ├── src/                   # React components, pages, state store
+│   ├── public/                # Static assets & Godot HTML5 export target
+│   ├── vite.config.ts         # Vite bundler & API proxy configuration
+│   └── package.json
+│
+├── packages/                  # Modular workspaces
+│   ├── civic-foyer/           # Godot 3D game client
+│   │   └── godot-foyer/       # Godot project files (scenes, scripts, assets)
+│   ├── civic-identity/        # Identity encryption and key management
+│   ├── civic-vault/           # Client wallet and credential storage
+│   ├── civic-watch/           # Task and verification logic
+│   ├── civic-governance/      # Proposal and voting logic
+│   ├── civic-mining/          # Mining telemetry integration
+│   └── civic-marketplace/     # Item listing and inventory logic
+│
+└── scripts/                   # Build and utility scripts
+    ├── build_exe.ps1          # PowerShell C# compilation script
+    └── dev.sh                 # Local development helper script
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! To contribute:
+
+1. Fork or branch from `main`:
+   ```bash
+   git checkout -b feat/your-feature-name
+   ```
+2. Make your modifications.
+3. Verify that the build succeeds:
+   ```bash
+   npm run build
+   ```
+4. Commit your changes and open a Pull Request with a clear summary of what was added or fixed.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE.txt](./LICENSE.txt) file for details.

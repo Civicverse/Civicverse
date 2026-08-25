@@ -108,11 +108,11 @@ func check_cosmetic_unlock(cosmetic_key: String) -> bool:
 	
 	return false
 
-def get_all_cosmetics() -> Dictionary:
+func get_all_cosmetics() -> Dictionary:
 	"""Get all available cosmetics."""
 	return cosmetic_definitions.duplicate()
 
-def get_unlocked_cosmetics() -> Array:
+func get_unlocked_cosmetics() -> Array:
 	"""Get player's unlocked cosmetics."""
 	return cosmetics_unlocked.duplicate()
 

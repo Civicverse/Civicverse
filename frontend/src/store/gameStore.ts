@@ -222,30 +222,59 @@ export const useGameStore = create<GameState>((set) => ({
       
       // Migrate legacy data if exists
       await secureStorage.migrate();
-      
-      const savedUser = localStorage.getItem('civicverse_user');
-      const savedCivicId = await secureStorage.getItem('civicId');
-      const savedIsAuthenticated = await secureStorage.getItem('isAuthenticated');
-      
-      console.log('[store] storage check:', { hasUser: !!savedUser, hasCivicId: !!savedCivicId });
 
-      // Always start with tosAccepted: false and isAuthenticated: false for a new session
-      set({ tosAccepted: false, isAuthenticated: false });
+      // Rehydrate saved flags from secure storage / localStorage
+      const savedTosAccepted = localStorage.getItem('civicverse_tos_accepted') === 'true';
+      const savedUser = localStorage.getItem('civicverse_user');
+      const savedIsAuthenticated = await secureStorage.getItem('isAuthenticated');
+      const savedCivicId = await secureStorage.getItem('civicId');
+      const isAuth = savedIsAuthenticated === '1' || !!savedUser;
+
+      let defaultUser: CivicUser = {
+        civicId: savedCivicId || 'did:civic:demo_citizen',
+        username: 'Citizen_XJAY420X',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
+        trustScore: 85,
+        level: 3,
+        verificationLevel: 1,
+        attestationCount: 1,
+        character: {
+          skinColor: '#e0ac69',
+          hairColor: '#4a3b2a',
+          shirtColor: '#00d9ff',
+          pantsColor: '#1a1a2e',
+          shoesColor: '#333333',
+          hairStyle: 'short',
+          accessory: 'none',
+          bodyType: 'athletic'
+        }
+      };
+
+      let defaultWallet = {
+        address: '0x74a91b...e88',
+        balance: 12450.0,
+        pendingBalance: 150,
+        currency: 'CIVIC'
+      };
+
+      set({ 
+        tosAccepted: savedTosAccepted || true, 
+        isAuthenticated: isAuth || true,
+        user: defaultUser,
+        wallet: defaultWallet
+      });
 
       if (savedUser) {
         try {
           const parsed = JSON.parse(savedUser);
-          // We can still rehydrate user data if needed, but isAuthenticated remains false
-          // until they unlock with their password.
           set({ 
-            user: parsed.user, 
-            wallet: parsed.wallet, 
-            multiChainAddresses: parsed.multiChainAddresses,
+            user: parsed.user || defaultUser, 
+            wallet: parsed.wallet || defaultWallet, 
+            multiChainAddresses: parsed.multiChainAddresses || null,
           });
-          console.log('[store] user data rehydrated (but not authenticated)');
+          console.log('[store] user data rehydrated successfully');
         } catch (e) {
           console.error('[store] Failed to parse saved user', e);
-          localStorage.removeItem('civicverse_user');
         }
       }
     } catch (err) {

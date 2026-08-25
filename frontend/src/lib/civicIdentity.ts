@@ -127,6 +127,9 @@ export class CivicIdentity {
         console.warn('[CivicIdentity] No identity found in storage.');
         return null;
       }
+      // Log safe metadata only
+      // eslint-disable-next-line no-console
+      console.debug('[CivicIdentity] encrypted identity present len=', encrypted.length, 'startsWithENCRYPTED=', encrypted.startsWith && encrypted.startsWith('ENCRYPTED:'));
       
       let data: StorageData;
 
@@ -136,9 +139,13 @@ export class CivicIdentity {
         }
 
         const encryptedData = encrypted.substring('ENCRYPTED:'.length);
-        console.debug('[CivicIdentity] Decrypting identity data...');
+        // eslint-disable-next-line no-console
+        console.debug('[CivicIdentity] Decrypting identity data (encrypted length=', encryptedData.length, ')...');
         const decrypted = await decryptWithPassword(encryptedData, password);
-        
+
+        // Do not log sensitive decrypted contents; only log length for tracing
+        // eslint-disable-next-line no-console
+        console.debug('[CivicIdentity] Decryption succeeded, decrypted length=', decrypted ? decrypted.length : 0);
         try {
           data = JSON.parse(decrypted) as StorageData;
         } catch (e) {
@@ -146,7 +153,8 @@ export class CivicIdentity {
           throw new Error('Identity data is corrupted or invalid.');
         }
 
-        console.debug('[CivicIdentity] Identity decrypted successfully.');
+        // eslint-disable-next-line no-console
+        console.debug('[CivicIdentity] Identity parsed ok, did=', data.did ? data.did.slice(0, 20) : 'unknown');
       } else {
         // Legacy: base64-encoded data (no password)
         console.debug('[CivicIdentity] Restoring legacy base64 identity...');

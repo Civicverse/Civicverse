@@ -24,7 +24,7 @@ func apply_aaa_environment(env: WorldEnvironment):
 	e.volumetric_fog_ambient_inject = 0.5
 	
 	# 3. POST-PROCESSING (Cinematic Polish)
-	e.tonemap_mode = Environment.TONEMAP_ACES
+	e.tonemap_mode = Environment.TONE_MAPPER_ACES
 	e.tonemap_exposure = 1.0
 	e.tonemap_white = 1.0
 	

@@ -18,7 +18,10 @@ const ubiEngine = require('./services/UBI-engine/ubi-service');
 const civicWatch = require('./services/civicwatch-service');
 
 // Security Middleware
-app.use(helmet())
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}))
 app.use(cors({ 
   origin: process.env.CORS_ORIGIN || '*', 
   optionsSuccessStatus: 200 
@@ -235,5 +238,15 @@ app.post('/api/governance/execute', (req, res) => {
 });
 
 
+
+// --- Static Frontend Serving (if built) ---
+const FRONTEND_DIST = path.join(__dirname, '..', 'frontend', 'dist');
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+}
 
 app.listen(port, () => console.log(`Rebuild backend listening on ${port}`))

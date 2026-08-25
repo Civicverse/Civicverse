@@ -18,9 +18,9 @@ export function CharacterViewer({ config, className = '', animate = true, scale 
 
   useEffect(() => {
     if (!containerRef.current) return;
-
-    // --- Scene Setup ---
-    const scene = new THREE.Scene();
+    try {
+      // --- Scene Setup ---
+      const scene = new THREE.Scene();
     // Transparent background for overlay
     // scene.background = null; 
 
@@ -28,12 +28,12 @@ export function CharacterViewer({ config, className = '', animate = true, scale 
     camera.position.set(0, 1.2, 3.5); // Focus on upper body for portrait feel
     camera.lookAt(0, 0.9, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      containerRef.current.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
 
     // --- Lighting (Cinematic) ---
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -62,7 +62,7 @@ export function CharacterViewer({ config, className = '', animate = true, scale 
     scene.add(characterGroup);
     characterGroupRef.current = characterGroup;
 
-    // --- Animation Loop ---
+      // --- Animation Loop ---
     let time = 0;
     const loop = () => {
       animationFrameRef.current = requestAnimationFrame(loop);
@@ -80,7 +80,7 @@ export function CharacterViewer({ config, className = '', animate = true, scale 
     };
     loop();
 
-    // --- Resize ---
+      // --- Resize ---
     const handleResize = () => {
       if (!containerRef.current) return;
       camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
@@ -89,14 +89,31 @@ export function CharacterViewer({ config, className = '', animate = true, scale 
     };
     window.addEventListener('resize', handleResize);
 
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (rendererRef.current) {
-        rendererRef.current.dispose();
-        containerRef.current?.removeChild(rendererRef.current.domElement);
+      return () => {
+        try {
+          if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+          if (rendererRef.current) {
+            rendererRef.current.dispose();
+            if (containerRef.current && rendererRef.current.domElement.parentNode === containerRef.current) {
+              containerRef.current.removeChild(rendererRef.current.domElement);
+            }
+          }
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error('[CharacterViewer] cleanup error', e);
+        }
+        window.removeEventListener('resize', handleResize);
+      };
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[CharacterViewer] WebGL setup failed', err);
+      // Fail gracefully by ensuring no lingering renderer remains
+      if (rendererRef.current && containerRef.current) {
+        try { rendererRef.current.dispose(); containerRef.current.removeChild(rendererRef.current.domElement); } catch(_) {}
+        rendererRef.current = null;
       }
-      window.removeEventListener('resize', handleResize);
-    };
+      return undefined as any;
+    }
   }, []);
 
   // --- Character Construction ---
