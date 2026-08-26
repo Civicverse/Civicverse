@@ -45,6 +45,7 @@ namespace CivicverseLauncher
         {
             InitializeComponent();
             LocateEnvironment();
+            EnsureDesktopShortcut();
             StartServices();
         }
 
@@ -317,6 +318,40 @@ namespace CivicverseLauncher
             }
 
             AppendLog("[INIT] Using Node runtime: " + nodeExe);
+        }
+
+        private void EnsureDesktopShortcut()
+        {
+            try
+            {
+                string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                if (Directory.Exists(desktop))
+                {
+                    string shortcutPath = Path.Combine(desktop, "Civicverse.lnk");
+                    string exePath = Path.Combine(repoDir, "Civicverse.exe");
+                    string iconPath = Path.Combine(repoDir, "app.ico");
+
+                    Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+                    if (shellType != null)
+                    {
+                        dynamic shell = Activator.CreateInstance(shellType);
+                        dynamic shortcut = shell.CreateShortcut(shortcutPath);
+                        shortcut.TargetPath = exePath;
+                        shortcut.WorkingDirectory = repoDir;
+                        shortcut.Description = "Civicverse Metaverse Node";
+                        if (File.Exists(iconPath))
+                        {
+                            shortcut.IconLocation = iconPath + ",0";
+                        }
+                        shortcut.Save();
+                        AppendLog("[SHORTCUT] Desktop shortcut verified: " + shortcutPath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog("[SHORTCUT] Note: " + ex.Message);
+            }
         }
 
         private void StartServices()

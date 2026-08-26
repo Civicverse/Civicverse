@@ -17,6 +17,8 @@
     "build:foyer": "npm run build:godot --workspace=@civicverse/civic-foyer",
     "start:backend": "npm start --workspace=backend",
     "start:frontend": "npm run dev --workspace=frontend",
+    "postinstall": "node scripts/setup-desktop.js",
+    "setup:desktop": "node scripts/setup-desktop.js",
     "clean": "rm -rf node_modules backend/node_modules frontend/node_modules frontend/dist && rm -f package-lock.json backend/package-lock.json frontend/package-lock.json && echo 'Clean complete!'",
     "docker:clean": "docker-compose down --volumes && docker container prune -f && docker image prune -f && echo 'Docker cleanup complete!'"
   },

@@ -63,7 +63,7 @@ Open a terminal (or PowerShell on Windows) and run:
 git clone https://github.com/Civicverse/Civicverse.git
 cd Civicverse
 
-# Install monorepo dependencies
+# Install monorepo dependencies (automatically creates a Civicverse shortcut on your Desktop)
 npm install
 
 # Build frontend production assets
@@ -77,9 +77,10 @@ npm run build
 You can choose any of the following launch methods:
 
 #### Method A: Windows One-Click Executable (Recommended on Windows)
-Simply double-click **`Civicverse.exe`** in the root directory (or run `launch.bat`).
+Simply double-click the **`Civicverse`** shortcut on your Desktop (or `Civicverse.exe` in the repo root / `launch.bat`).
 
 - Automatically detects and verifies the Node.js runtime.
+- Automatically places a shortcut on your Desktop if not already present.
 - Automatically clears any stale port conflicts on ports `3000`, `3003`, and `8080`.
 - Launches the Backend API, Multiplayer Server, and Frontend simultaneously.
 - Opens your default web browser to `http://localhost:3000`.
