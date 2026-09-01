@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -37,14 +37,29 @@ jobs:
       - name: Build Static Production Bundle
         run: npm run build --workspace=frontend
 
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
+      - name: Prepare Static Artifacts
+        run: |
+          touch frontend/dist/.nojekyll
+          cp frontend/dist/index.html frontend/dist/404.html || true
 
-      - name: Upload Pages Artifact
+      - name: Deploy to gh-pages branch (Legacy / Branch Mode Fallback)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./frontend/dist
+          enable_jekyll: false
+
+      - name: Setup GitHub Pages (Action Mode)
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+
+      - name: Upload Pages Artifact (Action Mode)
         uses: actions/upload-pages-artifact@v3
         with:
           path: './frontend/dist'
+        continue-on-error: true
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (Action Mode)
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
