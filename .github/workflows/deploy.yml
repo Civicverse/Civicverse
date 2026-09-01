@@ -8,11 +8,15 @@ on:
       environment:
         description: 'Deployment environment'
         required: true
-        default: 'production'
+        default: 'staging'
         type: choice
         options:
           - staging
           - production
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build-and-push:
@@ -20,13 +24,19 @@ jobs:
     permissions:
       packages: write
       contents: read
+    outputs:
+      frontend-tag: ${{ steps.meta-frontend.outputs.tags }}
+      backend-tag: ${{ steps.meta-backend.outputs.tags }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Source
+        uses: actions/checkout@v4
 
       - name: Lowercase Repository Name
         id: repo_name
         run: |
-          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+          REPO_LOWER=$(echo ${GITHUB_REPOSITORY} | tr '[:upper:]' '[:lower:]')
+          echo "REPO_LOWER=${REPO_LOWER}" >> $GITHUB_ENV
+          echo "Repository: ${REPO_LOWER}"
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -38,27 +48,49 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Build and push frontend image
+      - name: Extract Frontend Metadata
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ env.REPO_LOWER }}/frontend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and Push Frontend Image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ env.REPO_LOWER }}/frontend:${{ github.sha }}
-            ghcr.io/${{ env.REPO_LOWER }}/frontend:latest
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      - name: Build and push backend image
+      - name: Extract Backend Metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ env.REPO_LOWER }}/backend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and Push Backend Image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./backend/Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ env.REPO_LOWER }}/backend:${{ github.sha }}
-            ghcr.io/${{ env.REPO_LOWER }}/backend:latest
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -68,7 +100,8 @@ jobs:
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Source
+        uses: actions/checkout@v4
       
       - name: SSH Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
@@ -77,7 +110,29 @@ jobs:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ vars.DEPLOY_PORT || '22' }}
           script: |
-            cd /app/civicverse
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            set -e
+            echo "Starting deployment to ${{ github.event.inputs.environment || 'production' }}..."
+            cd /app/civicverse || { echo "ERROR: Deploy directory not found"; exit 1; }
+            
+            echo "Pulling latest Docker images..."
+            docker compose -f docker-compose.prod.yml pull || { echo "ERROR: Failed to pull images"; exit 1; }
+            
+            echo "Starting services..."
+            docker compose -f docker-compose.prod.yml up -d || { echo "ERROR: Failed to start services"; exit 1; }
+            
+            echo "Verifying deployment..."
+            sleep 5
+            docker compose -f docker-compose.prod.yml ps
+            echo "✓ Deployment completed successfully"
+      
+      - name: Deployment Status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✓ Deployment successful for ${{ github.event.inputs.environment || 'production' }}"
+          else
+            echo "✗ Deployment failed"
+            exit 1
+          fi
