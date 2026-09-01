@@ -7,6 +7,13 @@
     <meta name="description" content="CivicVerse: A decentralized 3D social hub, identity dashboard, and local metaverse node" />
     <meta name="theme-color" content="#07090e" />
     <link rel="icon" type="image/x-icon" href="./app.ico" />
+    <script>
+      // Automatically normalize bare root URL to #/vault immediately
+      if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#/') {
+        var base = window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/';
+        window.location.replace(base + '#/vault' + window.location.search);
+      }
+    </script>
   </head>
   <body class="bg-[#07090e] text-white antialiased overflow-x-hidden selection:bg-cyan-500 selection:text-black">
     <div id="root">
