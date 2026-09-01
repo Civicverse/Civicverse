@@ -168,18 +168,31 @@ export default function FoyerPage() {
 
         <div className="flex flex-1 items-center justify-between gap-8 ml-6">
           <nav className="flex items-center gap-5 text-xs font-semibold text-gray-300">
-            {['HOME', 'WORLD', 'GOVERN', 'MARKET', 'CREATE', 'LEARN', 'VOTE'].map((link) => (
+            {[
+              { id: 'HOME', label: 'VAULT', path: '/vault' },
+              { id: 'WORLD', label: 'WORLD', path: '/foyer' },
+              { id: 'GOVERN', label: 'GOVERN', path: '/governance' },
+              { id: 'MISSIONS', label: 'MISSIONS', path: '/missions' },
+              { id: 'CIVICWATCH', label: 'CIVICWATCH', path: '/civicwatch' },
+              { id: 'MINING', label: 'MINING', path: '/mining-pool' },
+              { id: 'WARDROBE', label: 'WARDROBE', path: '/wardrobe' },
+            ].map((link) => (
               <button
-                key={link}
-                onClick={() => setActiveTopTab(link)}
+                key={link.id}
+                onClick={() => {
+                  setActiveTopTab(link.id);
+                  if (link.path !== '/foyer') {
+                    nav(link.path);
+                  }
+                }}
                 className={`transition-colors py-1 relative ${
-                  activeTopTab === link
+                  activeTopTab === link.id
                     ? 'text-white font-bold'
                     : 'hover:text-cyan-400'
                 }`}
               >
-                {link}
-                {activeTopTab === link && (
+                {link.label}
+                {activeTopTab === link.id && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#00f3ff]" />
                 )}
               </button>
@@ -197,14 +210,11 @@ export default function FoyerPage() {
             </div>
 
             <div className="flex items-center gap-1.5 text-gray-400">
-              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50">
+              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50" title="Return to Civic Vault" onClick={() => nav('/vault')}>
+                <Shield className="w-4 h-4 text-cyan-400" />
+              </button>
+              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50" title="Missions" onClick={() => nav('/missions')}>
                 <Flower2 className="w-4 h-4" />
-              </button>
-              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50">
-                <Mail className="w-4 h-4" />
-              </button>
-              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50">
-                <Globe className="w-4 h-4" />
               </button>
               <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50 relative">
                 <MessageCircle className="w-4 h-4" />
@@ -216,7 +226,11 @@ export default function FoyerPage() {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 bg-[#141b27] border border-[#232f45] rounded-full pl-1 pr-3 py-1 cursor-pointer hover:border-cyan-500/50 transition-all">
+            <div 
+              onClick={() => nav('/vault')}
+              className="flex items-center gap-2 bg-[#141b27] border border-[#232f45] rounded-full pl-1 pr-3 py-1 cursor-pointer hover:border-cyan-500/50 transition-all"
+              title="Return to Civic Vault"
+            >
               <img
                 src={user?.avatar || '/images/streamer_metamike.jpg'}
                 alt="Avatar"
@@ -224,7 +238,7 @@ export default function FoyerPage() {
               />
               <span className="text-xs font-bold text-white">{user?.username || 'XJAY420X'}</span>
               <span className="text-[9px] bg-cyan-500/20 text-cyan-400 font-extrabold px-1.5 py-0.5 rounded-full uppercase">
-                LVL {user?.level || 42}
+                VAULT ⮌
               </span>
             </div>
           </div>

@@ -1,19 +1,24 @@
-FROM node:18-alpine AS build
+# Multi-stage build for Civicverse Frontend
+FROM node:20-alpine AS builder
+
 WORKDIR /app
-# Copy root package files
-COPY package.json package-lock.json* ./
-# Copy frontend specific files
-WORKDIR /app/frontend
-COPY frontend/package.json frontend/package-lock.json* ./
-# Install only frontend dependencies
-RUN npm install --loglevel=info
-# Copy the rest of the frontend code
-COPY frontend/ ./
-# Build the frontend
+
+# Copy package descriptors
+COPY package*.json ./
+RUN npm ci --include=dev || npm install --include=dev
+
+# Copy source code
+COPY . .
+
+# Build production distribution bundle
 RUN npm run build
 
+# Production web server (Nginx)
 FROM nginx:stable-alpine
-COPY --from=build /app/frontend/dist /usr/share/nginx/html
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]

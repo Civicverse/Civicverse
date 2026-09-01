@@ -66,8 +66,8 @@ export default function App() {
         <Route path="/governance" element={<GovernancePage />} />
         <Route path="/mining-pool" element={<MiningPoolPage />} />
         <Route path="/foyer" element={<FoyerPage />} />
-        <Route path="/" element={<Navigate to="/foyer" replace />} />
-        <Route path="*" element={<Navigate to="/foyer" replace />} />
+        <Route path="/" element={<Navigate to="/vault" replace />} />
+        <Route path="*" element={<Navigate to="/vault" replace />} />
       </Routes>
     </MainLayout>
   );

@@ -8,7 +8,7 @@ on:
       environment:
         description: 'Deployment environment'
         required: true
-        default: 'staging'
+        default: 'production'
         type: choice
         options:
           - staging
@@ -22,6 +22,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+
+      - name: Lowercase Repository Name
+        id: repo_name
+        run: |
+          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -40,20 +45,20 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/frontend:latest
+            ghcr.io/${{ env.REPO_LOWER }}/frontend:${{ github.sha }}
+            ghcr.io/${{ env.REPO_LOWER }}/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: .
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/backend:latest
+            ghcr.io/${{ env.REPO_LOWER }}/backend:${{ github.sha }}
+            ghcr.io/${{ env.REPO_LOWER }}/backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -67,7 +72,7 @@ jobs:
       
       - name: SSH Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
-        if: vars.DEPLOY_HOST != ''
+        if: ${{ vars.DEPLOY_HOST != '' && secrets.DEPLOY_USER != '' && secrets.DEPLOY_KEY != '' }}
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}

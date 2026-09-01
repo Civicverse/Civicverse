@@ -101,7 +101,7 @@ export default function SocialFeedPanel() {
         avatar: '👑',
         timestamp: '5m ago',
         content: 'New holographic armor cosmetics dropping today. The neon cyan glow is INSANE. 🎮✨',
-        media: { type: 'image', url: '/api/placeholder/400/300' },
+        media: { type: 'image', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect fill="%231a102f" width="400" height="300"/><text fill="%2300f0ff" font-family="sans-serif" font-size="18" font-weight="bold" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle">NEON HOLOGRAPHIC SUIT</text></svg>' },
         likes: 5600,
         comments: 892,
         reposts: 1200,
@@ -172,7 +172,7 @@ export default function SocialFeedPanel() {
       title: 'BR Tournament Finals - Live Coverage',
       streamer: 'CivicWatch Official',
       viewers: 12847,
-      thumbnail: '/api/placeholder/320/180',
+      thumbnail: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180"><rect fill="%230c1020" width="320" height="180"/><circle cx="30" cy="30" r="8" fill="%23ff0055"/><text fill="%23ffffff" font-family="sans-serif" font-size="14" font-weight="bold" x="48" y="35">LIVE BROADCAST</text><text fill="%2300f0ff" font-family="sans-serif" font-size="16" font-weight="bold" x="50%25" y="60%25" dominant-baseline="middle" text-anchor="middle">BR FINALS ARENA</text></svg>',
       isLive: true,
       category: 'Esports'
     };

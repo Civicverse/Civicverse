@@ -143,14 +143,19 @@ export default function CivicVaultPage() {
 
   return (
     <div className="relative min-h-screen bg-black text-white overflow-x-hidden">
-      {/* Background */}
+      {/* Background GIF */}
       <div
-        className="fixed inset-0 z-0 pointer-events-none opacity-25"
+        className="fixed inset-0 z-0 pointer-events-none opacity-85"
         style={{
-          backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(0, 217, 255, 0.18), transparent 18%), radial-gradient(circle at 80% 15%, rgba(184, 55, 247, 0.12), transparent 18%), linear-gradient(180deg, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.98))',
+          backgroundImage: 'url("./images/wallet-bg.gif")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
         }}
+      />
+      {/* Subtle atmospheric vignette to keep UI text & cards crisp */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-black/25 via-transparent to-black/60"
       />
 
       <div className="relative z-10 container mx-auto max-w-6xl pt-4 pb-24 px-4">

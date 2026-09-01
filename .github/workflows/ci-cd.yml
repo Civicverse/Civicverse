@@ -8,83 +8,60 @@ on:
 
 env:
   NODE_VERSION: '20'
-  REGISTRY: ghcr.io
 
 jobs:
-  # Job 1: Build Frontend
-  build-frontend:
+  # Job 1: Monorepo Build & Verification
+  build-and-verify:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
       
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
       
-      - name: Install dependencies
-        run: npm install # Use install instead of ci for better resilience if lockfile issues exist
+      - name: Install Monorepo Dependencies
+        run: npm install
       
-      - name: Build
-        run: npm run build
-      
-      - name: Upload dist artifact
+      - name: Verify Backend Syntax
+        run: |
+          node -c backend/index.js
+          node -c backend/start.js
+          node -c backend/multiplayer-server.js
+          echo "Backend syntax validated successfully."
+
+      - name: Build Frontend Application
+        run: npm run build --workspace=frontend
+
+      - name: Verify Static Distribution Bundle
+        run: |
+          test -f frontend/dist/index.html
+          test -d frontend/dist/assets
+          echo "Frontend static bundle verified successfully."
+
+      - name: Upload Frontend Dist Artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist
 
-  # Job 2: Build Backend
-  build-backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
-      
-      - name: Install dependencies
-        run: npm install
-      
-      - name: Check syntax
-        run: node -c index.js || true # Prevent failure if just a demo file
-
-  # Job 3: Build Godot Foyer
-  build-godot:
+  # Job 2: Verify Project Architecture & Godot Engine Assets
+  quality-and-assets:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
       
-      - name: Install Godot
+      - name: Verify Core Repository Structure & Packages
         run: |
-          wget https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
-          unzip Godot_v4.3-stable_linux.x86_64.zip
-          mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
-          chmod +x /usr/local/bin/godot
-        continue-on-error: true # Might fail in some environments, but let's try manual install
-
-      - name: Godot Export (Stub)
-        run: echo "Godot build environment check passed"
-
-  # Job 4: Quality Checks
-  quality:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Verify project structure
-        run: |
-          ls -R Civicverse-nightly-v0.0/ || ls -R ./
           test -f README.md
+          test -d frontend
+          test -d backend
+          test -d packages
+          test -d packages/civic-foyer/godot-foyer
+          test -f packages/civic-foyer/godot-foyer/project.godot
+          echo "Project structure and Godot workspace verified successfully."

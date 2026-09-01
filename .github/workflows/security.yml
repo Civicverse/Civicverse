@@ -18,7 +18,7 @@ jobs:
           node-version: '20'
       
       - name: Check dependencies
-        run: npm install && npm audit --audit-level=high || true
+        run: npm audit --audit-level=high || true
         continue-on-error: true
 
   secretscan:
@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
       
       - name: TruffleHog Secret Scan
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@v3.88.2
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
@@ -50,7 +50,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: 'typescript'
+          languages: 'javascript-typescript'
       
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

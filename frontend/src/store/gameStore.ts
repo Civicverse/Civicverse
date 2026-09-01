@@ -155,9 +155,48 @@ export const useGameStore = create<GameState>((set) => ({
   user: null,
   wallet: null,
   multiChainAddresses: null,
-  treasuryBalance: 0,
-  missions: [],
-  currentMission: null,
+  missions: [
+    {
+      id: 'm1',
+      title: 'Decentralized Air Quality Sampling',
+      description: 'Record particulate matter metrics at your local intersection using a community sensor.',
+      category: 'environmental',
+      reward: 45,
+      difficulty: 'easy',
+      status: 'available',
+      location: 'Sector 4 Air Quality Node'
+    },
+    {
+      id: 'm2',
+      title: 'Community Food Forest Stewardship',
+      description: 'Assist with rainwater catchment system maintenance and plant bed weeding.',
+      category: 'environmental',
+      reward: 60,
+      difficulty: 'medium',
+      status: 'available',
+      location: 'Green District Urban Farm'
+    },
+    {
+      id: 'm3',
+      title: 'Open Source Mesh Relay Setup',
+      description: 'Host and verify a solar-powered off-grid communication node on your rooftop.',
+      category: 'civic',
+      reward: 120,
+      difficulty: 'hard',
+      status: 'available',
+      location: 'Downtown Mesh Gateway'
+    },
+    {
+      id: 'm4',
+      title: 'Decentralized Civic Literacy Workshop',
+      description: 'Host a 30-minute peer onboarding session teaching self-custody and DID cryptography.',
+      category: 'educational',
+      reward: 75,
+      difficulty: 'medium',
+      status: 'available',
+      location: 'Civic Commons Library'
+    }
+  ],
   demoMode: false,
   loading: true,
   isInitialized: false,
@@ -258,8 +297,8 @@ export const useGameStore = create<GameState>((set) => ({
       };
 
       set({ 
-        tosAccepted: savedTosAccepted || true, 
-        isAuthenticated: isAuth || true,
+        tosAccepted: savedTosAccepted, 
+        isAuthenticated: isAuth,
         user: defaultUser,
         wallet: defaultWallet
       });
