@@ -28,15 +28,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
 
-      - name: Install Monorepo Dependencies
-        run: npm ci --prefer-offline --no-audit
-        continue-on-error: false
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+          echo "✓ Dependencies installed"
 
       - name: Build Frontend Production Bundle
-        run: npm run build --workspace=frontend
+        run: |
+          cd frontend
+          npm run build
+          echo "✓ Frontend build complete"
         env:
           NODE_ENV: production
 
@@ -44,13 +47,11 @@ jobs:
         run: |
           if [ ! -f frontend/dist/index.html ]; then
             echo "ERROR: Frontend build failed - index.html not found"
+            ls -la frontend/dist/ || echo "dist directory missing"
             exit 1
           fi
-          if [ ! -d frontend/dist/assets ]; then
-            echo "WARNING: assets directory not found"
-          fi
-          echo "✓ Frontend build verified successfully"
-          ls -lh frontend/dist/
+          echo "✓ Frontend build verified"
+          du -sh frontend/dist
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
