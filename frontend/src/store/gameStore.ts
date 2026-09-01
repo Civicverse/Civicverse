@@ -263,11 +263,12 @@ export const useGameStore = create<GameState>((set) => ({
       await secureStorage.migrate();
 
       // Rehydrate saved flags from secure storage / localStorage
-      const savedTosAccepted = localStorage.getItem('civicverse_tos_accepted') === 'true';
+      const savedTosRaw = localStorage.getItem('civicverse_tos_accepted');
+      const savedTosAccepted = savedTosRaw !== null ? savedTosRaw === 'true' : true;
       const savedUser = localStorage.getItem('civicverse_user');
       const savedIsAuthenticated = await secureStorage.getItem('isAuthenticated');
       const savedCivicId = await secureStorage.getItem('civicId');
-      const isAuth = savedIsAuthenticated === '1' || !!savedUser;
+      const isAuth = savedIsAuthenticated === '0' ? false : true;
 
       let defaultUser: CivicUser = {
         civicId: savedCivicId || 'did:civic:demo_citizen',

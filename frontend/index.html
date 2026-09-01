@@ -3,10 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CivicVerse</title>
+    <title>CivicVerse - The Real-World Game</title>
+    <meta name="description" content="CivicVerse: A decentralized 3D social hub, identity dashboard, and local metaverse node" />
+    <meta name="theme-color" content="#07090e" />
+    <link rel="icon" type="image/x-icon" href="./app.ico" />
   </head>
-  <body>
-    <div id="root"></div>
+  <body class="bg-[#07090e] text-white antialiased overflow-x-hidden selection:bg-cyan-500 selection:text-black">
+    <div id="root">
+      <div style="min-height: 100vh; background-color: #07090e; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #fff;">
+        <div style="width: 48px; height: 48px; border: 4px solid #00d9ff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;"></div>
+        <h2 style="font-size: 1.25rem; font-weight: 800; letter-spacing: 0.1em; color: #00d9ff; margin: 0 0 8px 0;">CIVICVERSE</h2>
+        <p style="font-size: 0.85rem; color: #94a3b8; font-family: monospace; margin: 0;">INITIALIZING_METAVERSE_NODE...</p>
+      </div>
+      <style>
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      </style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
