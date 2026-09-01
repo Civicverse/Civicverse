@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
@@ -29,13 +29,28 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install Monorepo Dependencies
-        run: npm install
+        run: npm ci --prefer-offline --no-audit
+        continue-on-error: false
 
-      - name: Build Static Production Bundle
+      - name: Build Frontend Production Bundle
         run: npm run build --workspace=frontend
+        env:
+          NODE_ENV: production
+
+      - name: Verify Frontend Distribution
+        run: |
+          if [ ! -f frontend/dist/index.html ]; then
+            echo "ERROR: Frontend build failed - index.html not found"
+            exit 1
+          fi
+          if [ ! -d frontend/dist/assets ]; then
+            echo "WARNING: assets directory not found"
+          fi
+          echo "✓ Frontend build verified successfully"
+          ls -lh frontend/dist/
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
