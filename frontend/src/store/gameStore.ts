@@ -94,6 +94,7 @@ export interface GameState {
   isInitialized: boolean;
   tempMnemonic: string | null;
   tosAccepted: boolean;
+  hasIdentity: boolean;
 
   // Auth
   initialize: () => Promise<void>;
@@ -152,6 +153,7 @@ export interface GameState {
 
 export const useGameStore = create<GameState>((set) => ({
   isAuthenticated: false,
+  hasIdentity: false,
   user: null,
   wallet: null,
   multiChainAddresses: null,
@@ -264,59 +266,72 @@ export const useGameStore = create<GameState>((set) => ({
 
       // Rehydrate saved flags from secure storage / localStorage
       const savedTosRaw = localStorage.getItem('civicverse_tos_accepted');
-      const savedTosAccepted = savedTosRaw !== null ? savedTosRaw === 'true' : true;
-      const savedUser = localStorage.getItem('civicverse_user');
-      const savedIsAuthenticated = await secureStorage.getItem('isAuthenticated');
-      const savedCivicId = await secureStorage.getItem('civicId');
-      const isAuth = savedIsAuthenticated === '0' ? false : true;
+      const savedTosAccepted = savedTosRaw === 'true';
+      const hasIdentity = await CivicIdentity.exists();
 
-      let defaultUser: CivicUser = {
-        civicId: savedCivicId || 'did:civic:demo_citizen',
-        username: 'Citizen_XJAY420X',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
-        trustScore: 85,
-        level: 3,
-        verificationLevel: 1,
-        attestationCount: 1,
-        character: {
-          skinColor: '#e0ac69',
-          hairColor: '#4a3b2a',
-          shirtColor: '#00d9ff',
-          pantsColor: '#1a1a2e',
-          shoesColor: '#333333',
-          hairStyle: 'short',
-          accessory: 'none',
-          bodyType: 'athletic'
-        }
-      };
+      let isAuth = false;
+      let currentUser: CivicUser | null = null;
+      let currentWallet: Wallet | null = null;
+      let currentMultiChain: Record<string, string> | null = null;
+      let currentMnemonic: string | null = null;
 
-      let defaultWallet = {
-        address: '0x74a91b...e88',
-        balance: 12450.0,
-        pendingBalance: 150,
-        currency: 'CIVIC'
-      };
-
-      set({ 
-        tosAccepted: savedTosAccepted, 
-        isAuthenticated: isAuth,
-        user: defaultUser,
-        wallet: defaultWallet
-      });
-
-      if (savedUser) {
+      // Check if session password is in sessionStorage (active tab session)
+      const sessionPass = sessionStorage.getItem('civicverse_session_pass');
+      if (hasIdentity && sessionPass) {
         try {
-          const parsed = JSON.parse(savedUser);
-          set({ 
-            user: parsed.user || defaultUser, 
-            wallet: parsed.wallet || defaultWallet, 
-            multiChainAddresses: parsed.multiChainAddresses || null,
-          });
-          console.log('[store] user data rehydrated successfully');
+          const identity = await CivicIdentity.restore(sessionPass);
+          if (identity) {
+            const civicWallet = await CivicWallet.restore(identity.did, sessionPass);
+            if (civicWallet) {
+              const multiChainAddresses = civicWallet.getAllAddresses();
+              currentUser = {
+                civicId: identity.did,
+                username: identity.username || `Citizen_${identity.did.slice(12, 20)}`,
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${identity.did}`,
+                trustScore: 75,
+                level: 3,
+                verificationLevel: (identity as any).verificationLevel || 1,
+                attestationCount: (identity as any).attestationCount || 0,
+                character: identity.characterConfig || {
+                  skinColor: '#e0ac69',
+                  hairColor: '#4a3b2a',
+                  shirtColor: '#00d9ff',
+                  pantsColor: '#1a1a2e',
+                  shoesColor: '#333333',
+                  hairStyle: 'short',
+                  accessory: 'none',
+                  bodyType: 'athletic'
+                }
+              };
+              currentWallet = {
+                address: multiChainAddresses.ETH?.slice(0, 42) || identity.publicKey.slice(0, 40),
+                balance: 100.0,
+                pendingBalance: 0,
+                currency: 'CIVIC',
+              };
+              currentMultiChain = multiChainAddresses;
+              currentMnemonic = civicWallet.mnemonic;
+              (window as any)._cv_session_pass = sessionPass;
+              isAuth = true;
+            }
+          }
         } catch (e) {
-          console.error('[store] Failed to parse saved user', e);
+          console.warn('[store] Session restoration failed:', e);
+          sessionStorage.removeItem('civicverse_session_pass');
         }
       }
+
+      set({ 
+        tosAccepted: savedTosAccepted,
+        hasIdentity,
+        isAuthenticated: isAuth,
+        user: currentUser,
+        wallet: currentWallet,
+        multiChainAddresses: currentMultiChain,
+        tempMnemonic: currentMnemonic
+      });
+
+      console.log('[store] initialized with tosAccepted:', savedTosAccepted, 'hasIdentity:', hasIdentity, 'isAuthenticated:', isAuth);
     } catch (err) {
       console.error('[store] Global initialize error:', err);
     } finally {
@@ -402,12 +417,17 @@ export const useGameStore = create<GameState>((set) => ({
 
       // Store password in session memory (not localStorage) for updates
       (window as any)._cv_session_pass = password;
+      try {
+        sessionStorage.setItem('civicverse_session_pass', password);
+      } catch (e) {}
 
       set({
         isAuthenticated: true,
+        hasIdentity: true,
         user,
         wallet,
         multiChainAddresses: multiChainAddresses && Object.keys(multiChainAddresses).length > 0 ? multiChainAddresses : null,
+        tempMnemonic: civicWallet.mnemonic,
         loading: false,
         isInitialized: true,
       });
@@ -486,7 +506,8 @@ export const useGameStore = create<GameState>((set) => ({
       };
 
       set({
-        isAuthenticated: false, // Keep false until verified in UI
+        isAuthenticated: false, // Keep false until verified in UI (Memetic Password step)
+        hasIdentity: true,
         user,
         wallet,
         multiChainAddresses,
@@ -497,8 +518,11 @@ export const useGameStore = create<GameState>((set) => ({
 
       console.log('Signup SUCCESS. tempMnemonic set:', !!civicWallet.mnemonic);
 
-      // Store password in session memory
+      // Store password in session memory & sessionStorage
       (window as any)._cv_session_pass = password;
+      try {
+        sessionStorage.setItem('civicverse_session_pass', password);
+      } catch (e) {}
 
       await secureStorage.setItem('civicId', realCivicId);
       // Removed immediate isAuthenticated: '1' storage
@@ -525,17 +549,25 @@ export const useGameStore = create<GameState>((set) => ({
     set({ isAuthenticated: authenticated });
     if (authenticated) {
       secureStorage.setItem('isAuthenticated', '1');
+    } else {
+      secureStorage.removeItem('isAuthenticated');
     }
   },
 
   logout: async () => {
+    try {
+      sessionStorage.removeItem('civicverse_session_pass');
+    } catch (e) {}
+    (window as any)._cv_session_pass = null;
     await secureStorage.removeItem('civicId');
     await secureStorage.removeItem('isAuthenticated');
     await secureStorage.removeItem('civicverse:publicKey');
     await secureStorage.removeItem('civicverse:multichain');
     localStorage.removeItem('civicverse_user');
+    const hasIdentity = await CivicIdentity.exists();
     set({
       isAuthenticated: false,
+      hasIdentity,
       user: null,
       wallet: null,
       multiChainAddresses: null,
@@ -842,7 +874,7 @@ export const useGameStore = create<GameState>((set) => ({
   },
 
   updateCharacter: async (config) => {
-    const password = (window as any)._cv_session_pass;
+    const password = (window as any)._cv_session_pass || sessionStorage.getItem('civicverse_session_pass');
     if (!password) {
       throw new Error('Session expired. Please log in again to save changes.');
     }

@@ -6,6 +6,7 @@ import { AnimatedButton, AnimatedCard, AnimatedInput, NeonText, GradientOrb, Loa
 export default function SignInPage() {
   const nav = useNavigate()
   const login = useGameStore(state => state.login)
+  const hasIdentity = useGameStore(state => state.hasIdentity)
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -14,10 +15,8 @@ export default function SignInPage() {
     setError('')
     setLoading(true)
     try {
-      // eslint-disable-next-line no-console
       console.debug('[SignInPage] attempting login call');
       await login('', password)
-      // eslint-disable-next-line no-console
       console.debug('[SignInPage] login resolved, navigating to /vault');
       nav('/vault')
     } catch (e) {
@@ -43,52 +42,98 @@ export default function SignInPage() {
         </div>
 
         <AnimatedCard className="border-t-4 border-neon-cyan">
-          <p className="text-gray-400 text-xs text-center mb-8 uppercase tracking-widest leading-relaxed">
-            Enter your vault password to decrypt your sovereign identity.
-          </p>
+          {!hasIdentity ? (
+            <div className="text-center space-y-6 py-4">
+              <div className="text-4xl mb-2">🔍</div>
+              <h3 className="text-lg font-bold text-neon-pink uppercase tracking-wider">
+                No Identity Found
+              </h3>
+              <p className="text-gray-400 text-xs leading-relaxed uppercase tracking-widest">
+                No encrypted CivicID vault was detected on this device. Please create a new sovereign identity or restore from your 12-word recovery phrase.
+              </p>
 
-          {error && (
-            <div className="mb-6 p-3 bg-neon-pink/10 border border-neon-pink/40 rounded text-neon-pink text-[10px] font-bold uppercase tracking-widest text-center animate-pulse">
-              ⚠ {error}
+              <div className="space-y-3 pt-2">
+                <AnimatedButton
+                  variant="primary"
+                  size="lg"
+                  className="w-full py-4 uppercase font-bold tracking-widest"
+                  onClick={() => nav('/signup')}
+                >
+                  ✨ Create New CivicID
+                </AnimatedButton>
+
+                <AnimatedButton
+                  variant="secondary"
+                  size="md"
+                  className="w-full py-3 uppercase font-bold tracking-wider"
+                  onClick={() => nav('/signup', { state: { mode: 'restore' } })}
+                >
+                  🔑 Restore from Seed Phrase
+                </AnimatedButton>
+              </div>
             </div>
+          ) : (
+            <>
+              <p className="text-gray-400 text-xs text-center mb-8 uppercase tracking-widest leading-relaxed">
+                Enter your vault password to decrypt your sovereign identity.
+              </p>
+
+              {error && (
+                <div className="mb-6 p-3 bg-neon-pink/10 border border-neon-pink/40 rounded text-neon-pink text-[10px] font-bold uppercase tracking-widest text-center animate-pulse">
+                  ⚠ {error}
+                </div>
+              )}
+
+              <div className="space-y-6">
+                <AnimatedInput
+                  label="Vault Password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  disabled={loading}
+                  onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+                />
+
+                <AnimatedButton
+                  variant="primary"
+                  size="lg"
+                  className="w-full py-4 uppercase font-bold tracking-[0.2em]"
+                  onClick={handleUnlock}
+                  disabled={loading}
+                >
+                  {loading ? <LoadingSpinner size="sm" /> : 'Decrypt & Enter'}
+                </AnimatedButton>
+                
+                <div className="flex flex-col gap-2 pt-2 text-center">
+                  <button 
+                    onClick={() => nav('/signup')}
+                    className="text-[10px] text-neon-cyan hover:underline uppercase tracking-widest transition-colors font-bold"
+                  >
+                    + Create a Different CivicID
+                  </button>
+                  <button 
+                    onClick={() => nav('/signup', { state: { mode: 'restore' } })}
+                    className="text-[10px] text-gray-400 hover:text-white uppercase tracking-widest transition-colors"
+                  >
+                    🔑 Restore with 12-Word Phrase
+                  </button>
+                  <button 
+                    onClick={() => nav('/welcome')}
+                    className="text-[10px] text-gray-500 hover:text-neon-cyan uppercase tracking-widest transition-colors mt-2"
+                  >
+                    ← Back to Welcome
+                  </button>
+                </div>
+              </div>
+            </>
           )}
-
-          <div className="space-y-6">
-            <AnimatedInput
-              label="Vault Password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              disabled={loading}
-              onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
-            />
-
-            <AnimatedButton
-              variant="primary"
-              size="lg"
-              className="w-full py-4 uppercase font-bold tracking-[0.2em]"
-              onClick={handleUnlock}
-              disabled={loading}
-            >
-              {loading ? <LoadingSpinner size="sm" /> : 'Decrypt & Enter'}
-            </AnimatedButton>
-            
-            <div className="text-center pt-2">
-               <button 
-                onClick={() => nav('/welcome')}
-                className="text-[10px] text-gray-500 hover:text-neon-cyan uppercase tracking-widest transition-colors"
-               >
-                 ← Back to Welcome
-               </button>
-            </div>
-          </div>
         </AnimatedCard>
 
         <div className="mt-8 text-center">
            <p className="text-[10px] text-gray-600 uppercase tracking-[0.2em] leading-relaxed">
-             No Password? Use "Restore" on the welcome screen<br/>
-             with your 12-word recovery phrase.
+             No Password? Use "Restore" with your 12-word recovery phrase.<br/>
+             Decryption happens 100% locally on your device.
            </p>
         </div>
       </div>

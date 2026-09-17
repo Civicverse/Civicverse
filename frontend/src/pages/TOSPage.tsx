@@ -6,12 +6,16 @@ import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../componen
 export default function TOSPage() {
   const nav = useNavigate()
   const setTosAccepted = useGameStore(state => state.setTosAccepted)
+  const hasIdentity = useGameStore(state => state.hasIdentity)
   const [agreed, setAgreed] = React.useState(false)
 
   const handleAccept = () => {
-    // No longer save to localStorage to ensure it shows on every session
     setTosAccepted(true)
-    nav('/welcome')
+    if (hasIdentity) {
+      nav('/signin')
+    } else {
+      nav('/welcome')
+    }
   }
 
   return (

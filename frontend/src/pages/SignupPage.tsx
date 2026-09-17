@@ -9,6 +9,8 @@ export default function SignupPage() {
   const location = useLocation()
   const signup = useGameStore(state => state.signup)
   const setAuthenticated = useGameStore(state => state.setAuthenticated)
+  const globalTosAccepted = useGameStore(state => state.tosAccepted)
+  const setGlobalTosAccepted = useGameStore(state => state.setTosAccepted)
   
   const mode = location.state?.mode || 'create' // 'create' or 'restore'
   
@@ -20,21 +22,32 @@ export default function SignupPage() {
   const [step, setStep] = useState(1) // 1: Setup, 2: Seed Display/Verify
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
   
   const [generatedMnemonic, setGeneratedMnemonic] = useState('')
   const [seedCheckWords, setSeedCheckWords] = useState<{ index: number, word: string }[]>([])
   const [userCheckInputs, setUserCheckInputs] = useState<string[]>(['', '', ''])
   const [hasWrittenSeed, setHasWrittenSeed] = useState(false)
-  const [tosAccepted, setTosAccepted] = useState(false)
+  const [tosAccepted, setTosAcceptedState] = useState(globalTosAccepted)
   const [showTosModal, setShowTosModal] = useState(false)
+
+  // Keep in sync with store
+  useEffect(() => {
+    if (globalTosAccepted) {
+      setTosAcceptedState(true)
+    }
+  }, [globalTosAccepted])
 
   const handleInitialSetup = async () => {
     setError('')
-    if (!tosAccepted) return setError('You must accept the Terms of Service to continue.')
+    if (!tosAccepted && !globalTosAccepted) return setError('You must accept the Terms of Service to continue.')
     if (username.length < 3) return setError('Username must be 3+ characters')
     if (password.length < 8) return setError('Password must be 8+ characters')
     if (password !== confirm) return setError('Passwords do not match')
     
+    // Ensure store knows TOS is accepted
+    setGlobalTosAccepted(true)
+
     if (mode === 'restore') {
       const words = mnemonicInput.trim().split(/\s+/)
       if (words.length !== 12 && words.length !== 24) {
@@ -163,17 +176,26 @@ export default function SignupPage() {
               )}
 
               <div className="flex flex-col items-center gap-4 pt-4 border-t border-white/5">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox" 
-                    className="w-5 h-5 accent-neon-cyan bg-black border-neon-cyan/40 rounded"
-                    checked={tosAccepted}
-                    onChange={(e) => setTosAccepted(e.target.checked)}
-                  />
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400 group-hover:text-white transition-colors">
-                    I accept the <button onClick={(e) => { e.preventDefault(); setShowTosModal(true); }} className="text-neon-cyan underline font-black">Terms of Service</button>
-                  </span>
-                </label>
+                {globalTosAccepted ? (
+                  <div className="flex items-center gap-2 text-neon-cyan text-[10px] uppercase tracking-[0.2em] font-bold">
+                    <span>✓</span> Terms of Service Accepted
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      className="w-5 h-5 accent-neon-cyan bg-black border-neon-cyan/40 rounded"
+                      checked={tosAccepted}
+                      onChange={(e) => {
+                        setTosAcceptedState(e.target.checked);
+                        if (e.target.checked) setGlobalTosAccepted(true);
+                      }}
+                    />
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400 group-hover:text-white transition-colors">
+                      I accept the <button onClick={(e) => { e.preventDefault(); setShowTosModal(true); }} className="text-neon-cyan underline font-black">Terms of Service</button>
+                    </span>
+                  </label>
+                )}
               </div>
 
               <div className="pt-4">
@@ -182,10 +204,19 @@ export default function SignupPage() {
                   size="lg"
                   className="w-full py-4 uppercase font-bold tracking-widest disabled:opacity-40"
                   onClick={handleInitialSetup}
-                  disabled={loading || !tosAccepted}
+                  disabled={loading || (!tosAccepted && !globalTosAccepted)}
                 >
-                  {loading ? <LoadingSpinner size="sm" /> : (mode === 'create' ? 'Generate Identity' : 'Restore Identity')}
+                  {loading ? <LoadingSpinner size="sm" /> : (mode === 'create' ? 'Generate Identity & View Memetic Password →' : 'Restore Identity & Enter Vault →')}
                 </AnimatedButton>
+              </div>
+
+              <div className="pt-2 text-center">
+                <button
+                  onClick={() => nav('/signin')}
+                  className="text-[10px] text-neon-cyan hover:underline uppercase tracking-widest transition-colors font-bold"
+                >
+                  Already have a CivicID on this device? Log In
+                </button>
               </div>
 
               <p className="text-[10px] text-gray-500 text-center uppercase tracking-widest leading-relaxed">
@@ -199,7 +230,7 @@ export default function SignupPage() {
     )
   }
 
-  // Step 2: Seed Phrase Display & Verification
+  // Step 2: Memetic Password Write Down & Verification
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 text-white overflow-hidden py-12 px-4 flex flex-col items-center">
       <GradientOrb delay={0} size={300} />
@@ -208,16 +239,32 @@ export default function SignupPage() {
       <div className="relative z-10 w-full max-w-2xl">
         <div className="text-center mb-8">
           <NeonText size="4xl" gradient={true} className="block mb-2 uppercase tracking-tighter">
-            🧬 Master Recovery Seed
+            🧬 Memetic Password
           </NeonText>
           <div className="inline-block px-3 py-1 bg-neon-pink/20 border border-neon-pink/40 rounded text-neon-pink text-[10px] font-bold uppercase tracking-[0.2em]">
-            Physical Backup Required
+            Physical Backup Required — Write Down Your 12 Words
           </div>
+          <p className="text-gray-400 text-xs mt-3 uppercase tracking-wider max-w-md mx-auto">
+            This 12-word memetic password is the only master key to your decentralized identity and wallet.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <AnimatedCard className="border-l-4 border-neon-pink">
-            <h3 className="text-neon-pink font-bold text-sm uppercase tracking-widest mb-4">Your Seed Phrase</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-neon-pink font-bold text-sm uppercase tracking-widest">Your 12 Words</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedMnemonic);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="text-[10px] text-neon-cyan hover:underline font-mono uppercase tracking-widest font-bold"
+              >
+                {copied ? '✓ Copied!' : '📋 Copy Words'}
+              </button>
+            </div>
             <div className="grid grid-cols-3 gap-2 font-mono text-[10px]">
               {generatedMnemonic.split(' ').map((word, i) => (
                 <div key={i} className="bg-dark-900/60 border border-neon-cyan/20 rounded p-2 flex gap-2">
@@ -228,22 +275,23 @@ export default function SignupPage() {
             </div>
             
             <div className="mt-6 p-3 bg-dark-900/40 border border-white/5 rounded text-[10px] text-gray-400 leading-relaxed italic">
-              "Write these words down on paper and store them in a secure, offline location. This is the only way to recover your CivicID."
+              "Write these words down on paper and store them in a secure, offline location. There is NO password reset or key recovery without this Memetic Password."
             </div>
           </AnimatedCard>
 
           <div className="space-y-6">
             <AnimatedCard className="border-l-4 border-neon-cyan">
-              <h3 className="text-neon-cyan font-bold text-sm uppercase tracking-widest mb-4">Verify Backup</h3>
+              <h3 className="text-neon-cyan font-bold text-sm uppercase tracking-widest mb-4">Verify Memetic Password</h3>
               
               <div className="space-y-4">
                 {seedCheckWords.map((check, i) => (
                   <div key={i} className="space-y-1">
-                    <label className="text-[10px] uppercase text-gray-500">Word #{check.index + 1}</label>
+                    <label className="text-[10px] uppercase text-gray-500 font-bold">Word #{check.index + 1}</label>
                     <input
                       className="w-full bg-dark-900/60 border border-neon-cyan/20 rounded p-2 text-sm font-mono focus:border-neon-cyan/60 outline-none"
                       type="text"
                       autoComplete="off"
+                      placeholder={`Enter word #${check.index + 1}`}
                       value={userCheckInputs[i]}
                       onChange={e => {
                         const newInputs = [...userCheckInputs]
@@ -255,18 +303,18 @@ export default function SignupPage() {
                 ))}
               </div>
 
-              {error && <p className="text-neon-pink text-[10px] mt-4 font-bold uppercase animate-pulse">{error}</p>}
+              {error && <p className="text-neon-pink text-[10px] mt-4 font-bold uppercase animate-pulse">⚠ {error}</p>}
 
               <div className="mt-6 pt-6 border-t border-white/5">
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <input
                     type="checkbox"
-                    className="mt-1 w-4 h-4 accent-neon-pink"
+                    className="mt-1 w-4 h-4 accent-neon-pink cursor-pointer"
                     checked={hasWrittenSeed}
                     onChange={e => setHasWrittenSeed(e.target.checked)}
                   />
                   <span className="text-[10px] uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">
-                    I have securely written down my seed phrase and understand it cannot be recovered.
+                    I have physically written down my 12-word Memetic Password and understand it cannot be recovered if lost.
                   </span>
                 </label>
               </div>
@@ -278,7 +326,7 @@ export default function SignupPage() {
               className="w-full py-4 uppercase font-bold tracking-widest"
               onClick={handleVerifySeed}
             >
-              Confirm & Enter Vault
+              ✓ Confirm & Enter Civic Vault
             </AnimatedButton>
           </div>
         </div>

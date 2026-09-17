@@ -10,31 +10,21 @@ export default function CivicVaultPage() {
   const nav = useNavigate()
   const { user: rawUser, wallet: rawWallet, logout, tempMnemonic, updateUser, multiChainAddresses } = useGameStore()
 
-  // Safe Fallback User & Wallet to prevent blank page crashes
-  const user = rawUser || {
-    civicId: 'did:civic:demo_citizen',
-    username: 'Citizen_XJAY420X',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo',
-    trustScore: 85,
-    level: 3,
-    verificationLevel: 1,
-    attestationCount: 1,
-    character: {
-      skinColor: '#e0ac69',
-      hairColor: '#4a3b2a',
-      shirtColor: '#00d9ff',
-      pantsColor: '#1a1a2e',
-      shoesColor: '#333333',
-      hairStyle: 'short',
-      accessory: 'none',
-      bodyType: 'athletic'
-    }
-  };
+  if (!rawUser) {
+    return (
+      <div className="min-h-screen bg-[#0a0c10] flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-neon-cyan font-mono text-xs animate-pulse">DECRYPTING_VAULT...</p>
+      </div>
+    );
+  }
+
+  const user = rawUser;
 
   const wallet = rawWallet || {
-    address: '0x74a91b...e88',
-    balance: 12450.0,
-    pendingBalance: 150,
+    address: multiChainAddresses?.ETH || (rawUser.civicId ? rawUser.civicId.replace('did:civic:', '0x').slice(0, 42) : '0x...'),
+    balance: 100.0,
+    pendingBalance: 0,
     currency: 'CIVIC'
   };
 
@@ -306,7 +296,7 @@ export default function CivicVaultPage() {
                    <span className="font-black uppercase text-xs">👕 WARDROBE_LAB</span>
                    <ArrowUpRight className="w-4 h-4" />
                 </AnimatedButton>
-                <AnimatedButton variant="danger" className="w-full py-5 justify-between" onClick={() => { logout(); nav('/welcome'); }}>
+                <AnimatedButton variant="danger" className="w-full py-5 justify-between" onClick={() => { logout(); nav('/signin'); }}>
                    <span className="font-black uppercase text-xs">🔒 LOCK_VAULT_SESSION</span>
                    <span>✕</span>
                 </AnimatedButton>

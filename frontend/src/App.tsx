@@ -19,6 +19,7 @@ export default function App() {
   const initialize = useGameStore(state => state.initialize);
   const tosAccepted = useGameStore(state => state.tosAccepted);
   const isAuthenticated = useGameStore(state => state.isAuthenticated);
+  const hasIdentity = useGameStore(state => state.hasIdentity);
 
   useEffect(() => {
     initialize();
@@ -50,7 +51,8 @@ export default function App() {
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/signin" element={<SignInPage />} />
-        <Route path="*" element={<Navigate to="/welcome" replace />} />
+        <Route path="/tos" element={<TOSPage />} />
+        <Route path="*" element={<Navigate to={hasIdentity ? "/signin" : "/welcome"} replace />} />
       </Routes>
     );
   }
