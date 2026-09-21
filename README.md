@@ -14,7 +14,21 @@ A modular open-source 3D social hub, identity dashboard, and local multiplayer n
 
 ---
 
-## 📍 Current Project State
+## 📍 Current Project State: Its all fucked up...
+
+What if we took all the bullshit we used every day and just put it all in one big ass Metaverse?
+
+Thats all im trying to do here nothing more nothing less.
+
+For example you buy something in the metaverse it carries a one percent micro contribution to the communtiy wallets.
+
+At scale that could be meaningful and make real world contributions such as building our own data/mining centers. 
+
+Not sure where to go from here or even how to scale this if and when I ever get this thing in any kind of working state but, hey holy shit I got it online sort of now lol.
+
+Imn not crazy I will build a video game that pays us to play it! Well maybe not directly but, passively collectively anyways.
+
+Anyone else out there want to help me build something meaningful?
 
 Civicverse is organized as a monorepo containing a web dashboard, an Express backend API, a Node.js WebSocket multiplayer server, and a Godot 4.3+ 3D client.
 
