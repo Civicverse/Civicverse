@@ -26,7 +26,7 @@ At scale that could be meaningful and make real world contributions such as buil
 
 Not sure where to go from here or even how to scale this if and when I ever get this thing in any kind of working state but, hey holy shit I got it online sort of now lol.
 
-Imn not crazy I will build a video game that pays us to play it! Well maybe not directly but, passively collectively anyways.
+Im not crazy I will build a video game that pays us to play it! Well maybe not directly but, passively collectively anyways.
 
 Anyone else out there want to help me build something meaningful?
 
