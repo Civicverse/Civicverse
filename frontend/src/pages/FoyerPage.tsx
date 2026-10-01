@@ -41,6 +41,7 @@ import {
   Music,
   Send
 } from 'lucide-react';
+import { useMultiplayerStore } from '../services/multiplayer';
 
 export default function FoyerPage() {
   const nav = useNavigate();
@@ -54,14 +55,14 @@ export default function FoyerPage() {
   const [isMuted, setIsMuted] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
   
-  // Live Stream Chat state
+  // Real-time Multiplayer Chat state
+  const chatHistory = useMultiplayerStore(state => state.chatHistory);
+  const peerCount = useMultiplayerStore(state => state.peerCount);
+  const connectionMode = useMultiplayerStore(state => state.connectionMode);
+  const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
+  const ubiStatus = useMultiplayerStore(state => state.ubiStatus);
+  const sendMessage = useMultiplayerStore(state => state.sendMessage);
   const [streamChatInput, setStreamChatInput] = useState('');
-  const [streamChatMessages, setStreamChatMessages] = useState([
-    { id: 1, user: 'blockchick24', text: 'That lighting tho 🔥', color: 'text-amber-400' },
-    { id: 2, user: 'civiclah', text: 'this game is next level', color: 'text-cyan-400' },
-    { id: 3, user: 'kevlar88', text: 'just minted my first property!', color: 'text-emerald-400' },
-    { id: 4, user: 'token_traveler', text: 'See you at the rally!', color: 'text-purple-400' }
-  ]);
 
   // Newsfeed Posts Interactive State
   const [posts, setPosts] = useState([
@@ -125,15 +126,7 @@ export default function FoyerPage() {
   const handleSendStreamChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!streamChatInput.trim()) return;
-    setStreamChatMessages(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        user: user?.username || 'XJAY420X',
-        text: streamChatInput,
-        color: 'text-cyan-400'
-      }
-    ]);
+    sendMessage(streamChatInput.trim(), 'text-cyan-400');
     setStreamChatInput('');
   };
 
@@ -252,19 +245,25 @@ export default function FoyerPage() {
         
         {/* Left: District Location & Live Population */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-red-400 font-bold">
-            <MapPin className="w-4 h-4 fill-current text-red-500" />
-            <span className="text-white font-bold">New District, Civic City</span>
+          <div className="flex items-center gap-1.5 text-cyan-400 font-bold">
+            <MapPin className="w-4 h-4 fill-current text-cyan-400" />
+            <span className="text-white font-bold">{currentLobbyName}</span>
           </div>
           <span className="text-gray-500">|</span>
-          <span className="text-gray-400">Population: <strong className="text-gray-200">12,398</strong></span>
+          <span className="text-gray-400">Citizens in Instance: <strong className="text-cyan-400 font-extrabold">{1 + peerCount}/20</strong></span>
           <span className="flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> • Live
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> • {connectionMode.toUpperCase()}
           </span>
         </div>
 
         {/* Right: Economy Ticker Pills */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          {/* 1% UBI POOL */}
+          <div className="flex items-center gap-1.5 bg-neon-pink/10 border border-neon-pink/30 px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(255,0,128,0.2)]">
+            <span className="text-neon-pink font-bold text-[10px] uppercase">1% UBI POOL</span>
+            <span className="text-white font-extrabold font-mono text-[11px]">{ubiStatus?.ubiPool ? ubiStatus.ubiPool.toFixed(2) : '1,240.50'} CIVIC</span>
+          </div>
+
           {/* $CVC */}
           <div className="flex items-center gap-1.5">
             <span className="text-gray-400 font-bold">$CVC</span>
@@ -313,10 +312,13 @@ export default function FoyerPage() {
           <div className="flex-1 flex flex-col border-b border-[#1a2333]/80 overflow-hidden">
             {/* Header */}
             <div className="p-2.5 px-3 bg-[#0d131f] flex items-center justify-between border-b border-gray-800/60">
-              <span className="text-xs font-black tracking-wider text-gray-300 uppercase">LIVESTREAM</span>
-              <div className="flex items-center gap-1 text-gray-400">
-                <button className="hover:text-white p-0.5"><MoreHorizontal className="w-3.5 h-3.5" /></button>
-                <button className="hover:text-white p-0.5"><X className="w-3.5 h-3.5" /></button>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-xs font-black tracking-wider text-white uppercase">DISTRICT LIVE CHAT</span>
+              </div>
+              <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-mono font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{1 + peerCount} ONLINE</span>
               </div>
             </div>
 
@@ -335,7 +337,7 @@ export default function FoyerPage() {
 
               {/* Viewer Count */}
               <div className="absolute top-2 right-2 bg-[#04070c] text-white text-[10px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border border-[#1a2233] shadow-[0_0_18px_rgba(0,0,0,0.25)]">
-                👁 7.2K
+                👁 {1 + peerCount} CITIZENS
               </div>
 
               {/* Streamer Title Overlay */}
@@ -352,9 +354,9 @@ export default function FoyerPage() {
             {/* Stream Chat Feed */}
             <div className="flex-1 flex flex-col p-2.5 overflow-hidden bg-[#090d16]">
               <div className="flex-1 overflow-y-auto space-y-2 pr-1 font-sans text-[11px] scrollbar-thin">
-                {streamChatMessages.map((msg) => (
+                {chatHistory.map((msg) => (
                   <div key={msg.id} className="leading-tight break-words">
-                    <span className={`font-bold mr-1.5 ${msg.color}`}>{msg.user}:</span>
+                    <span className={`font-bold mr-1.5 ${msg.color || 'text-cyan-400'}`}>{msg.username}:</span>
                     <span className="text-gray-300">{msg.text}</span>
                   </div>
                 ))}
@@ -366,7 +368,7 @@ export default function FoyerPage() {
                   type="text"
                   value={streamChatInput}
                   onChange={(e) => setStreamChatInput(e.target.value)}
-                  placeholder="Say something..."
+                  placeholder="Broadcast to district..."
                   className="w-full bg-[#121824] border border-[#232f45] rounded-lg py-1.5 pl-3 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                 />
                 <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300">

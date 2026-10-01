@@ -44,7 +44,7 @@ export default function App() {
     );
   }
 
-  // 2. Handle Unauthenticated (Auth Flow)
+  // 2. Handle Unauthenticated (Auth Flow & Direct Vault/Foyer Access)
   if (!isAuthenticated) {
     return (
       <Routes>
@@ -52,7 +52,18 @@ export default function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/tos" element={<TOSPage />} />
-        <Route path="*" element={<Navigate to={hasIdentity ? "/signin" : "/welcome"} replace />} />
+        <Route path="/vault" element={
+          <MainLayout>
+            <CivicVaultPage />
+          </MainLayout>
+        } />
+        <Route path="/wardrobe" element={
+          <MainLayout>
+            <CharacterCreatorPage />
+          </MainLayout>
+        } />
+        <Route path="/foyer" element={<FoyerPage />} />
+        <Route path="*" element={<Navigate to={hasIdentity ? "/signin" : "/vault"} replace />} />
       </Routes>
     );
   }

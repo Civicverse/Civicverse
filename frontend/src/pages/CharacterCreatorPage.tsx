@@ -225,10 +225,28 @@ export function CharacterCreatorPage() {
                 disabled={saving}
             >
                 {saving ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                {saving ? 'Encrypting...' : 'Save Identity'}
+                {saving ? 'Encrypting...' : 'Save & Mint Avatar to Vault'}
             </AnimatedButton>
-            <p className="text-center text-xs text-gray-500 mt-4">
-                This avatar will be used across all CivicVerse experiences.
+            <button 
+                onClick={async () => {
+                  setSaving(true);
+                  try {
+                    await updateCharacter(config);
+                    navigate('/foyer');
+                  } catch (e: any) {
+                    alert(e.message || 'Failed to update avatar');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                disabled={saving}
+                className="w-full mt-3 py-3 bg-gradient-to-r from-neon-cyan via-cyan-400 to-blue-500 hover:opacity-90 rounded-xl text-xs font-black uppercase tracking-wider text-black flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,217,255,0.4)] transition-all"
+            >
+                <span>🚀</span>
+                <span>Enter Gathering Grounds with this Outfit</span>
+            </button>
+            <p className="text-center text-xs text-gray-400 mt-4">
+                This sovereign 3D avatar is bound to your CivicID and synchronized into multiplayer lobbies.
             </p>
         </div>
       </div>

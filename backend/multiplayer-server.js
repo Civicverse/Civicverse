@@ -3,6 +3,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
 const ubiEngine = require('./services/UBI-engine/ubi-service');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,24 +12,73 @@ const wss = new WebSocket.Server({ server, path: '/ws' });
 app.use(cors());
 app.use(express.json());
 
+// ========================================================
+// LOBBY INSTANCE SYSTEM (MAX 20 CITIZENS PER INSTANCE)
+// ========================================================
+const MAX_PLAYERS_PER_LOBBY = 20;
+
+class Lobby {
+  constructor(id, name) {
+    this.id = id;
+    this.name = name;
+    this.playerIds = new Set();
+    this.chatHistory = [];
+    this.createdAt = Date.now();
+  }
+
+  isFull() {
+    return this.playerIds.size >= MAX_PLAYERS_PER_LOBBY;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      playerCount: this.playerIds.size,
+      maxPlayers: MAX_PLAYERS_PER_LOBBY,
+      isFull: this.isFull()
+    };
+  }
+}
+
+const lobbies = new Map(); // lobbyId -> Lobby
+
+// Initialize default lobbies
+lobbies.set('district-lobby-1', new Lobby('district-lobby-1', 'New District — Gathering Grounds Alpha'));
+lobbies.set('district-lobby-2', new Lobby('district-lobby-2', 'New District — Gathering Grounds Beta'));
+lobbies.set('district-lobby-3', new Lobby('district-lobby-3', 'New District — Gathering Grounds Gamma'));
+
+function findAvailableLobby() {
+  for (const lobby of lobbies.values()) {
+    if (!lobby.isFull()) return lobby;
+  }
+  // Create a new instance dynamically if all existing are full
+  const nextNum = lobbies.size + 1;
+  const newLobby = new Lobby(`district-lobby-${nextNum}`, `New District — Gathering Grounds ${nextNum}`);
+  lobbies.set(newLobby.id, newLobby);
+  return newLobby;
+}
+
+function getLobbyList() {
+  return Array.from(lobbies.values()).map(l => l.toJSON());
+}
+
 // Player state tracking
 const players = new Map(); // playerId -> playerState
 let playerIdCounter = 0;
+const wsByPlayerId = new Map(); // playerId -> WebSocket
 
 // Wallets and matches (simulated CVT token)
 const wallets = new Map(); // playerId -> balance (number)
 let communityWallet = 0;
-const matches = new Map(); // matchId -> { id, owner, participants: Set, bets: Map(playerId->amount), status }
+const matches = new Map();
 let matchIdCounter = 0;
 
-// ToS consents storage (playerId -> { version, acceptedAt })
+// ToS consents storage
 const tosConsents = new Map();
-const fs = require('fs');
 const TOS_FILE = __dirname + '/tos_consents.json';
 const CHAT_FILE = __dirname + '/chat_history.json';
 
-// Chat history storage
-let chatHistory = [];
 const MAX_CHAT_HISTORY = 100;
 
 // Load existing consents if present
@@ -42,16 +92,6 @@ try {
   console.error('Failed to load TOS consents:', err);
 }
 
-// Load existing chat history if present
-try {
-  if (fs.existsSync(CHAT_FILE)) {
-    const raw = fs.readFileSync(CHAT_FILE, 'utf8');
-    chatHistory = JSON.parse(raw || '[]');
-  }
-} catch (err) {
-  console.error('Failed to load chat history:', err);
-}
-
 // Combat constants
 const DAMAGE_PER_HIT = 25;
 const ATTACK_RANGE = 3;
@@ -61,13 +101,16 @@ class Player {
   constructor(id) {
     this.id = id;
     this.username = `Guest_${id}`;
-    this.position = { x: 0, y: 0, z: 0 };
-    this.rotation = { x: 0, y: 0, z: 0 };
+    this.character = null;
+    this.lobbyId = 'district-lobby-1';
+    this.position = { x: 0, y: 0, z: 20 };
+    this.rotation = { x: 0, y: Math.PI, z: 0 };
     this.health = 100;
     this.kills = 0;
     this.deaths = 0;
     this.lastAttackTime = 0;
     this.isAlive = true;
+    this.isMoving = false;
     this.matchId = null;
     this.matchKills = 0;
   }
@@ -76,62 +119,131 @@ class Player {
     return {
       id: this.id,
       username: this.username,
+      character: this.character,
+      lobbyId: this.lobbyId,
       position: this.position,
       rotation: this.rotation,
       health: this.health,
       kills: this.kills,
       deaths: this.deaths,
       isAlive: this.isAlive,
+      isMoving: this.isMoving,
     };
   }
 }
 
-// Broadcast player state to all clients
-function broadcastPlayers() {
-  const playerList = Array.from(players.values()).map(p => p.toJSON());
+// Broadcast player state to clients in a specific lobby instance
+function broadcastLobbyPlayers(lobbyId) {
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby) return;
+
+  const playerList = [];
+  lobby.playerIds.forEach(pid => {
+    const p = players.get(pid);
+    if (p) playerList.push(p.toJSON());
+  });
+
   const message = JSON.stringify({
     type: 'players_update',
+    lobbyId: lobbyId,
+    lobbyName: lobby.name,
+    playerCount: playerList.length,
+    maxPlayers: MAX_PLAYERS_PER_LOBBY,
     players: playerList,
   });
 
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
+  lobby.playerIds.forEach(pid => {
+    const ws = wsByPlayerId.get(pid);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(message);
     }
   });
 }
 
-// Broadcast chat message
-function broadcastChat(chatMsg) {
+// Broadcast chat message to a specific lobby instance
+function broadcastLobbyChat(lobbyId, chatMsg) {
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby) return;
+
+  lobby.chatHistory.push(chatMsg);
+  if (lobby.chatHistory.length > MAX_CHAT_HISTORY) {
+    lobby.chatHistory.shift();
+  }
+
   const message = JSON.stringify({
     type: 'chat_message',
+    lobbyId: lobbyId,
     ...chatMsg,
   });
 
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
+  lobby.playerIds.forEach(pid => {
+    const ws = wsByPlayerId.get(pid);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(message);
     }
   });
+}
 
-  // Save to history
-  chatHistory.push(chatMsg);
-  if (chatHistory.length > MAX_CHAT_HISTORY) {
-    chatHistory.shift();
+// 20Hz game tick loop for smooth multiplayer movement sync per lobby
+setInterval(() => {
+  lobbies.forEach((lobby, lobbyId) => {
+    if (lobby.playerIds.size > 0) {
+      broadcastLobbyPlayers(lobbyId);
+    }
+  });
+}, 50);
+
+// Assign or move player between lobbies
+function assignPlayerToLobby(player, targetLobbyId) {
+  // Remove from old lobby
+  if (player.lobbyId && lobbies.has(player.lobbyId)) {
+    const oldLobby = lobbies.get(player.lobbyId);
+    oldLobby.playerIds.delete(player.id);
+    broadcastLobbyPlayers(oldLobby.id);
   }
 
-  // Persist to file
-  try {
-    fs.writeFileSync(CHAT_FILE, JSON.stringify(chatHistory, null, 2));
-  } catch (err) {
-    console.error('Failed to persist chat history:', err);
+  // Find or use target lobby
+  let targetLobby = null;
+  if (targetLobbyId && lobbies.has(targetLobbyId)) {
+    const candidate = lobbies.get(targetLobbyId);
+    if (!candidate.isFull()) {
+      targetLobby = candidate;
+    }
   }
+
+  if (!targetLobby) {
+    targetLobby = findAvailableLobby();
+  }
+
+  player.lobbyId = targetLobby.id;
+  targetLobby.playerIds.add(player.id);
+
+  const ws = wsByPlayerId.get(player.id);
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'lobby_joined',
+      lobbyId: targetLobby.id,
+      lobbyName: targetLobby.name,
+      playerCount: targetLobby.playerIds.size,
+      maxPlayers: MAX_PLAYERS_PER_LOBBY,
+      availableLobbies: getLobbyList(),
+    }));
+
+    // Send lobby-specific chat history
+    ws.send(JSON.stringify({
+      type: 'chat_history',
+      lobbyId: targetLobby.id,
+      history: targetLobby.chatHistory,
+    }));
+  }
+
+  broadcastLobbyPlayers(targetLobby.id);
 }
 
 // Check if attack hits another player
 function checkAttackHit(attacker, targetId) {
   const target = players.get(targetId);
-  if (!target || !target.isAlive) return false;
+  if (!target || !target.isAlive || target.lobbyId !== attacker.lobbyId) return false;
 
   const dx = target.position.x - attacker.position.x;
   const dy = target.position.y - attacker.position.y;
@@ -144,47 +256,26 @@ function checkAttackHit(attacker, targetId) {
 // Handle player attack
 function handleAttack(attacker, targetId) {
   const now = Date.now();
-  
-  // Check cooldown
   if (now - attacker.lastAttackTime < ATTACK_COOLDOWN) {
     return { success: false, reason: 'cooldown' };
   }
-
   attacker.lastAttackTime = now;
 
-  // Check if hit target
   if (checkAttackHit(attacker, targetId)) {
     const target = players.get(targetId);
-    if (target && target.isAlive) {
-      target.health -= DAMAGE_PER_HIT;
-      
-      if (target.health <= 0) {
-        // Kill
-        target.health = 0;
-        target.isAlive = false;
-        attacker.kills++;
-        // match-scoped kill
-        if (attacker.matchId) {
-          attacker.matchKills = (attacker.matchKills || 0) + 1;
-        }
-        target.deaths++;
-        
-        // Schedule respawn
-        setTimeout(() => respawnPlayer(targetId), 3000);
-        
-        return {
-          success: true,
-          killed: targetId,
-          killerKills: attacker.kills,
-        };
-      }
+    target.health -= DAMAGE_PER_HIT;
 
-      return {
-        success: true,
-        hit: targetId,
-        targetHealth: target.health,
-      };
+    if (target.health <= 0) {
+      target.health = 0;
+      target.isAlive = false;
+      target.deaths++;
+      attacker.kills++;
+      attacker.matchKills = (attacker.matchKills || 0) + 1;
+      setTimeout(() => respawnPlayer(targetId), 3000);
+      return { success: true, hit: true, killed: true, targetId, damage: DAMAGE_PER_HIT };
     }
+
+    return { success: true, hit: true, killed: false, targetId, damage: DAMAGE_PER_HIT };
   }
 
   return { success: false, reason: 'missed' };
@@ -196,18 +287,14 @@ function respawnPlayer(playerId) {
   if (player) {
     player.health = 100;
     player.isAlive = true;
-    // Random spawn position
     player.position = {
-      x: (Math.random() - 0.5) * 50,
+      x: (Math.random() - 0.5) * 30,
       y: 0,
-      z: (Math.random() - 0.5) * 50,
+      z: (Math.random() - 0.5) * 30 + 10,
     };
-    broadcastPlayers();
+    broadcastLobbyPlayers(player.lobbyId);
   }
 }
-
-// map of playerId -> ws
-const wsByPlayerId = new Map();
 
 // WebSocket connection handler
 wss.on('connection', (ws) => {
@@ -216,36 +303,28 @@ wss.on('connection', (ws) => {
   
   // Random spawn position
   player.position = {
-    x: (Math.random() - 0.5) * 50,
+    x: (Math.random() - 0.5) * 20,
     y: 0,
-    z: (Math.random() - 0.5) * 50,
+    z: (Math.random() - 0.5) * 20 + 15,
   };
   
   players.set(playerId, player);
-
-  // initialize simulated wallet for player (if not present)
-  if (!wallets.has(playerId)) wallets.set(playerId, 1000); // start with 1000 CVT
-
-  // store ws for potential direct messages
   ws.playerId = playerId;
   wsByPlayerId.set(playerId, ws);
 
-  console.log(`Player ${playerId} connected. Total players: ${players.size}`);
+  if (!wallets.has(playerId)) wallets.set(playerId, 1000);
 
-  // Send player their ID
+  console.log(`Player ${playerId} connected. Total online: ${players.size}`);
+
+  // Send player their ID and UBI status
   ws.send(JSON.stringify({
     type: 'player_id',
     playerId: playerId,
+    ubiStatus: ubiEngine.getStatus()
   }));
 
-  // Send chat history
-  ws.send(JSON.stringify({
-    type: 'chat_history',
-    history: chatHistory,
-  }));
-
-  // Broadcast initial player list
-  broadcastPlayers();
+  // Assign to first open 20-player lobby instance
+  assignPlayerToLobby(player, null);
 
   // Handle incoming messages
   ws.on('message', (data) => {
@@ -253,31 +332,88 @@ wss.on('connection', (ws) => {
       const message = JSON.parse(data);
 
       switch (message.type) {
+        case 'join_lobby':
+          if (players.has(playerId)) {
+            assignPlayerToLobby(players.get(playerId), message.lobbyId);
+          }
+          break;
+
         case 'player_move':
           if (players.has(playerId)) {
-            players.get(playerId).position = message.position;
-            players.get(playerId).rotation = message.rotation;
+            const p = players.get(playerId);
+            p.position = message.position;
+            p.rotation = message.rotation;
+            if (message.isMoving !== undefined) p.isMoving = message.isMoving;
           }
           break;
 
         case 'player_identity':
           if (players.has(playerId)) {
-            players.get(playerId).username = message.username || `Guest_${playerId}`;
-            broadcastPlayers();
+            const p = players.get(playerId);
+            p.username = message.username || `Guest_${playerId}`;
+            if (message.character) {
+              p.character = message.character;
+            }
+            broadcastLobbyPlayers(p.lobbyId);
           }
           break;
 
         case 'chat_message':
           if (players.has(playerId)) {
-            const player = players.get(playerId);
+            const p = players.get(playerId);
             const chatMsg = {
-              id: Date.now().toString(),
+              id: message.id || Date.now().toString(),
               playerId: playerId,
-              username: player.username,
+              username: message.username || p.username,
               text: message.text,
+              color: message.color || 'text-cyan-400',
               timestamp: new Date().toISOString()
             };
-            broadcastChat(chatMsg);
+            broadcastLobbyChat(p.lobbyId, chatMsg);
+          }
+          break;
+
+        case 'microtransaction':
+          // Process microtransaction with 1% passive contribution to UBI pool
+          if (players.has(playerId)) {
+            const p = players.get(playerId);
+            const amt = Math.max(0.1, Number(message.amount) || 1.0);
+            const { netAmount, taxAmount } = ubiEngine.processTransaction(amt);
+
+            const txEvent = {
+              type: 'microtransaction_event',
+              id: `tx_${Date.now()}`,
+              senderId: playerId,
+              senderUsername: p.username,
+              recipient: message.recipient || 'Community Treasury',
+              grossAmount: amt,
+              netAmount,
+              passiveUbiCut: taxAmount,
+              memo: message.memo || 'Citizen Micro-Contribution',
+              timestamp: new Date().toISOString(),
+              ubiStatus: ubiEngine.getStatus()
+            };
+
+            // Broadcast to the lobby
+            const lobby = lobbies.get(p.lobbyId);
+            if (lobby) {
+              const noticeMsg = {
+                id: `notice_${Date.now()}`,
+                playerId: 'system',
+                username: '🏛️ CIVIC TREASURY',
+                text: `${p.username} made a micro-contribution of ${amt} CIVIC (${taxAmount.toFixed(3)} CIVIC routed to Sovereign UBI Pool)!`,
+                color: 'text-amber-400',
+                timestamp: new Date().toISOString()
+              };
+              broadcastLobbyChat(p.lobbyId, noticeMsg);
+
+              lobby.playerIds.forEach(pid => {
+                const clientWs = wsByPlayerId.get(pid);
+                if (clientWs && clientWs.readyState === WebSocket.OPEN) {
+                  clientWs.send(JSON.stringify(txEvent));
+                }
+              });
+            }
           }
           break;
 
@@ -286,21 +422,31 @@ wss.on('connection', (ws) => {
             const attacker = players.get(playerId);
             const result = handleAttack(attacker, message.targetId);
             
-            // Broadcast result to all players
-            wss.clients.forEach(client => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({
-                  type: 'attack_result',
-                  attacker: playerId,
-                  target: message.targetId,
-                  result: result,
-                }));
-              }
-            });
-
-            // Broadcast updated player states
-            broadcastPlayers();
+            const lobby = lobbies.get(attacker.lobbyId);
+            if (lobby) {
+              const resMsg = JSON.stringify({
+                type: 'attack_result',
+                attacker: playerId,
+                target: message.targetId,
+                result: result,
+              });
+              lobby.playerIds.forEach(pid => {
+                const clientWs = wsByPlayerId.get(pid);
+                if (clientWs && clientWs.readyState === WebSocket.OPEN) {
+                  clientWs.send(resMsg);
+                }
+              });
+            }
+            broadcastLobbyPlayers(attacker.lobbyId);
           }
+          break;
+
+        case 'get_lobbies':
+          ws.send(JSON.stringify({
+            type: 'lobbies_list',
+            lobbies: getLobbyList(),
+            currentLobbyId: player.lobbyId
+          }));
           break;
 
         case 'ping':
@@ -314,9 +460,14 @@ wss.on('connection', (ws) => {
 
   // Handle disconnect
   ws.on('close', () => {
+    if (player.lobbyId && lobbies.has(player.lobbyId)) {
+      const lobby = lobbies.get(player.lobbyId);
+      lobby.playerIds.delete(playerId);
+      broadcastLobbyPlayers(lobby.id);
+    }
     players.delete(playerId);
-    console.log(`Player ${playerId} disconnected. Total players: ${players.size}`);
-    broadcastPlayers();
+    wsByPlayerId.delete(playerId);
+    console.log(`Player ${playerId} disconnected. Total online: ${players.size}`);
   });
 
   ws.on('error', (err) => {
@@ -324,87 +475,21 @@ wss.on('connection', (ws) => {
   });
 });
 
-// REST endpoints for testing/admin
+// REST endpoints
+app.get('/api/lobbies', (req, res) => {
+  res.json({
+    lobbies: getLobbyList(),
+    maxPlayersPerLobby: MAX_PLAYERS_PER_LOBBY,
+    totalOnline: players.size
+  });
+});
+
 app.get('/api/players', (req, res) => {
   const playerList = Array.from(players.values()).map(p => p.toJSON());
   res.json({
     count: playerList.length,
     players: playerList,
   });
-});
-
-// Create a royal deathmatch (simulated)
-app.post('/api/match/create', (req, res) => {
-  const owner = req.body.owner || null;
-  const id = ++matchIdCounter;
-  const match = {
-    id,
-    owner,
-    participants: new Set(),
-    bets: new Map(),
-    status: 'open', // open, running, finished
-    createdAt: Date.now(),
-  };
-  matches.set(id, match);
-  res.json({ matchId: id });
-});
-
-app.post('/api/match/join', (req, res) => {
-  const { matchId, playerId } = req.body;
-  const match = matches.get(Number(matchId));
-  const player = players.get(Number(playerId));
-  if (!match) return res.status(404).json({ error: 'match not found' });
-  if (!player) return res.status(404).json({ error: 'player not found' });
-  match.participants.add(Number(playerId));
-  player.matchId = match.id;
-  player.matchKills = 0;
-  res.json({ ok: true, matchId });
-});
-
-app.post('/api/match/place_bet', (req, res) => {
-  const { matchId, playerId, amount } = req.body;
-  const match = matches.get(Number(matchId));
-  const pid = Number(playerId);
-  const amt = Number(amount) || 0;
-  if (!match) return res.status(404).json({ error: 'match not found' });
-  if (!players.has(pid)) return res.status(404).json({ error: 'player not found' });
-  const balance = wallets.get(pid) || 0;
-  if (amt <= 0 || balance < amt) return res.status(400).json({ error: 'insufficient funds' });
-  // deduct immediately (escrow)
-  wallets.set(pid, balance - amt);
-  match.bets.set(pid, (match.bets.get(pid) || 0) + amt);
-  res.json({ ok: true, balance: wallets.get(pid), bet: match.bets.get(pid) });
-});
-
-app.post('/api/match/start', (req, res) => {
-  const { matchId } = req.body;
-  const match = matches.get(Number(matchId));
-  if (!match) return res.status(404).json({ error: 'match not found' });
-  match.status = 'running';
-  // reset matchKills for participants
-  match.participants.forEach(pid => {
-    const p = players.get(pid);
-    if (p) p.matchKills = 0;
-  });
-  // broadcast match state
-  const msg = JSON.stringify({ type: 'match_update', match: serializeMatch(match) });
-  wss.clients.forEach(c => c.readyState === WebSocket.OPEN && c.send(msg));
-  res.json({ ok: true });
-});
-
-// Force end and resolve match (for testing or when time expires)
-app.post('/api/match/end', (req, res) => {
-  const { matchId } = req.body;
-  const match = matches.get(Number(matchId));
-  if (!match) return res.status(404).json({ error: 'match not found' });
-  const result = resolveMatch(match.id);
-  res.json({ ok: true, result });
-});
-
-app.get('/api/match/:id', (req, res) => {
-  const match = matches.get(Number(req.params.id));
-  if (!match) return res.status(404).json({ error: 'match not found' });
-  res.json(serializeMatch(match));
 });
 
 app.get('/api/wallet/:playerId', (req, res) => {
@@ -416,86 +501,28 @@ app.get('/api/community_wallet', (req, res) => {
   res.json({ community: communityWallet });
 });
 
-// ToS endpoints
-app.post('/api/tos/accept', (req, res) => {
-  const { playerId, version } = req.body;
-  if (!playerId || !version) return res.status(400).json({ error: 'playerId and version required' });
-  const rec = { version, acceptedAt: Date.now() };
-  tosConsents.set(Number(playerId), rec);
-  // persist to file
-  try {
-    const obj = {};
-    tosConsents.forEach((v, k) => { obj[k] = v; });
-    fs.writeFileSync(TOS_FILE, JSON.stringify(obj, null, 2));
-  } catch (err) {
-    console.error('Failed to persist TOS consent:', err);
-  }
-  res.json({ ok: true, record: rec });
-});
-
-app.get('/api/tos/:playerId', (req, res) => {
-  const pid = Number(req.params.playerId);
-  if (!tosConsents.has(pid)) return res.status(404).json({ error: 'consent not found' });
-  res.json(tosConsents.get(pid));
-});
-
-function serializeMatch(match) {
-  return {
-    id: match.id,
-    owner: match.owner,
-    participants: Array.from(match.participants),
-    bets: Array.from(match.bets.entries()),
-    status: match.status,
-    createdAt: match.createdAt,
-  };
-}
-
-function resolveMatch(matchId) {
-  const match = matches.get(Number(matchId));
-  if (!match) return null;
-  // determine winner by highest matchKills
-  let topKills = -1;
-  let winners = [];
-  match.participants.forEach(pid => {
-    const p = players.get(pid);
-    const mk = (p && p.matchKills) || 0;
-    if (mk > topKills) { topKills = mk; winners = [pid]; }
-    else if (mk === topKills) winners.push(pid);
-  });
-  if (winners.length === 0) {
-    match.status = 'finished';
-    return { winners: [], distributed: 0 };
-  }
-  const winner = winners[Math.floor(Math.random() * winners.length)];
-  // sum bets
-  let total = 0;
-  match.bets.forEach(v => total += v);
-  
-  // Apply 1% Micro-tax per whitepaper
-  const { netAmount, taxAmount } = ubiEngine.processTransaction(total);
-  const payout = netAmount;
-  const fee = taxAmount;
-
-  wallets.set(winner, (wallets.get(winner) || 0) + payout);
-  match.status = 'finished';
-  // clear participants' matchId
-  match.participants.forEach(pid => {
-    const p = players.get(pid);
-    if (p) { p.matchId = null; p.matchKills = 0; }
-  });
-  // broadcast match result
-  const msg = JSON.stringify({ type: 'match_result', matchId: match.id, winner, payout, fee });
-  wss.clients.forEach(c => c.readyState === WebSocket.OPEN && c.send(msg));
-  return { winner, payout, fee };
-}
-
 app.get('/api/ubi/status', (req, res) => {
   res.json(ubiEngine.getStatus());
+});
+
+app.post('/api/microtransaction', (req, res) => {
+  const { amount, memo, playerId } = req.body;
+  const amt = Number(amount) || 1.0;
+  const result = ubiEngine.processTransaction(amt);
+  res.json({
+    ok: true,
+    amount: amt,
+    netAmount: result.netAmount,
+    passiveUbiCut: result.taxAmount,
+    memo: memo || 'REST micro-contribution',
+    ubiStatus: ubiEngine.getStatus()
+  });
 });
 
 app.post('/api/reset', (req, res) => {
   players.clear();
   playerIdCounter = 0;
+  lobbies.forEach(l => l.playerIds.clear());
   res.json({ message: 'Game reset', players: 0 });
 });
 
@@ -503,6 +530,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     players: players.size,
+    lobbies: getLobbyList(),
     timestamp: new Date().toISOString(),
   });
 });
@@ -512,4 +540,5 @@ const PORT = process.env.MULTIPLAYER_PORT || 8080;
 server.listen(PORT, () => {
   console.log(`Multiplayer server running on http://localhost:${PORT}`);
   console.log(`WebSocket endpoint: ws://localhost:${PORT}/ws`);
+  console.log(`Instances: 20 Citizens per Lobby configured.`);
 });

@@ -66,8 +66,16 @@ export default function WelcomePage() {
                <span className="text-2xl group-hover:scale-110 transition-transform">✨</span> 
                <span className="text-xl font-bold uppercase tracking-wider">Create New CivicID</span>
             </div>
-            <span className="text-[10px] text-white/60 font-mono tracking-widest">GENERATE_LOCAL_VAULT</span>
+            <span className="text-[10px] text-white/60 font-mono tracking-widest">GENERATE_LOCAL_VAULT_ENCRYPTED</span>
           </AnimatedButton>
+          
+          <button
+            onClick={() => nav('/vault')}
+            className="w-full py-3.5 bg-gradient-to-r from-neon-cyan/20 to-purple-600/20 hover:from-neon-cyan/30 hover:to-purple-600/30 border border-neon-cyan/40 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase text-neon-cyan tracking-wider shadow-[0_0_20px_rgba(0,217,255,0.2)] transition-all"
+          >
+            <span>🚀</span>
+            <span>Instant Guest Pass (Enter Vault & Gathering Grounds)</span>
+          </button>
           
           <div className="grid grid-cols-2 gap-3">
              <AnimatedButton

@@ -203,3 +203,48 @@ export const createCharacterMesh = (config: CharacterConfig & { weapon?: string 
 
   return group;
 };
+
+export const createPlayerNametag = (username: string, color = '#00f3ff'): THREE.Sprite => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.clearRect(0, 0, 512, 128);
+
+    // Rounded rectangle background
+    ctx.fillStyle = 'rgba(9, 13, 22, 0.85)';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    if (typeof (ctx as any).roundRect === 'function') {
+      (ctx as any).roundRect(16, 20, 480, 88, 44);
+    } else {
+      ctx.rect(16, 20, 480, 88);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // Pulse dot (live status)
+    ctx.fillStyle = '#10b981';
+    ctx.beginPath();
+    ctx.arc(56, 64, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Text (display name)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(username.length > 18 ? username.slice(0, 16) + '..' : username, 84, 64);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(2.4, 0.6, 1);
+  sprite.position.set(0, 2.35, 0);
+  return sprite;
+};
+

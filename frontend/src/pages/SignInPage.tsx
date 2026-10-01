@@ -7,7 +7,9 @@ export default function SignInPage() {
   const nav = useNavigate()
   const login = useGameStore(state => state.login)
   const hasIdentity = useGameStore(state => state.hasIdentity)
+  const user = useGameStore(state => state.user)
   const [password, setPassword] = useState('')
+  const [rememberDevice, setRememberDevice] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -17,6 +19,11 @@ export default function SignInPage() {
     try {
       console.debug('[SignInPage] attempting login call');
       await login('', password)
+      if (rememberDevice) {
+        try {
+          localStorage.setItem('civicverse_saved_session', password);
+        } catch (e) {}
+      }
       console.debug('[SignInPage] login resolved, navigating to /vault');
       nav('/vault')
     } catch (e) {
@@ -74,9 +81,16 @@ export default function SignInPage() {
             </div>
           ) : (
             <>
-              <p className="text-gray-400 text-xs text-center mb-8 uppercase tracking-widest leading-relaxed">
-                Enter your vault password to decrypt your sovereign identity.
-              </p>
+              <div className="text-center mb-6">
+                {user?.username && (
+                  <p className="text-sm font-black text-cyan-400 uppercase tracking-wider mb-1">
+                    Citizen: {user.username}
+                  </p>
+                )}
+                <p className="text-gray-400 text-xs uppercase tracking-widest leading-relaxed">
+                  Enter your password to decrypt your sovereign identity vault.
+                </p>
+              </div>
 
               {error && (
                 <div className="mb-6 p-3 bg-neon-pink/10 border border-neon-pink/40 rounded text-neon-pink text-[10px] font-bold uppercase tracking-widest text-center animate-pulse">
@@ -84,7 +98,7 @@ export default function SignInPage() {
                 </div>
               )}
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <AnimatedInput
                   label="Vault Password"
                   type="password"
@@ -94,6 +108,16 @@ export default function SignInPage() {
                   disabled={loading}
                   onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
                 />
+
+                <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={rememberDevice}
+                    onChange={(e) => setRememberDevice(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-cyan-500 focus:ring-0"
+                  />
+                  <span>Keep unlocked on this trusted device</span>
+                </label>
 
                 <AnimatedButton
                   variant="primary"

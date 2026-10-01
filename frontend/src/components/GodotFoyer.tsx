@@ -16,8 +16,13 @@ import {
   MessageSquare,
   Camera,
   Crosshair,
-  Volume2
+  Volume2,
+  Send,
+  Coins,
+  Users
 } from 'lucide-react';
+import { useMultiplayerStore } from '../services/multiplayer';
+import { createCharacterMesh, createPlayerNametag } from '../lib/characterFactory';
 
 interface GodotFoyerProps {
   onExit?: () => void;
@@ -38,11 +43,47 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const [aaMode, setAaMode] = useState<'off' | 'smaa'>('smaa');
   const [pixelCap, setPixelCap] = useState<number>(3);
 
+  // Multiplayer state (20 per Lobby Instance)
+  const chatHistory = useMultiplayerStore(state => state.chatHistory);
+  const peerCount = useMultiplayerStore(state => state.peerCount);
+  const connectionMode = useMultiplayerStore(state => state.connectionMode);
+  const currentLobbyId = useMultiplayerStore(state => state.currentLobbyId);
+  const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
+  const availableLobbies = useMultiplayerStore(state => state.availableLobbies);
+  const switchLobby = useMultiplayerStore(state => state.switchLobby);
+  const ubiStatus = useMultiplayerStore(state => state.ubiStatus);
+  const [hudChatInput, setHudChatInput] = useState('');
+  const [showLobbyModal, setShowLobbyModal] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false);
+  const [tipAmount, setTipAmount] = useState('5.0');
+  const [tipSuccess, setTipSuccess] = useState('');
+  const isChatFocusedRef = useRef(false);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
   // Store camera mode ref so event listeners don't re-mount the Three.js scene
   const cameraModeRef = useRef<'3RD' | '1ST'>('3RD');
 
   // Audio context ref (must be a hook at component top-level)
   const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Initialize and synchronize multiplayer connection
+  useEffect(() => {
+    const uninit = useMultiplayerStore.getState().initialize(user?.username || 'Citizen', user?.character);
+    return () => {
+      if (typeof uninit === 'function') uninit();
+    };
+  }, [user?.username, user?.character]);
+
+  useEffect(() => {
+    useMultiplayerStore.getState().setIdentity(user?.username || 'Citizen', user?.character);
+  }, [user?.username, user?.character]);
+
+  const handleSendHudChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hudChatInput.trim()) return;
+    useMultiplayerStore.getState().sendMessage(hudChatInput.trim(), 'text-cyan-400');
+    setHudChatInput('');
+  };
 
   const toggleCameraMode = () => {
     const nextMode = cameraModeRef.current === '3RD' ? '1ST' : '3RD';
@@ -552,8 +593,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
         const suitPBR = await tryLoadPBRFromPublic('suit');
         if (suitPBR) {
-          // apply to humanoid suit if present
-          humanoid.traverse((c: any) => {
+          playerGroup.traverse((c: any) => {
             if (c.isMesh && c.material && c.material.emissive !== undefined) {
               c.material.map = suitPBR.albedo;
               if (suitPBR.normal) c.material.normalMap = suitPBR.normal;
@@ -644,85 +684,40 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     const playerGroup = new THREE.Group();
     playerGroup.position.set(0, 0, 20);
 
-    // Create a stylized synthwave humanoid using primitives (replaceable with glTF later)
-    const createSynthHuman = () => {
-      const g = new THREE.Group();
-
-      // Materials
-      const skin = new THREE.MeshStandardMaterial({ color: 0xffd1b3, roughness: 0.5, metalness: 0.05 });
-      const suitTex = generatePBR('suit', '#0f172a');
-      const suit = new THREE.MeshStandardMaterial({ map: suitTex.albedo, normalMap: suitTex.normal, roughnessMap: suitTex.roughness, metalness: 0.55, emissive: 0x220033, emissiveIntensity: 0.18 });
-      const neon = new THREE.MeshStandardMaterial({ color: 0x00f3ff, emissive: 0x00f3ff, emissiveIntensity: 1.8 });
-
-      // Torso
-      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.2, 6, 12), suit);
-      torso.position.y = 1.2;
-      torso.castShadow = true;
-      g.add(torso);
-
-      // Head
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 24, 24), skin);
-      head.position.y = 2.05;
-      g.add(head);
-
-      // Stylized visor
-      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.08), neon);
-      visor.position.set(0, 2.05, 0.25);
-      visor.rotation.x = 0.02;
-      g.add(visor);
-
-      // Arms
-      const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.6, 8), suit);
-      const lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8), suit);
-      const leftArm = new THREE.Group();
-      leftArm.position.set(-0.55, 1.5, 0);
-      upperArm.position.y = -0.3;
-      lowerArm.position.y = -0.9;
-      leftArm.add(upperArm.clone());
-      leftArm.add(lowerArm.clone());
-      g.add(leftArm);
-
-      const rightArm = new THREE.Group();
-      rightArm.position.set(0.55, 1.5, 0);
-      rightArm.add(upperArm.clone());
-      rightArm.add(lowerArm.clone());
-      g.add(rightArm);
-
-      // Legs
-      const upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8), suit);
-      const lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.7, 8), suit);
-      const leftLeg = new THREE.Group();
-      leftLeg.position.set(-0.22, 0.35, 0);
-      leftLeg.add(upperLeg.clone());
-      leftLeg.add(lowerLeg.clone());
-      g.add(leftLeg);
-
-      const rightLeg = new THREE.Group();
-      rightLeg.position.set(0.22, 0.35, 0);
-      rightLeg.add(upperLeg.clone());
-      rightLeg.add(lowerLeg.clone());
-      g.add(rightLeg);
-
-      // Neon chest stripe
-      const stripeGeo = new THREE.PlaneGeometry(0.28, 0.9);
-      const stripe = new THREE.Mesh(stripeGeo, neon);
-      stripe.position.set(0, 1.35, 0.51);
-      stripe.rotation.y = Math.PI;
-      g.add(stripe);
-
-      return g;
+    const defaultCharacter = {
+      skinColor: '#e0ac69',
+      hairColor: '#4a3b2a',
+      shirtColor: '#00d9ff',
+      pantsColor: '#1a1a2e',
+      shoesColor: '#333333',
+      hairStyle: 'short' as const,
+      accessory: 'none' as const,
+      bodyType: 'athletic' as const
     };
 
-    const humanoid = createSynthHuman();
-    // Ensure the humanoid faces forward (positive Z as forward in world)
-    humanoid.rotation.y = Math.PI; 
-    playerGroup.add(humanoid);
+    // Construct local player with their custom non-custodial decentralized avatar!
+    const localCharacterMesh = createCharacterMesh(user?.character || defaultCharacter);
+    localCharacterMesh.rotation.y = Math.PI;
+    playerGroup.add(localCharacterMesh);
 
-    // Expose torsoMesh variable used by animation code by finding by type
-    // (keep a reference to the capsule we created)
-    const torsoMesh = humanoid.children.find(c => c.type === 'Mesh' && (c.geometry as any).type === 'CapsuleGeometry') as THREE.Mesh || new THREE.Mesh();
+    // Floating nametag above local player
+    const localNametag = createPlayerNametag(user?.username ? `${user.username} (You)` : 'Citizen (You)', '#00f3ff');
+    playerGroup.add(localNametag);
 
     scene.add(playerGroup);
+
+    // Remote multiplayer player mesh tracking map
+    const remoteMeshes = new Map<string, {
+      group: THREE.Group;
+      mesh: THREE.Group;
+      nametag: THREE.Sprite;
+      characterJson: string;
+      username: string;
+      targetPos: THREE.Vector3;
+      targetRotY: number;
+      isMoving: boolean;
+      animTime: number;
+    }>();
 
     // 3. DETAILED 3D WEAPON RIFLE MODEL
     const weaponGroup = new THREE.Group();
@@ -777,12 +772,11 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     const damping = 10; // damping factor
 
     const onMouseMove = (e: MouseEvent) => {
+      if (isChatFocusedRef.current) return;
       if (document.pointerLockElement === containerRef.current) {
         // Horizontal look: use natural movement (positive movementX -> look right)
-        // If left/right feels inverted, flip the sign here.
         yaw -= e.movementX * 0.0022;
         // Vertical look: use natural movement (positive movementY -> look down)
-        // If the user reports inverted Y, flip the sign here.
         pitch += e.movementY * 0.0022;
         // Clamp pitch to avoid flipping
         pitch = Math.max(-1.48, Math.min(1.48, pitch));
@@ -790,11 +784,30 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
+      // If typing in chat, do not trigger game controls
+      if (isChatFocusedRef.current) {
+        if (e.code === 'Escape') {
+          chatInputRef.current?.blur();
+        }
+        return;
+      }
+
+      // Quick chat key: T or Enter to focus in-game chat input
+      if (e.code === 'KeyT' || e.code === 'Enter') {
+        e.preventDefault();
+        if (document.pointerLockElement) {
+          document.exitPointerLock();
+        }
+        setTimeout(() => {
+          chatInputRef.current?.focus();
+        }, 50);
+        return;
+      }
+
       keys[e.code] = true;
 
       // Toggle 1ST / 3RD Person with V
       if (e.code === 'KeyV') {
-        console.debug('[GodotFoyer] KeyV pressed')
         try {
           const next = cameraModeRef.current === '3RD' ? '1ST' : '3RD';
           cameraModeRef.current = next;
@@ -846,7 +859,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     };
 
     const onMouseDown = (e: MouseEvent) => {
-      if (e.button === 0) { // Left Click Shoot
+      if (isChatFocusedRef.current) return;
+      if (e.button === 0 && document.pointerLockElement === containerRef.current) { // Left Click Shoot
         muzzleLight.intensity = 80;
         weaponGroup.position.z = -0.22; // Recoil kick back (small)
         weaponGroup.rotation.x = -0.12;
@@ -861,7 +875,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       }
     };
 
-    containerRef.current.addEventListener('click', () => {
+    containerRef.current.addEventListener('click', (e) => {
+      if (isChatFocusedRef.current) return;
+      if ((e.target as HTMLElement)?.closest('form') || (e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'BUTTON') return;
       containerRef.current?.requestPointerLock();
     });
 
@@ -881,6 +897,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     const clock = new THREE.Clock();
     let frameId: number;
+    let lastMoveBroadcast = 0;
 
     const animate = () => {
       frameId = requestAnimationFrame(animate);
@@ -926,9 +943,102 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         // Move player by velocity (frame-rate independent)
         playerGroup.position.addScaledVector(velocity, delta);
 
-        // Torso gait animation (smoothed and reduced amplitude to avoid shimmering)
-        const targetTorsoY = moveDir.length() > 0 ? 1.4 + Math.sin(elapsed * 6) * 0.02 : 1.4 + Math.sin(elapsed * 2) * 0.005;
-        torsoMesh.position.y = THREE.MathUtils.lerp(torsoMesh.position.y, targetTorsoY, 0.08);
+        // Local player gait animation on custom decentralized avatar
+        const isMoving = moveDir.length() > 0;
+        const targetMeshY = isMoving ? Math.sin(elapsed * 8) * 0.04 : Math.sin(elapsed * 2) * 0.01;
+        localCharacterMesh.position.y = THREE.MathUtils.lerp(localCharacterMesh.position.y, targetMeshY, 0.1);
+
+        // Hide local character mesh & nametag in 1st person mode so it doesn't block camera
+        const isFirstPerson = cameraModeRef.current === '1ST';
+        localCharacterMesh.visible = !isFirstPerson;
+        localNametag.visible = !isFirstPerson;
+
+        // Broadcast local position to peers (~25Hz)
+        const nowMs = performance.now();
+        if (nowMs - lastMoveBroadcast > 40) {
+          useMultiplayerStore.getState().updatePosition(
+            { x: playerGroup.position.x, y: playerGroup.position.y, z: playerGroup.position.z },
+            { x: 0, y: playerGroup.rotation.y, z: 0 },
+            isMoving
+          );
+          lastMoveBroadcast = nowMs;
+        }
+
+        // Synchronize remote multiplayer players in 3D scene
+        const remotePlayers = useMultiplayerStore.getState().players;
+        const activeRemoteIds = new Set<string>();
+
+        remotePlayers.forEach((p, pId) => {
+          activeRemoteIds.add(pId);
+          let remoteObj = remoteMeshes.get(pId);
+          const cJson = JSON.stringify(p.character || {});
+
+          if (!remoteObj) {
+            const grp = new THREE.Group();
+            const m = createCharacterMesh(p.character || defaultCharacter);
+            m.rotation.y = Math.PI;
+            grp.add(m);
+
+            const tag = createPlayerNametag(p.username || `Citizen_${pId.slice(0, 6)}`, '#a855f7');
+            grp.add(tag);
+
+            grp.position.set(p.position.x, p.position.y, p.position.z);
+            grp.rotation.y = p.rotation.y;
+            scene.add(grp);
+
+            remoteObj = {
+              group: grp,
+              mesh: m,
+              nametag: tag,
+              characterJson: cJson,
+              username: p.username,
+              targetPos: new THREE.Vector3(p.position.x, p.position.y, p.position.z),
+              targetRotY: p.rotation.y,
+              isMoving: !!p.isMoving,
+              animTime: 0
+            };
+            remoteMeshes.set(pId, remoteObj);
+          } else {
+            if (remoteObj.characterJson !== cJson) {
+              remoteObj.group.remove(remoteObj.mesh);
+              const newM = createCharacterMesh(p.character || defaultCharacter);
+              newM.rotation.y = Math.PI;
+              remoteObj.group.add(newM);
+              remoteObj.mesh = newM;
+              remoteObj.characterJson = cJson;
+            }
+
+            if (remoteObj.username !== p.username) {
+              remoteObj.group.remove(remoteObj.nametag);
+              const newTag = createPlayerNametag(p.username || `Citizen_${pId.slice(0, 6)}`, '#a855f7');
+              remoteObj.group.add(newTag);
+              remoteObj.nametag = newTag;
+              remoteObj.username = p.username;
+            }
+
+            remoteObj.targetPos.set(p.position.x, p.position.y, p.position.z);
+            remoteObj.targetRotY = p.rotation.y;
+            remoteObj.isMoving = !!p.isMoving;
+
+            remoteObj.group.position.lerp(remoteObj.targetPos, Math.min(1, 14 * delta));
+            remoteObj.group.rotation.y = THREE.MathUtils.lerp(remoteObj.group.rotation.y, remoteObj.targetRotY, Math.min(1, 14 * delta));
+
+            if (remoteObj.isMoving) {
+              remoteObj.animTime += delta * 8;
+              remoteObj.group.position.y = remoteObj.targetPos.y + Math.abs(Math.sin(remoteObj.animTime)) * 0.05;
+            } else {
+              remoteObj.group.position.y = THREE.MathUtils.lerp(remoteObj.group.position.y, remoteObj.targetPos.y, 0.1);
+            }
+          }
+        });
+
+        // Clean up disconnected players
+        remoteMeshes.forEach((remoteObj, pId) => {
+          if (!activeRemoteIds.has(pId)) {
+            scene.remove(remoteObj.group);
+            remoteMeshes.delete(pId);
+          }
+        });
 
         // Weapon recoil smoothing
         weaponGroup.position.z = THREE.MathUtils.lerp(weaponGroup.position.z, -0.4, 0.08);
@@ -1090,8 +1200,180 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       {/* IN-GAME HUD OVERLAYS (MATCHING FOYER_FORMAT.JPG EXACTLY)  */}
       {/* ======================================================== */}
 
+      {/* 0. TOP-LEFT OVERLAY: MULTIPLAYER LIVE STATUS & 20-CITIZEN LOBBY */}
+      <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2 pointer-events-auto">
+        <div className="flex items-center gap-2 bg-[#090d16]/90 border border-emerald-500/50 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]" />
+          <span className="text-xs font-black text-white tracking-wider uppercase">
+            {currentLobbyName} • {1 + peerCount}/20 CITIZENS
+          </span>
+          <span className="text-[9px] text-emerald-400 font-mono font-bold uppercase bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30">
+            {connectionMode === 'mesh' ? 'P2P MESH' : connectionMode === 'websocket' ? 'WS SERVER' : 'P2P'}
+          </span>
+        </div>
+
+        <button 
+          onClick={() => setShowLobbyModal(true)}
+          className="flex items-center gap-1.5 bg-[#0e1626]/90 border border-cyan-500/50 hover:border-cyan-400 text-cyan-400 text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(0,217,255,0.25)] transition-all"
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Switch Lobby</span>
+        </button>
+
+        <button 
+          onClick={() => setShowTipModal(true)}
+          className="flex items-center gap-1.5 bg-neon-pink/20 border border-neon-pink/50 hover:bg-neon-pink/30 text-neon-pink text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(255,0,128,0.25)] transition-all"
+        >
+          <Coins className="w-3.5 h-3.5" />
+          <span>1% UBI Tip</span>
+        </button>
+      </div>
+
+      {/* LOBBY INSTANCE SELECTOR MODAL (20 PLAYERS / ROOM) */}
+      {showLobbyModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md pointer-events-auto">
+          <div className="bg-[#0b121f] border border-cyan-500/60 rounded-2xl p-6 max-w-md w-full shadow-[0_0_40px_rgba(0,217,255,0.3)]">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-base font-black text-white uppercase tracking-wider">Lobby Instances (20 Max)</h3>
+              </div>
+              <button onClick={() => setShowLobbyModal(false)} className="text-gray-400 hover:text-white text-lg">✕</button>
+            </div>
+            <p className="text-xs text-gray-400 mb-4">
+              To guarantee optimal 60+ FPS physics and networking, each Gathering Grounds district instance is capped at 20 citizens.
+            </p>
+            <div className="space-y-2.5 mb-6">
+              {availableLobbies.map((lobby) => (
+                <div 
+                  key={lobby.id}
+                  className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
+                    lobby.id === currentLobbyId 
+                      ? 'bg-cyan-500/20 border-cyan-400 text-white' 
+                      : 'bg-[#121927] border-gray-800 hover:border-gray-700 text-gray-300'
+                  }`}
+                >
+                  <div>
+                    <h4 className="font-bold text-xs">{lobby.name}</h4>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {lobby.id === currentLobbyId ? 1 + peerCount : lobby.playerCount}/20 Citizens
+                    </span>
+                  </div>
+                  {lobby.id === currentLobbyId ? (
+                    <span className="text-[10px] font-black uppercase text-cyan-400 bg-cyan-400/20 px-2 py-1 rounded-full">Current</span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        switchLobby(lobby.id);
+                        setShowLobbyModal(false);
+                      }}
+                      className="text-[10px] font-black uppercase text-black bg-cyan-400 hover:bg-cyan-300 px-3 py-1 rounded-full transition-all"
+                    >
+                      Join
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button 
+              onClick={() => setShowLobbyModal(false)} 
+              className="w-full py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold uppercase tracking-wider text-white"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 1% UBI PASSIVE CONTRIBUTION MODAL */}
+      {showTipModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md pointer-events-auto">
+          <div className="bg-[#0b121f] border border-neon-pink/60 rounded-2xl p-6 max-w-md w-full shadow-[0_0_40px_rgba(255,0,128,0.3)]">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Coins className="w-5 h-5 text-neon-pink" />
+                <h3 className="text-base font-black text-white uppercase tracking-wider">Passive UBI Microtransaction</h3>
+              </div>
+              <button onClick={() => { setShowTipModal(false); setTipSuccess(''); }} className="text-gray-400 hover:text-white text-lg">✕</button>
+            </div>
+            <p className="text-xs text-gray-300 mb-4 leading-relaxed">
+              Every micro-payment in the Civicverse automatically deposits a 1% dividend into the Sovereign Community UBI Pool. Capitalism reimagined: citizen-owned micro-dividends.
+            </p>
+
+            <div className="space-y-3 mb-6">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-gray-400 tracking-wider block mb-1">Contribution Amount (CIVIC)</label>
+                <div className="grid grid-cols-4 gap-2 mb-2">
+                  {['1.0', '5.0', '10.0', '25.0'].map(val => (
+                    <button
+                      key={val}
+                      onClick={() => setTipAmount(val)}
+                      className={`py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                        tipAmount === val ? 'bg-neon-pink text-black border-neon-pink' : 'bg-[#121927] border-gray-800 text-gray-400'
+                      }`}
+                    >
+                      {val}
+                    </button>
+                  ))}
+                </div>
+                <input 
+                  type="number"
+                  value={tipAmount}
+                  onChange={(e) => setTipAmount(e.target.value)}
+                  className="w-full bg-[#121927] border border-gray-800 rounded-xl px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-neon-pink"
+                />
+              </div>
+
+              <div className="bg-black/50 p-3 rounded-xl border border-white/5 space-y-1 text-xs">
+                <div className="flex justify-between text-gray-400">
+                  <span>Gross Micro-Payment:</span>
+                  <span className="font-mono text-white">{parseFloat(tipAmount) || 0} CIVIC</span>
+                </div>
+                <div className="flex justify-between text-neon-pink font-bold">
+                  <span>1% Sovereign UBI Cut:</span>
+                  <span className="font-mono">+{(Number(tipAmount || 0) * 0.01).toFixed(4)} CIVIC</span>
+                </div>
+              </div>
+
+              {tipSuccess && (
+                <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-400 font-mono text-xs font-bold text-center animate-bounce">
+                  {tipSuccess}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                onClick={async () => {
+                  try {
+                    const amt = parseFloat(tipAmount) || 5.0;
+                    await useGameStore.getState().processMicrotransaction?.(amt, 'Gathering Grounds', 'In-Game Foyer Contribution');
+                    setTipSuccess(`✓ Microtransaction of ${amt} CIVIC sent! ${(amt * 0.01).toFixed(3)} CIVIC routed to UBI Pool.`);
+                    setTimeout(() => {
+                      setShowTipModal(false);
+                      setTipSuccess('');
+                    }, 2500);
+                  } catch (e: any) {
+                    alert(e.message || 'Transaction failed');
+                  }
+                }}
+                className="flex-1 py-3 bg-neon-pink hover:bg-white text-black font-black uppercase text-xs rounded-xl shadow-lg shadow-neon-pink/30 transition-all"
+              >
+                Broadcast Micro-Payment
+              </button>
+              <button 
+                onClick={() => { setShowTipModal(false); setTipSuccess(''); }} 
+                className="px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold uppercase tracking-wider text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. TOP-LEFT OVERLAY: ACTIVE QUEST */}
-      <div className="absolute top-4 left-4 z-20 w-64 bg-[#0d131f]/85 backdrop-blur-md border border-[#1e293b] rounded-xl p-3.5 shadow-2xl text-white pointer-events-auto">
+      <div className="absolute top-16 left-4 z-20 w-64 bg-[#0d131f]/85 backdrop-blur-md border border-[#1e293b] rounded-xl p-3.5 shadow-2xl text-white pointer-events-auto">
         <div className="flex items-center justify-between border-b border-gray-800/60 pb-2 mb-2.5">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400">
             <span className="text-cyan-400 font-extrabold">ACTIVE QUEST</span>
@@ -1103,7 +1385,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         </div>
 
         <h4 className="text-sm font-bold text-white mb-1">Voices of the People</h4>
-        <p className="text-[11px] text-gray-300 mb-2">Speak to 3 citizens in New District</p>
+        <p className="text-[11px] text-gray-300 mb-2">Speak to citizens in New District</p>
 
         <div className="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden mb-3 border border-gray-800">
           <div className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full w-[66%]" />
@@ -1136,15 +1418,47 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         </div>
       </div>
 
-      {/* 3. BOTTOM-LEFT OVERLAY: DISTRICT CHAT LOG */}
-      <div className="absolute bottom-20 left-4 z-20 max-w-sm bg-[#090d16]/85 backdrop-blur-md border border-gray-800/80 rounded-xl p-2.5 pointer-events-auto">
-        <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-gray-400 border-b border-gray-800/50 pb-1">
-          <MessageSquare className="w-3 h-3 text-cyan-400" />
-          <span># New District</span>
+      {/* 3. BOTTOM-LEFT OVERLAY: REAL-TIME DISTRICT CHAT & MULTIPLAYER LOBBY */}
+      <div className="absolute bottom-20 left-4 z-20 w-80 max-w-sm bg-[#090d16]/90 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl pointer-events-auto">
+        <div className="flex items-center justify-between gap-1.5 mb-2 text-[10px] font-bold text-gray-300 border-b border-gray-800/60 pb-1.5">
+          <div className="flex items-center gap-1.5 text-cyan-400">
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span className="font-extrabold uppercase tracking-wider"># New District Lobby</span>
+          </div>
+          <span className="text-[9px] text-gray-500 font-mono">Press 'T' or Enter to chat</span>
         </div>
-        <p className="text-[11px] text-gray-200 leading-snug">
-          <span className="text-amber-400 font-bold">CivicBot:</span> The community rally has started at Unity Plaza!
-        </p>
+
+        {/* Live chat message feed */}
+        <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 mb-2.5 text-[11px] scrollbar-thin">
+          {chatHistory.slice(-6).map((msg) => (
+            <div key={msg.id} className="leading-tight break-words">
+              <span className={`font-bold mr-1.5 ${msg.color || 'text-cyan-400'}`}>{msg.username}:</span>
+              <span className="text-gray-200">{msg.text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* In-game HUD interactive chat input */}
+        <form onSubmit={handleSendHudChat} className="relative flex items-center">
+          <input
+            ref={chatInputRef}
+            type="text"
+            value={hudChatInput}
+            onChange={(e) => setHudChatInput(e.target.value)}
+            onFocus={() => {
+              isChatFocusedRef.current = true;
+              if (document.pointerLockElement) document.exitPointerLock();
+            }}
+            onBlur={() => {
+              isChatFocusedRef.current = false;
+            }}
+            placeholder="Type message & Enter to send..."
+            className="w-full bg-[#121824] border border-[#232f45] rounded-lg py-1.5 pl-2.5 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+          />
+          <button type="submit" className="absolute right-1.5 text-cyan-400 hover:text-cyan-300 p-1">
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </form>
       </div>
 
       {/* 4. BOTTOM-CENTER OVERLAY: ACTION BAR & STATUS HUD */}

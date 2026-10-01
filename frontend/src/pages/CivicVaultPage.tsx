@@ -10,24 +10,36 @@ export default function CivicVaultPage() {
   const nav = useNavigate()
   const { user: rawUser, wallet: rawWallet, logout, tempMnemonic, updateUser, multiChainAddresses } = useGameStore()
 
-  if (!rawUser) {
-    return (
-      <div className="min-h-screen bg-[#0a0c10] flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-neon-cyan font-mono text-xs animate-pulse">DECRYPTING_VAULT...</p>
-      </div>
-    );
-  }
+  const isGuestMode = !rawUser;
 
-  const user = rawUser;
+  const user = rawUser || {
+    civicId: 'did:civic:guest_' + Math.random().toString(36).substring(2, 8),
+    username: 'SovereignCitizen',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=civicverse',
+    trustScore: 75,
+    level: 1,
+    verificationLevel: 1,
+    attestationCount: 1,
+    character: {
+      skinColor: '#e0ac69',
+      hairColor: '#4a3b2a',
+      shirtColor: '#00d9ff',
+      pantsColor: '#1a1a2e',
+      shoesColor: '#333333',
+      hairStyle: 'short' as const,
+      accessory: 'none' as const,
+      bodyType: 'athletic' as const
+    }
+  };
 
   const wallet = rawWallet || {
-    address: multiChainAddresses?.ETH || (rawUser.civicId ? rawUser.civicId.replace('did:civic:', '0x').slice(0, 42) : '0x...'),
+    address: multiChainAddresses?.ETH || (user.civicId ? user.civicId.replace('did:civic:', '0x').slice(0, 42) : '0x...'),
     balance: 100.0,
     pendingBalance: 0,
     currency: 'CIVIC'
   };
 
+  const [avatarViewMode, setAvatarViewMode] = useState<'3d' | '2d'>('3d');
   const [showSeed, setShowSeed] = useState(false)
   const [aiStatus, setAiStatus] = useState({ status: 'online', model: 'v1.4' })
   const [verifying, setVerifying] = useState(false)
@@ -37,6 +49,7 @@ export default function CivicVaultPage() {
   const [verifError, setVerifError] = useState('')
   const [showSendModal, setShowSendModal] = useState(false)
   const [sendData, setSendData] = useState({ address: '', amount: '' })
+  const [microTxMessage, setMicroTxMessage] = useState('')
 
   // Mock Receipts / Asset Proofs
   const [receipts] = useState([
@@ -150,6 +163,25 @@ export default function CivicVaultPage() {
 
       <div className="relative z-10 container mx-auto max-w-6xl pt-4 pb-24 px-4">
         
+        {/* Guest Mode Onboarding Banner */}
+        {isGuestMode && (
+          <div className="mb-6 p-3.5 bg-gradient-to-r from-neon-cyan/20 via-purple-600/20 to-neon-pink/20 border border-neon-cyan/50 rounded-2xl flex flex-wrap items-center justify-between gap-3 backdrop-blur-md shadow-[0_0_25px_rgba(0,217,255,0.25)]">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">✨</span>
+              <div>
+                <p className="text-xs font-black uppercase text-white tracking-wider">Preview Guest Session Active</p>
+                <p className="text-[10px] text-gray-300">Ready to save your sovereign avatar, password, and wallet foreal?</p>
+              </div>
+            </div>
+            <button
+              onClick={() => nav('/signup')}
+              className="bg-neon-cyan hover:bg-cyan-300 text-black font-black text-xs px-4 py-2 rounded-xl uppercase tracking-wider shadow-[0_0_15px_rgba(0,217,255,0.4)] transition-all"
+            >
+              Mint Real Encrypted CivicID
+            </button>
+          </div>
+        )}
+
         {/* Verification Status (Top Bar) */}
         <div className="flex justify-center mb-8 animate-slide-up">
            <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-full px-6 py-3 flex items-center gap-6">
@@ -190,9 +222,24 @@ export default function CivicVaultPage() {
 
         {/* Header Avatar & Identity Section (Top Center) */}
         <div className="flex flex-col items-center mb-12 animate-slide-up">
-          <div className="w-64 h-80 relative cursor-pointer group mb-4">
-            <img src={user.avatar} alt="avatar" className="w-full h-full object-cover rounded-3xl" />
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+          <div className="w-72 h-88 relative rounded-3xl overflow-hidden border border-neon-cyan/40 bg-gradient-to-b from-[#0e1626] to-black shadow-[0_0_35px_rgba(0,217,255,0.2)] mb-4 group">
+            {avatarViewMode === '3d' && user.character ? (
+              <CharacterViewer
+                config={user.character}
+                className="w-full h-full"
+                animate={true}
+              />
+            ) : (
+              <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+            )}
+
+            {/* Overlay Badges */}
+            <div className="absolute top-3 left-3 bg-black/70 border border-neon-cyan/50 backdrop-blur-md px-2.5 py-1 rounded-full text-[8px] font-black uppercase text-neon-cyan flex items-center gap-1.5 shadow-[0_0_10px_rgba(0,217,255,0.3)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse" />
+              <span>NON-CUSTODIAL 3D AVATAR</span>
+            </div>
+
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
               <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border backdrop-blur-md text-[8px] font-black uppercase tracking-tighter ${
                 aiStatus.status === 'online' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'
               }`}>
@@ -205,10 +252,58 @@ export default function CivicVaultPage() {
             <NeonText size="5xl" gradient={true} className="block tracking-tighter uppercase font-black mb-1">
               {user.username}
             </NeonText>
-            <code className="text-[9px] bg-white/5 border border-white/10 px-3 py-1 rounded-full text-gray-500 font-mono">
+            <code className="text-[9px] bg-white/5 border border-white/10 px-3 py-1 rounded-full text-gray-400 font-mono">
               {user.civicId}
             </code>
           </div>
+
+          {/* Quick Action CTA Bar: Bring Avatar to Foyer */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
+            <button
+              onClick={() => nav('/foyer')}
+              className="flex items-center gap-2 bg-gradient-to-r from-neon-cyan via-cyan-400 to-blue-500 hover:opacity-95 text-black font-black text-xs px-6 py-3 rounded-full uppercase tracking-wider shadow-[0_0_25px_rgba(0,217,255,0.45)] transform active:scale-95 transition-all"
+            >
+              <span className="text-sm">🚀</span>
+              <span>Enter Gathering Grounds Foyer</span>
+            </button>
+
+            <button
+              onClick={() => nav('/wardrobe')}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs px-5 py-3 rounded-full uppercase tracking-wider transition-all"
+            >
+              <span>👕</span>
+              <span>Wardrobe Studio</span>
+            </button>
+
+            <button
+              onClick={() => setAvatarViewMode(avatarViewMode === '3d' ? '2d' : '3d')}
+              className="text-[10px] text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-3 py-2 rounded-full uppercase tracking-widest transition-all"
+            >
+              {avatarViewMode === '3d' ? '2D View' : '3D View'}
+            </button>
+
+            <button
+              onClick={async () => {
+                try {
+                  const result = await useGameStore.getState().processMicrotransaction?.(5, 'Community Treasury', 'Civic UBI Contribution');
+                  setMicroTxMessage(`✓ Contributed 5.0 CIVIC! 0.05 CIVIC routed to Sovereign UBI Pool.`);
+                  setTimeout(() => setMicroTxMessage(''), 5000);
+                } catch (e: any) {
+                  alert(e.message || 'Microtransaction failed');
+                }
+              }}
+              className="flex items-center gap-1.5 bg-neon-pink/20 hover:bg-neon-pink/30 border border-neon-pink/50 text-neon-pink font-bold text-xs px-4 py-3 rounded-full uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(255,0,128,0.25)]"
+            >
+              <span>💸</span>
+              <span>1% UBI Micro-Contribution</span>
+            </button>
+          </div>
+
+          {microTxMessage && (
+            <div className="mt-3 px-4 py-1.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-emerald-400 font-mono text-[11px] font-bold animate-bounce">
+              {microTxMessage}
+            </div>
+          )}
 
           {/* Portal Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 w-full max-w-4xl">

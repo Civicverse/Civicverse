@@ -131,6 +131,7 @@ export interface GameState {
   createProposal?: (title: string, amount: number) => void;
   voteProposal?: (proposalId: string, support: boolean) => void;
   distributeUBI?: (amount: number) => Promise<void>;
+  processMicrotransaction?: (amount: number, recipient?: string, memo?: string) => Promise<{ grossAmount: number; taxAmount: number; netAmount: number }>;
   // Mining
   miningFacilities?: MiningFacility[];
   totalCryptoMined?: Record<string, number>;
@@ -275,8 +276,8 @@ export const useGameStore = create<GameState>((set) => ({
       let currentMultiChain: Record<string, string> | null = null;
       let currentMnemonic: string | null = null;
 
-      // Check if session password is in sessionStorage (active tab session)
-      const sessionPass = sessionStorage.getItem('civicverse_session_pass');
+      // Check if session password is in sessionStorage (active tab session) or localStorage (saved device session)
+      const sessionPass = sessionStorage.getItem('civicverse_session_pass') || localStorage.getItem('civicverse_saved_session');
       if (hasIdentity && sessionPass) {
         try {
           const identity = await CivicIdentity.restore(sessionPass);
@@ -312,13 +313,30 @@ export const useGameStore = create<GameState>((set) => ({
               currentMultiChain = multiChainAddresses;
               currentMnemonic = civicWallet.mnemonic;
               (window as any)._cv_session_pass = sessionPass;
+              try { sessionStorage.setItem('civicverse_session_pass', sessionPass); } catch (e) {}
               isAuth = true;
             }
           }
         } catch (e) {
           console.warn('[store] Session restoration failed:', e);
           sessionStorage.removeItem('civicverse_session_pass');
+          localStorage.removeItem('civicverse_saved_session');
         }
+      }
+
+      // If still not authenticated but user cache exists in localStorage, load for smooth preview
+      if (!currentUser) {
+        try {
+          const savedStr = localStorage.getItem('civicverse_user');
+          if (savedStr) {
+            const parsed = JSON.parse(savedStr);
+            if (parsed.user) {
+              currentUser = parsed.user;
+              currentWallet = parsed.wallet || null;
+              currentMultiChain = parsed.multiChainAddresses || null;
+            }
+          }
+        } catch (e) {}
       }
 
       set({ 
@@ -415,10 +433,11 @@ export const useGameStore = create<GameState>((set) => ({
         currency: 'CIVIC',
       };
 
-      // Store password in session memory (not localStorage) for updates
+      // Store password in session memory and local saved session
       (window as any)._cv_session_pass = password;
       try {
         sessionStorage.setItem('civicverse_session_pass', password);
+        localStorage.setItem('civicverse_saved_session', password);
       } catch (e) {}
 
       set({
@@ -518,10 +537,11 @@ export const useGameStore = create<GameState>((set) => ({
 
       console.log('Signup SUCCESS. tempMnemonic set:', !!civicWallet.mnemonic);
 
-      // Store password in session memory & sessionStorage
+      // Store password in session memory & sessionStorage & persistent device session
       (window as any)._cv_session_pass = password;
       try {
         sessionStorage.setItem('civicverse_session_pass', password);
+        localStorage.setItem('civicverse_saved_session', password);
       } catch (e) {}
 
       await secureStorage.setItem('civicId', realCivicId);
@@ -557,6 +577,7 @@ export const useGameStore = create<GameState>((set) => ({
   logout: async () => {
     try {
       sessionStorage.removeItem('civicverse_session_pass');
+      localStorage.removeItem('civicverse_saved_session');
     } catch (e) {}
     (window as any)._cv_session_pass = null;
     await secureStorage.removeItem('civicId');
@@ -576,6 +597,73 @@ export const useGameStore = create<GameState>((set) => ({
       tempMnemonic: null,
     });
     console.debug('[auth] logout - session and wallet cleared');
+  },
+
+  updateCharacter: async (config: CharacterConfig) => {
+    set((state) => {
+      if (!state.user) return state;
+      const updatedUser = { ...state.user, character: config };
+      localStorage.setItem('civicverse_user', JSON.stringify({
+        user: updatedUser,
+        wallet: state.wallet,
+        multiChainAddresses: state.multiChainAddresses
+      }));
+      return { user: updatedUser };
+    });
+
+    // Notify multiplayer system immediately
+    try {
+      const { useMultiplayerStore } = await import('../services/multiplayer');
+      const currentUser = get().user;
+      if (currentUser) {
+        useMultiplayerStore.getState().setIdentity(currentUser.username, config);
+      }
+    } catch (e) {}
+
+    const pass = (window as any)._cv_session_pass || sessionStorage.getItem('civicverse_session_pass') || localStorage.getItem('civicverse_saved_session');
+    if (pass) {
+      try {
+        await CivicIdentity.updateIdentity(pass, { characterConfig: config });
+        console.debug('[character] successfully persisted character config to encrypted identity');
+      } catch (err) {
+        console.warn('[character] failed to persist to encrypted identity:', err);
+      }
+    }
+  },
+
+  processMicrotransaction: async (amount: number, recipient = 'Community Treasury', memo = 'Citizen Micro-Contribution') => {
+    const amt = Math.max(0.1, amount);
+    const tax = amt * 0.01;
+    const net = amt - tax;
+
+    set((state) => {
+      if (!state.wallet || state.wallet.balance < amt) {
+        throw new Error('Insufficient balance for microtransaction.');
+      }
+      const updatedWallet = { ...state.wallet, balance: Math.max(0, state.wallet.balance - amt) };
+      const updatedUser = state.user ? {
+        ...state.user,
+        trustScore: Math.min(100, (state.user.trustScore || 50) + 1),
+        attestationCount: Math.min(3, (state.user.attestationCount || 0) + 1)
+      } : null;
+
+      try {
+        localStorage.setItem('civicverse_user', JSON.stringify({
+          user: updatedUser,
+          wallet: updatedWallet,
+          multiChainAddresses: state.multiChainAddresses
+        }));
+      } catch (e) {}
+
+      return { wallet: updatedWallet, user: updatedUser };
+    });
+
+    try {
+      const { useMultiplayerStore } = await import('../services/multiplayer');
+      useMultiplayerStore.getState().sendMicrotransaction(amt, memo);
+    } catch (e) {}
+
+    return { grossAmount: amt, taxAmount: tax, netAmount: net };
   },
 
   updateUser: (userUpdates) =>
@@ -871,33 +959,6 @@ export const useGameStore = create<GameState>((set) => ({
       currentJobStatus: verificationResult ? 'completed' : 'verifying',
       currentJobProgress: verificationResult ? 100 : 50,
     }));
-  },
-
-  updateCharacter: async (config) => {
-    const password = (window as any)._cv_session_pass || sessionStorage.getItem('civicverse_session_pass');
-    if (!password) {
-      throw new Error('Session expired. Please log in again to save changes.');
-    }
-
-    set({ loading: true });
-    try {
-      await CivicIdentity.updateIdentity(password, { characterConfig: config });
-      set((state) => ({
-        user: state.user ? { ...state.user, character: config } : null,
-        loading: false
-      }));
-      
-      // Update the local user cache too
-      const savedUserStr = localStorage.getItem('civicverse_user');
-      if (savedUserStr) {
-        const savedUser = JSON.parse(savedUserStr);
-        savedUser.user.character = config;
-        localStorage.setItem('civicverse_user', JSON.stringify(savedUser));
-      }
-    } catch (e) {
-      set({ loading: false });
-      throw e;
-    }
   },
 
   completeJob: async (jobId) => {
