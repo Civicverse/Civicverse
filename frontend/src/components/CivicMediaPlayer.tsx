@@ -38,9 +38,6 @@ import {
 export const CivicMediaPlayer: React.FC = () => {
   const { user } = useGameStore();
 
-  // Active Service Tab
-  const [activeMediaTab, setActiveMediaTab] = useState<'Civic Radio' | 'Spotify' | 'iTunes' | 'Podcasts'>('Civic Radio');
-
   // Playback state
   const [currentStation, setCurrentStation] = useState<MediaStation>(() => getLastPlayedStation());
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -254,121 +251,42 @@ export const CivicMediaPlayer: React.FC = () => {
   };
 
   // --------------------------------------------------------------------------
-  // CARDS CONFIGURATION PER TAB
+  // CARDS CONFIGURATION (FOYER FM)
   // --------------------------------------------------------------------------
-  const getCards = () => {
-    if (activeMediaTab === 'Podcasts') {
-      return [
-        {
-          id: 'defcon-radio',
-          title: 'DEF CON Talk',
-          sub: 'Hacker Cypherpunk',
-          color: 'bg-purple-600',
-          icon: Podcast,
-          station: CURATED_STATIONS[0]
-        },
-        {
-          id: 'npr-news',
-          title: 'NPR 24/7 Live',
-          sub: 'News & Journalism',
-          color: 'bg-blue-600',
-          icon: Radio,
-          station: CURATED_STATIONS[2]
-        },
-        {
-          id: 'bbc-world',
-          title: 'BBC World News',
-          sub: 'Global Documentaries',
-          color: 'bg-red-600',
-          icon: Radio,
-          station: CURATED_STATIONS[3]
-        },
-        {
-          id: 'hacker-public',
-          title: 'Hacker Public Radio',
-          sub: 'Open Source Tech',
-          color: 'bg-cyan-600',
-          icon: Podcast,
-          station: CURATED_STATIONS[1]
-        }
-      ];
+  const cards = [
+    {
+      id: 'nightwave-plaza',
+      title: 'Nightwave Plaza',
+      sub: 'Vaporwave & Synth',
+      color: 'bg-pink-600',
+      icon: Music,
+      station: CURATED_STATIONS[5]
+    },
+    {
+      id: 'atomicwave',
+      title: 'Atomicwave FM',
+      sub: 'Dark Synth / Cyber',
+      color: 'bg-cyan-600',
+      icon: Zap,
+      station: CURATED_STATIONS[6]
+    },
+    {
+      id: 'defcon-radio',
+      title: 'Soma: DEF CON',
+      sub: 'Music for Hacking',
+      color: 'bg-purple-600',
+      icon: Radio,
+      station: CURATED_STATIONS[0]
+    },
+    {
+      id: 'groove-salad',
+      title: 'Groove Salad',
+      sub: 'Ambient Downtempo',
+      color: 'bg-emerald-600',
+      icon: Heart,
+      station: CURATED_STATIONS[8]
     }
-
-    if (activeMediaTab === 'Spotify' || activeMediaTab === 'iTunes') {
-      return [
-        {
-          id: 'nightwave-plaza',
-          title: 'Liked Songs',
-          sub: '2,341 songs',
-          color: 'bg-purple-600',
-          icon: Heart,
-          station: CURATED_STATIONS[5]
-        },
-        {
-          id: 'civicverse-hits',
-          title: 'Civicverse Hits',
-          sub: '50 songs',
-          color: 'bg-cyan-600',
-          icon: Music,
-          station: CURATED_STATIONS[6]
-        },
-        {
-          id: 'workout-mode',
-          title: 'Workout Mode',
-          sub: '65 songs',
-          color: 'bg-amber-600',
-          icon: Zap,
-          station: CURATED_STATIONS[0]
-        },
-        {
-          id: 'focus-flow',
-          title: 'Focus Flow',
-          sub: '120 songs',
-          color: 'bg-blue-600',
-          icon: Radio,
-          station: CURATED_STATIONS[8]
-        }
-      ];
-    }
-
-    // Default 'Civic Radio'
-    return [
-      {
-        id: 'nightwave-plaza',
-        title: 'Nightwave Plaza',
-        sub: 'Vaporwave & Synth',
-        color: 'bg-pink-600',
-        icon: Music,
-        station: CURATED_STATIONS[5]
-      },
-      {
-        id: 'atomicwave',
-        title: 'Atomicwave FM',
-        sub: 'Dark Synth / Cyber',
-        color: 'bg-cyan-600',
-        icon: Zap,
-        station: CURATED_STATIONS[6]
-      },
-      {
-        id: 'defcon-radio',
-        title: 'Soma: DEF CON',
-        sub: 'Music for Hacking',
-        color: 'bg-purple-600',
-        icon: Radio,
-        station: CURATED_STATIONS[0]
-      },
-      {
-        id: 'groove-salad',
-        title: 'Groove Salad',
-        sub: 'Ambient Downtempo',
-        color: 'bg-emerald-600',
-        icon: Heart,
-        station: CURATED_STATIONS[8]
-      }
-    ];
-  };
-
-  const cards = getCards();
+  ];
 
   const handleCardClick = (cardStation: MediaStation) => {
     playStation(cardStation);
@@ -395,15 +313,15 @@ export const CivicMediaPlayer: React.FC = () => {
       <div className="p-2.5 px-3 bg-[#0d131f] flex items-center justify-between border-b border-gray-800/60 shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-black tracking-wider text-gray-300 uppercase">MEDIA PLAYER</span>
-          <span className="text-[9px] bg-cyan-950/70 border border-cyan-500/30 text-cyan-300 font-mono px-1 rounded uppercase">
-            60K+ OPEN
+          <span className="text-[9px] bg-cyan-950/70 border border-cyan-500/30 text-cyan-300 font-mono px-1.5 py-0.5 rounded uppercase font-bold">
+            FOYER FM
           </span>
         </div>
         <div className="flex items-center gap-1 text-gray-400">
           <button 
             onClick={() => setShowExplorer(true)} 
             className="hover:text-white p-0.5" 
-            title="Search 60,000+ Stations & Live Podcasts"
+            title="Search 60,000+ Stations & Live Tuner"
           >
             <Search className="w-3.5 h-3.5 text-cyan-400" />
           </button>
@@ -418,48 +336,20 @@ export const CivicMediaPlayer: React.FC = () => {
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* 2. SERVICE TABS (iTUNES, SPOTIFY, CIVIC RADIO, PODCASTS)              */}
+      {/* 2. STATION CHANNEL: FOYER FM                                         */}
       {/* -------------------------------------------------------------------- */}
-      <div className="flex items-center gap-3 px-3 py-1.5 border-b border-gray-800/50 text-xs font-bold text-gray-400 shrink-0 overflow-x-auto scrollbar-none">
-        <button 
-          onClick={() => setActiveMediaTab('Civic Radio')} 
-          className={`relative py-0.5 transition-colors ${
-            activeMediaTab === 'Civic Radio' ? 'text-cyan-400 font-extrabold' : 'hover:text-gray-300'
-          }`}
-        >
-          Civic Radio
-          {activeMediaTab === 'Civic Radio' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400" />}
-        </button>
-
-        <button 
-          onClick={() => setActiveMediaTab('Podcasts')} 
-          className={`relative py-0.5 transition-colors ${
-            activeMediaTab === 'Podcasts' ? 'text-purple-400 font-extrabold' : 'hover:text-gray-300'
-          }`}
-        >
-          🎙️ Podcasts
-          {activeMediaTab === 'Podcasts' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-400" />}
-        </button>
-
-        <button 
-          onClick={() => setActiveMediaTab('Spotify')} 
-          className={`relative py-0.5 transition-colors ${
-            activeMediaTab === 'Spotify' ? 'text-emerald-400 font-extrabold' : 'hover:text-gray-300'
-          }`}
-        >
-          Spotify
-          {activeMediaTab === 'Spotify' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400" />}
-        </button>
-
-        <button 
-          onClick={() => setActiveMediaTab('iTunes')} 
-          className={`relative py-0.5 transition-colors ${
-            activeMediaTab === 'iTunes' ? 'text-white' : 'hover:text-gray-300'
-          }`}
-        >
-          iTunes
-          {activeMediaTab === 'iTunes' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
-        </button>
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-800/50 text-xs font-bold shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="relative py-0.5 text-cyan-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span>Foyer FM</span>
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400 shadow-[0_0_8px_#00f3ff]" />
+          </span>
+        </div>
+        <span className="text-[9px] text-cyan-400/80 font-mono tracking-wider flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>24/7 BROADCAST</span>
+        </span>
       </div>
 
       {/* -------------------------------------------------------------------- */}
@@ -592,9 +482,9 @@ export const CivicMediaPlayer: React.FC = () => {
             <div className="p-3 bg-[#0d1424] border-b border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
-                <span className="text-sm font-black text-white tracking-wider">CIVICVERSE GLOBAL MEDIA TUNER</span>
+                <span className="text-sm font-black text-white tracking-wider">FOYER FM GLOBAL TUNER</span>
                 <span className="text-[10px] bg-cyan-950 border border-cyan-500/40 text-cyan-300 px-2 py-0.5 rounded font-mono">
-                  60,000+ OPEN STATIONS & PODCASTS
+                  60,000+ OPEN STATIONS
                 </span>
               </div>
               <button onClick={() => setShowExplorer(false)} className="text-gray-400 hover:text-white p-1">
