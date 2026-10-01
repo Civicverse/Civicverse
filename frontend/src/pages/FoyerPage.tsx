@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
-import { GodotFoyer } from '../components';
+import { GodotFoyer, CivicMediaPlayer } from '../components';
 import { 
   Shield, 
   Search, 
@@ -48,11 +48,6 @@ export default function FoyerPage() {
   const { user } = useGameStore();
   const [activeTopTab, setActiveTopTab] = useState('WORLD');
   const [activeNewsTab, setActiveNewsTab] = useState('Following');
-  const [activeMediaTab, setActiveMediaTab] = useState('Spotify');
-  
-  // Audio state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
   
   // Real-time Multiplayer Chat state
@@ -378,118 +373,9 @@ export default function FoyerPage() {
             </div>
           </div>
 
-          {/* SECTION B: MEDIA PLAYER */}
-          <div className="h-64 flex flex-col bg-[#080c14] overflow-hidden">
-            {/* Header */}
-            <div className="p-2.5 px-3 bg-[#0d131f] flex items-center justify-between border-b border-gray-800/60">
-              <span className="text-xs font-black tracking-wider text-gray-300 uppercase">MEDIA PLAYER</span>
-              <div className="flex items-center gap-1 text-gray-400">
-                <button className="hover:text-white p-0.5"><MoreHorizontal className="w-3.5 h-3.5" /></button>
-                <button className="hover:text-white p-0.5"><X className="w-3.5 h-3.5" /></button>
-              </div>
-            </div>
-
-            {/* Service Tabs */}
-            <div className="flex items-center gap-4 px-3 py-1.5 border-b border-gray-800/50 text-xs font-bold text-gray-400">
-              <button 
-                onClick={() => setActiveMediaTab('iTunes')} 
-                className={activeMediaTab === 'iTunes' ? 'text-white' : 'hover:text-gray-300'}
-              >
-                iTunes
-              </button>
-              <button 
-                onClick={() => setActiveMediaTab('Spotify')} 
-                className={`relative py-0.5 ${activeMediaTab === 'Spotify' ? 'text-emerald-400 font-extrabold' : 'hover:text-gray-300'}`}
-              >
-                Spotify
-                {activeMediaTab === 'Spotify' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400" />}
-              </button>
-              <button 
-                onClick={() => setActiveMediaTab('Civic Radio')} 
-                className={activeMediaTab === 'Civic Radio' ? 'text-white' : 'hover:text-gray-300'}
-              >
-                Civic Radio
-              </button>
-            </div>
-
-            <div className="p-2.5 flex-1 flex flex-col justify-between overflow-hidden">
-              <p className="text-[11px] text-gray-400">Good afternoon, <strong className="text-white">{user?.username || 'XJAY420X'}</strong></p>
-
-              {/* 2x2 Playlist Grid */}
-              <div className="grid grid-cols-2 gap-2 my-1">
-                <div className="bg-[#121927] border border-gray-800 rounded-lg p-2 flex items-center gap-2 cursor-pointer hover:border-cyan-500/50 transition-all">
-                  <div className="w-7 h-7 bg-purple-600 rounded flex items-center justify-center shrink-0">
-                    <Heart className="w-4 h-4 text-white fill-current" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-bold text-white truncate">Liked Songs</div>
-                    <div className="text-[8px] text-gray-400">2,341 songs</div>
-                  </div>
-                </div>
-
-                <div className="bg-[#121927] border border-gray-800 rounded-lg p-2 flex items-center gap-2 cursor-pointer hover:border-cyan-500/50 transition-all">
-                  <div className="w-7 h-7 bg-cyan-600 rounded flex items-center justify-center shrink-0">
-                    <Music className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-bold text-white truncate">Civicverse Hits</div>
-                    <div className="text-[8px] text-gray-400">50 songs</div>
-                  </div>
-                </div>
-
-                <div className="bg-[#121927] border border-gray-800 rounded-lg p-2 flex items-center gap-2 cursor-pointer hover:border-cyan-500/50 transition-all">
-                  <div className="w-7 h-7 bg-amber-600 rounded flex items-center justify-center shrink-0">
-                    <Zap className="w-4 h-4 text-white fill-current" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-bold text-white truncate">Workout Mode</div>
-                    <div className="text-[8px] text-gray-400">65 songs</div>
-                  </div>
-                </div>
-
-                <div className="bg-[#121927] border border-gray-800 rounded-lg p-2 flex items-center gap-2 cursor-pointer hover:border-cyan-500/50 transition-all">
-                  <div className="w-7 h-7 bg-blue-600 rounded flex items-center justify-center shrink-0">
-                    <Radio className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-bold text-white truncate">Focus Flow</div>
-                    <div className="text-[8px] text-gray-400">120 songs</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Now Playing Active Track Bar */}
-              <div className="bg-[#0f1522] border border-[#1f2b3e] rounded-xl p-2 flex items-center gap-2.5">
-                <img 
-                  src="/images/rooftop_garden.jpg" 
-                  alt="Track Cover" 
-                  className="w-10 h-10 rounded-lg object-cover shrink-0 border border-purple-500/30"
-                />
-
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-bold text-white truncate">Conquer The Day</div>
-                  <div className="text-[9px] text-gray-400 truncate">EpicSoulz • Civicverse Vol. 1</div>
-                  
-                  {/* Progress Bar */}
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <div className="flex-1 bg-gray-800 h-1 rounded-full overflow-hidden">
-                      <div className="bg-emerald-400 h-full w-[45%]" />
-                    </div>
-                    <span className="text-[8px] font-mono text-gray-400">1:42 / 3:45</span>
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center gap-1 text-gray-300 shrink-0">
-                  <button onClick={() => setIsMuted(!isMuted)} className="hover:text-white p-1">
-                    {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5" />}
-                  </button>
-                  <button onClick={() => setIsPlaying(!isPlaying)} className="w-7 h-7 bg-emerald-500 rounded-full text-black flex items-center justify-center hover:scale-105 transition-all shadow-[0_0_10px_#10b981]">
-                    {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
-                  </button>
-                </div>
-              </div>
-            </div>
+          {/* SECTION B: CIVIC MEDIA PLAYER (FREE & OPEN SOURCE 60,000+ STATIONS & LIVE PODCASTS) */}
+          <div className="h-72 flex flex-col bg-[#080c14] overflow-hidden shrink-0">
+            <CivicMediaPlayer />
           </div>
         </aside>
 
