@@ -5,25 +5,20 @@ import {
   Pause, 
   Volume2, 
   VolumeX, 
-  SkipBack, 
-  SkipForward, 
-  Star, 
+  Heart, 
+  Music, 
+  Zap, 
   Radio, 
   Podcast, 
-  Zap, 
   Search, 
   Maximize2, 
-  Minimize2, 
-  ExternalLink, 
-  RefreshCw, 
-  Plus, 
-  Check, 
   X, 
-  Headphones,
-  Music,
-  Link as LinkIcon,
-  Sparkles
+  MoreHorizontal,
+  RefreshCw,
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
+import { useGameStore } from '../store/gameStore';
 import { 
   MediaStation, 
   PodcastEpisode, 
@@ -40,46 +35,27 @@ import {
   saveLastPlayedStation 
 } from '../services/mediaService';
 
-interface CivicMediaPlayerProps {
-  onStationChange?: (station: MediaStation) => void;
-}
+export const CivicMediaPlayer: React.FC = () => {
+  const { user } = useGameStore();
 
-export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationChange }) => {
-  // Navigation / Tab state
-  const [activeTab, setActiveTab] = useState<'PODCAST' | 'SYNTH' | 'RADIO' | 'FAVORITES' | 'CUSTOM'>('SYNTH');
-  
-  // Audio playback state
+  // Active Service Tab
+  const [activeMediaTab, setActiveMediaTab] = useState<'Civic Radio' | 'Spotify' | 'iTunes' | 'Podcasts'>('Civic Radio');
+
+  // Playback state
   const [currentStation, setCurrentStation] = useState<MediaStation>(() => getLastPlayedStation());
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackState, setPlaybackState] = useState<'idle' | 'buffering' | 'playing' | 'error'>('idle');
   const [volume, setVolume] = useState<number>(0.8);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [streamDuration, setStreamDuration] = useState<number>(0);
-  const [streamPosition, setStreamPosition] = useState<number>(0);
+  const [streamTime, setStreamTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Station library & search states
-  const [stations, setStations] = useState<MediaStation[]>(CURATED_STATIONS);
-  const [favorites, setFavorites] = useState<MediaStation[]>(() => getFavorites());
+  // Search & Explorer Modal
+  const [showExplorer, setShowExplorer] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<MediaStation[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [selectedTag, setSelectedTag] = useState<string>('synthwave');
-
-  // Live Podcast Tune-In state
-  const [podcastQuery, setPodcastQuery] = useState<string>('Darknet Diaries');
-  const [podcastSearchResults, setPodcastSearchResults] = useState<any[]>([]);
-  const [isSearchingPodcasts, setIsSearchingPodcasts] = useState<boolean>(false);
-  const [podcastEpisodes, setPodcastEpisodes] = useState<PodcastEpisode[]>([]);
-  const [activePodcastTitle, setActivePodcastTitle] = useState<string>('');
-  const [isLoadingEpisodes, setIsLoadingEpisodes] = useState<boolean>(false);
-
-  // Custom Stream URL state
-  const [customUrl, setCustomUrl] = useState<string>('');
-  const [customName, setCustomName] = useState<string>('');
-
-  // UI state
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [showVolumePopup, setShowVolumePopup] = useState<boolean>(false);
 
   // Howler reference
   const howlRef = useRef<Howl | null>(null);
@@ -88,12 +64,11 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
   const animFrameRef = useRef<number | null>(null);
 
   // --------------------------------------------------------------------------
-  // AUDIO ENGINE INITIALIZATION & STREAM MANAGEMENT (HOWLER.JS)
+  // AUDIO ENGINE (HOWLER.JS WITH HTML5 STREAMING POOL)
   // --------------------------------------------------------------------------
   const playStation = (station: MediaStation) => {
     if (!station || !station.url) return;
 
-    // If already playing this station, toggle play/pause
     if (currentStation.id === station.id && howlRef.current) {
       if (isPlaying) {
         howlRef.current.pause();
@@ -107,14 +82,11 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
       return;
     }
 
-    // Stop and unload existing stream instance
     if (howlRef.current) {
       try {
         howlRef.current.stop();
         howlRef.current.unload();
-      } catch (e) {
-        console.warn('Error stopping previous howl:', e);
-      }
+      } catch (e) {}
       howlRef.current = null;
     }
 
@@ -123,23 +95,19 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
     setPlaybackState('buffering');
     setErrorMessage(null);
     setIsPlaying(true);
-    setStreamPosition(0);
-
-    if (onStationChange) {
-      onStationChange(station);
-    }
+    setStreamTime(0);
 
     try {
       const sound = new Howl({
         src: [station.url],
-        html5: true, // Enables true continuous streaming for live radio & podcast streams
+        html5: true, // Enables continuous buffering for live radio & podcast streams
         format: station.codec ? [station.codec.toLowerCase(), 'mp3', 'aac', 'ogg'] : ['mp3', 'aac', 'ogg'],
         volume: isMuted ? 0 : volume,
         autoplay: true,
         onload: () => {
           setPlaybackState('playing');
           setIsPlaying(true);
-          setStreamDuration(sound.duration());
+          setDuration(sound.duration() || 0);
         },
         onplay: () => {
           setPlaybackState('playing');
@@ -154,32 +122,27 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
           setPlaybackState('idle');
         },
         onloaderror: (_id, err) => {
-          console.warn('Howler stream load error:', err, station.url);
+          console.warn('Howler stream error:', err);
           setPlaybackState('error');
           setIsPlaying(false);
-          setErrorMessage('Stream connection timed out or offline');
+          setErrorMessage('Stream connection offline');
         },
-        onplayerror: (_id, err) => {
-          console.warn('Howler stream play error:', err);
-          sound.once('unlock', () => {
-            sound.play();
-          });
+        onplayerror: () => {
+          sound.once('unlock', () => sound.play());
           setPlaybackState('error');
           setIsPlaying(false);
-          setErrorMessage('Audio locked by browser - tap play to unlock');
+          setErrorMessage('Tap play to unlock browser audio');
         }
       });
 
       howlRef.current = sound;
     } catch (err: any) {
-      console.error('Failed to instantiate stream player:', err);
       setPlaybackState('error');
       setIsPlaying(false);
-      setErrorMessage(err.message || 'Stream initialization error');
+      setErrorMessage(err.message || 'Stream error');
     }
   };
 
-  // Toggle Play / Pause
   const handleTogglePlay = () => {
     if (!howlRef.current) {
       playStation(currentStation);
@@ -197,33 +160,6 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
     }
   };
 
-  // Skip to Next Station in current list
-  const handleSkipNext = () => {
-    const list = getActiveStationList();
-    if (!list || list.length === 0) return;
-    const currentIndex = list.findIndex(s => s.id === currentStation.id || s.url === currentStation.url);
-    const nextIndex = (currentIndex + 1) % list.length;
-    playStation(list[nextIndex]);
-  };
-
-  // Skip to Previous Station in current list
-  const handleSkipPrevious = () => {
-    const list = getActiveStationList();
-    if (!list || list.length === 0) return;
-    const currentIndex = list.findIndex(s => s.id === currentStation.id || s.url === currentStation.url);
-    const prevIndex = (currentIndex - 1 + list.length) % list.length;
-    playStation(list[prevIndex]);
-  };
-
-  // Volume & Mute Controls
-  const handleVolumeChange = (newVolume: number) => {
-    setVolume(newVolume);
-    setIsMuted(newVolume === 0);
-    if (howlRef.current) {
-      howlRef.current.volume(newVolume);
-    }
-  };
-
   const handleToggleMute = () => {
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
@@ -232,23 +168,72 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
     }
   };
 
-  // Seek position tracker (for podcast episodes)
+  const handleVolumeChange = (newVol: number) => {
+    setVolume(newVol);
+    setIsMuted(newVol === 0);
+    if (howlRef.current) {
+      howlRef.current.volume(newVol);
+    }
+  };
+
+  // Live timer & position tracker
   useEffect(() => {
     if (isPlaying) {
       timerRef.current = window.setInterval(() => {
-        if (howlRef.current && howlRef.current.playing()) {
-          const pos = typeof howlRef.current.seek() === 'number' ? (howlRef.current.seek() as number) : 0;
-          setStreamPosition(pos);
-        }
+        setStreamTime(t => t + 1);
       }, 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isPlaying]);
+
+  // Audio Visualizer Canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let barHeights = new Array(18).fill(2);
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const numBars = 18;
+      const barWidth = Math.max(2, (canvas.width / numBars) - 1.5);
+
+      for (let i = 0; i < numBars; i++) {
+        if (isPlaying && playbackState === 'playing') {
+          const target = Math.random() * (canvas.height * 0.9) + 2;
+          barHeights[i] += (target - barHeights[i]) * 0.35;
+        } else if (playbackState === 'buffering') {
+          barHeights[i] = (Math.sin(Date.now() / 250 + i * 0.4) + 1) * (canvas.height * 0.4) + 2;
+        } else {
+          barHeights[i] += (2 - barHeights[i]) * 0.2;
+        }
+
+        const h = Math.max(2, barHeights[i]);
+        const x = i * (barWidth + 1.5);
+        const y = canvas.height - h;
+
+        const grad = ctx.createLinearGradient(0, y, 0, canvas.height);
+        grad.addColorStop(0, '#00f3ff');
+        grad.addColorStop(1, '#10b981');
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y, barWidth, h);
+      }
+
+      animFrameRef.current = requestAnimationFrame(render);
+    };
+
+    animFrameRef.current = requestAnimationFrame(render);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [isPlaying, playbackState]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -259,239 +244,173 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
           howlRef.current.unload();
         } catch (e) {}
       }
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-      }
     };
   }, []);
 
+  const formatTimer = (totalSeconds: number) => {
+    const m = Math.floor(totalSeconds / 60);
+    const s = Math.floor(totalSeconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
   // --------------------------------------------------------------------------
-  // AUDIO SPECTRUM VISUALIZER (CANVAS)
+  // CARDS CONFIGURATION PER TAB
   // --------------------------------------------------------------------------
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let barHeights = new Array(24).fill(2);
-
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const numBars = 24;
-      const barWidth = Math.max(2, (canvas.width / numBars) - 1.5);
-
-      for (let i = 0; i < numBars; i++) {
-        if (isPlaying && playbackState === 'playing') {
-          // Dynamic waveform animation with harmonic frequency modulation
-          const target = Math.random() * (canvas.height * 0.85) + (canvas.height * 0.15);
-          barHeights[i] += (target - barHeights[i]) * 0.35;
-        } else if (playbackState === 'buffering') {
-          // Pulsing wave
-          barHeights[i] = (Math.sin(Date.now() / 200 + i * 0.3) + 1) * (canvas.height * 0.35) + 3;
-        } else {
-          // Resting baseline
-          barHeights[i] += (2 - barHeights[i]) * 0.2;
+  const getCards = () => {
+    if (activeMediaTab === 'Podcasts') {
+      return [
+        {
+          id: 'defcon-radio',
+          title: 'DEF CON Talk',
+          sub: 'Hacker Cypherpunk',
+          color: 'bg-purple-600',
+          icon: Podcast,
+          station: CURATED_STATIONS[0]
+        },
+        {
+          id: 'npr-news',
+          title: 'NPR 24/7 Live',
+          sub: 'News & Journalism',
+          color: 'bg-blue-600',
+          icon: Radio,
+          station: CURATED_STATIONS[2]
+        },
+        {
+          id: 'bbc-world',
+          title: 'BBC World News',
+          sub: 'Global Documentaries',
+          color: 'bg-red-600',
+          icon: Radio,
+          station: CURATED_STATIONS[3]
+        },
+        {
+          id: 'hacker-public',
+          title: 'Hacker Public Radio',
+          sub: 'Open Source Tech',
+          color: 'bg-cyan-600',
+          icon: Podcast,
+          station: CURATED_STATIONS[1]
         }
+      ];
+    }
 
-        const h = Math.max(2, barHeights[i]);
-        const x = i * (barWidth + 1.5);
-        const y = canvas.height - h;
+    if (activeMediaTab === 'Spotify' || activeMediaTab === 'iTunes') {
+      return [
+        {
+          id: 'nightwave-plaza',
+          title: 'Liked Songs',
+          sub: '2,341 songs',
+          color: 'bg-purple-600',
+          icon: Heart,
+          station: CURATED_STATIONS[5]
+        },
+        {
+          id: 'civicverse-hits',
+          title: 'Civicverse Hits',
+          sub: '50 songs',
+          color: 'bg-cyan-600',
+          icon: Music,
+          station: CURATED_STATIONS[6]
+        },
+        {
+          id: 'workout-mode',
+          title: 'Workout Mode',
+          sub: '65 songs',
+          color: 'bg-amber-600',
+          icon: Zap,
+          station: CURATED_STATIONS[0]
+        },
+        {
+          id: 'focus-flow',
+          title: 'Focus Flow',
+          sub: '120 songs',
+          color: 'bg-blue-600',
+          icon: Radio,
+          station: CURATED_STATIONS[8]
+        }
+      ];
+    }
 
-        // Cyberpunk Cyan to Magenta gradient
-        const grad = ctx.createLinearGradient(0, y, 0, canvas.height);
-        grad.addColorStop(0, '#00f3ff');
-        grad.addColorStop(0.5, '#7928ca');
-        grad.addColorStop(1, '#ff007f');
-
-        ctx.fillStyle = grad;
-        ctx.fillRect(x, y, barWidth, h);
+    // Default 'Civic Radio'
+    return [
+      {
+        id: 'nightwave-plaza',
+        title: 'Nightwave Plaza',
+        sub: 'Vaporwave & Synth',
+        color: 'bg-pink-600',
+        icon: Music,
+        station: CURATED_STATIONS[5]
+      },
+      {
+        id: 'atomicwave',
+        title: 'Atomicwave FM',
+        sub: 'Dark Synth / Cyber',
+        color: 'bg-cyan-600',
+        icon: Zap,
+        station: CURATED_STATIONS[6]
+      },
+      {
+        id: 'defcon-radio',
+        title: 'Soma: DEF CON',
+        sub: 'Music for Hacking',
+        color: 'bg-purple-600',
+        icon: Radio,
+        station: CURATED_STATIONS[0]
+      },
+      {
+        id: 'groove-salad',
+        title: 'Groove Salad',
+        sub: 'Ambient Downtempo',
+        color: 'bg-emerald-600',
+        icon: Heart,
+        station: CURATED_STATIONS[8]
       }
-
-      animFrameRef.current = requestAnimationFrame(render);
-    };
-
-    animFrameRef.current = requestAnimationFrame(render);
-
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    };
-  }, [isPlaying, playbackState]);
-
-  // --------------------------------------------------------------------------
-  // DATA FETCHING & TAB SWITCHING
-  // --------------------------------------------------------------------------
-  useEffect(() => {
-    if (activeTab === 'SYNTH') {
-      const synths = CURATED_STATIONS.filter(s => s.category === 'synth' || s.category === 'ambient');
-      setStations(synths);
-    } else if (activeTab === 'PODCAST') {
-      loadPodcastTabStations();
-    } else if (activeTab === 'RADIO') {
-      loadRadioStations(selectedTag);
-    } else if (activeTab === 'FAVORITES') {
-      setStations(favorites);
-    }
-  }, [activeTab]);
-
-  const loadPodcastTabStations = async () => {
-    setIsSearching(true);
-    try {
-      const data = await fetchLivePodcastStations(15);
-      setStations(data);
-    } catch (e) {
-      setStations(CURATED_STATIONS.filter(s => s.category === 'podcast'));
-    } finally {
-      setIsSearching(false);
-    }
+    ];
   };
 
-  const loadRadioStations = async (tag: string) => {
-    setIsSearching(true);
-    try {
-      const data = await fetchStationsByTag(tag, 20);
-      setStations(data);
-    } catch (e) {
-      setStations(CURATED_STATIONS);
-    } finally {
-      setIsSearching(false);
-    }
+  const cards = getCards();
+
+  const handleCardClick = (cardStation: MediaStation) => {
+    playStation(cardStation);
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearchStations = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     setIsSearching(true);
     try {
-      const results = await searchRadioStations(searchQuery.trim(), 25);
-      setStations(results);
+      const results = await searchRadioStations(searchQuery.trim(), 20);
+      setSearchResults(results);
     } finally {
       setIsSearching(false);
     }
   };
 
-  const handleSearchPodcasts = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!podcastQuery.trim()) return;
-    setIsSearchingPodcasts(true);
-    try {
-      const results = await searchPodcasts(podcastQuery.trim(), 10);
-      setPodcastSearchResults(results);
-    } finally {
-      setIsSearchingPodcasts(false);
-    }
-  };
-
-  const handleSelectPodcastShow = async (show: any) => {
-    if (!show.feedUrl) return;
-    setActivePodcastTitle(show.title);
-    setIsLoadingEpisodes(true);
-    try {
-      const eps = await fetchPodcastEpisodes(show.feedUrl);
-      setPodcastEpisodes(eps);
-      if (eps.length > 0) {
-        // Auto play latest episode
-        handlePlayPodcastEpisode(eps[0], show);
-      }
-    } finally {
-      setIsLoadingEpisodes(false);
-    }
-  };
-
-  const handlePlayPodcastEpisode = (ep: PodcastEpisode, show?: any) => {
-    const stationObj: MediaStation = {
-      id: ep.id,
-      name: `${show?.title || ep.podcastTitle}: ${ep.title}`,
-      url: ep.audioUrl,
-      favicon: ep.artwork || show?.artwork,
-      tags: ['podcast', 'episode', 'talk'],
-      country: 'Global',
-      codec: 'MP3',
-      bitrate: 128,
-      category: 'podcast',
-      isLive: false,
-      description: ep.description || `Episode of ${show?.title || ep.podcastTitle}`
-    };
-    playStation(stationObj);
-  };
-
-  const handleCustomTuneIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customUrl.trim()) return;
-    const customStation: MediaStation = {
-      id: `custom-${Date.now()}`,
-      name: customName.trim() || 'Custom Stream Node',
-      url: customUrl.trim(),
-      tags: ['custom', 'stream'],
-      country: 'Local',
-      codec: 'MP3',
-      bitrate: 128,
-      category: 'custom',
-      isLive: true,
-      description: 'Citizen custom audio feed'
-    };
-    playStation(customStation);
-    const updated = toggleFavorite(customStation);
-    setFavorites(updated);
-    setCustomUrl('');
-    setCustomName('');
-  };
-
-  const handleToggleFavoriteStation = (station: MediaStation) => {
-    const updated = toggleFavorite(station);
-    setFavorites(updated);
-    if (activeTab === 'FAVORITES') {
-      setStations(updated);
-    }
-  };
-
-  const getActiveStationList = (): MediaStation[] => {
-    return stations.length > 0 ? stations : CURATED_STATIONS;
-  };
-
-  const formatTime = (secs: number) => {
-    if (isNaN(secs) || secs <= 0) return 'LIVE';
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  // ==========================================================================
-  // RENDER COMPONENT
-  // ==========================================================================
   return (
-    <div className="flex flex-col h-full bg-[#080c14] border-t border-[#1a2333]/80 select-none overflow-hidden relative">
+    <div className="h-64 flex flex-col bg-[#080c14] overflow-hidden select-none">
       
       {/* -------------------------------------------------------------------- */}
-      {/* HEADER: TITLE, LIVE STATUS & TOOLBAR                                */}
+      {/* 1. HEADER (MEDIA PLAYER TITLE, EXPAND / SEARCH TOGGLE)               */}
       {/* -------------------------------------------------------------------- */}
-      <div className="p-2 px-3 bg-[#0d131f] flex items-center justify-between border-b border-gray-800/60 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Radio className={`w-3.5 h-3.5 ${isPlaying ? 'text-cyan-400 animate-pulse' : 'text-gray-400'}`} />
-            {isPlaying && (
-              <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            )}
-          </div>
-          <span className="text-[11px] font-black tracking-wider text-gray-200 uppercase">CIVIC MEDIA HUB</span>
+      <div className="p-2.5 px-3 bg-[#0d131f] flex items-center justify-between border-b border-gray-800/60 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-black tracking-wider text-gray-300 uppercase">MEDIA PLAYER</span>
           <span className="text-[9px] bg-cyan-950/70 border border-cyan-500/30 text-cyan-300 font-mono px-1 rounded uppercase">
             60K+ OPEN
           </span>
         </div>
-
-        <div className="flex items-center gap-1.5 text-gray-400">
+        <div className="flex items-center gap-1 text-gray-400">
           <button 
-            onClick={() => handleToggleFavoriteStation(currentStation)} 
-            className={`p-1 hover:text-amber-400 transition-colors ${isFavorite(currentStation) ? 'text-amber-400' : 'text-gray-400'}`}
-            title="Bookmark Station"
+            onClick={() => setShowExplorer(true)} 
+            className="hover:text-white p-0.5" 
+            title="Search 60,000+ Stations & Live Podcasts"
           >
-            <Star className={`w-3.5 h-3.5 ${isFavorite(currentStation) ? 'fill-amber-400' : ''}`} />
+            <Search className="w-3.5 h-3.5 text-cyan-400" />
           </button>
-          
           <button 
-            onClick={() => setIsExpanded(true)}
-            className="p-1 hover:text-cyan-400 transition-colors"
-            title="Expand Full 60,000+ Tuner & Podcast Explorer"
+            onClick={() => setShowExplorer(true)} 
+            className="hover:text-white p-0.5" 
+            title="Maximize Player"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
@@ -499,409 +418,155 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* NAVIGATION TABS: PODCAST | SYNTH | 60K RADIO | FAVS | TUNE IN        */}
+      {/* 2. SERVICE TABS (iTUNES, SPOTIFY, CIVIC RADIO, PODCASTS)              */}
       {/* -------------------------------------------------------------------- */}
-      <div className="flex items-center gap-1 px-2.5 py-1 bg-[#0b101a] border-b border-gray-800/50 text-[10px] font-bold overflow-x-auto scrollbar-none shrink-0">
-        {[
-          { id: 'SYNTH', label: '⚡ Cyber Synth', icon: Zap },
-          { id: 'PODCAST', label: '🎙️ Live Podcast', icon: Podcast },
-          { id: 'RADIO', label: '📻 60K+ Radio', icon: Radio },
-          { id: 'FAVORITES', label: '⭐ Favs', icon: Star },
-          { id: 'CUSTOM', label: '🔗 Tune URL', icon: LinkIcon }
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded transition-all whitespace-nowrap ${
-                isActive 
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.3)] font-extrabold'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40'
-              }`}
-            >
-              <Icon className="w-2.5 h-2.5" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
+      <div className="flex items-center gap-3 px-3 py-1.5 border-b border-gray-800/50 text-xs font-bold text-gray-400 shrink-0 overflow-x-auto scrollbar-none">
+        <button 
+          onClick={() => setActiveMediaTab('Civic Radio')} 
+          className={`relative py-0.5 transition-colors ${
+            activeMediaTab === 'Civic Radio' ? 'text-cyan-400 font-extrabold' : 'hover:text-gray-300'
+          }`}
+        >
+          Civic Radio
+          {activeMediaTab === 'Civic Radio' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400" />}
+        </button>
+
+        <button 
+          onClick={() => setActiveMediaTab('Podcasts')} 
+          className={`relative py-0.5 transition-colors ${
+            activeMediaTab === 'Podcasts' ? 'text-purple-400 font-extrabold' : 'hover:text-gray-300'
+          }`}
+        >
+          🎙️ Podcasts
+          {activeMediaTab === 'Podcasts' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-400" />}
+        </button>
+
+        <button 
+          onClick={() => setActiveMediaTab('Spotify')} 
+          className={`relative py-0.5 transition-colors ${
+            activeMediaTab === 'Spotify' ? 'text-emerald-400 font-extrabold' : 'hover:text-gray-300'
+          }`}
+        >
+          Spotify
+          {activeMediaTab === 'Spotify' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400" />}
+        </button>
+
+        <button 
+          onClick={() => setActiveMediaTab('iTunes')} 
+          className={`relative py-0.5 transition-colors ${
+            activeMediaTab === 'iTunes' ? 'text-white' : 'hover:text-gray-300'
+          }`}
+        >
+          iTunes
+          {activeMediaTab === 'iTunes' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
+        </button>
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* MAIN TAB CONTENT CONTAINER                                           */}
+      {/* 3. MAIN BODY: GREETING, 2x2 PLAYLIST GRID, ACTIVE TRACK BAR          */}
       {/* -------------------------------------------------------------------- */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 scrollbar-thin bg-[#070a12]">
+      <div className="p-2.5 flex-1 flex flex-col justify-between overflow-hidden">
         
-        {/* TAB 1: CYBER SYNTH & AMBIENT (VAPORWAVE, RETRO, LOFI) */}
-        {activeTab === 'SYNTH' && (
-          <div className="space-y-1.5">
-            <div className="text-[10px] text-gray-400 px-1 flex items-center justify-between">
-              <span>CYBERVERSE BROADCAST NODES</span>
-              <span className="text-[9px] text-cyan-400 font-mono font-bold">24/7 LIVE</span>
-            </div>
-            <div className="grid grid-cols-1 gap-1.5">
-              {CURATED_STATIONS.filter(s => s.category === 'synth' || s.category === 'ambient').map(st => {
-                const isThisStation = currentStation.id === st.id;
-                const isThisPlaying = isThisStation && isPlaying;
-                return (
-                  <div
-                    key={st.id}
-                    onClick={() => playStation(st)}
-                    className={`p-1.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
-                      isThisStation
-                        ? 'bg-cyan-950/40 border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                        : 'bg-[#0f1522] border-gray-800 hover:border-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-8 h-8 rounded bg-[#162032] border border-cyan-500/30 flex items-center justify-center shrink-0 overflow-hidden">
-                        {st.favicon ? (
-                          <img src={st.favicon} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as any).style.display = 'none'; }} />
-                        ) : (
-                          <Headphones className="w-4 h-4 text-cyan-400" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-bold text-white truncate flex items-center gap-1">
-                          <span>{st.name}</span>
-                          {isThisPlaying && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
-                        </div>
-                        <div className="text-[9px] text-gray-400 truncate flex items-center gap-1">
-                          <span className="text-cyan-400 font-mono uppercase">{st.codec} {st.bitrate}k</span>
-                          <span>•</span>
-                          <span className="capitalize">{st.tags.slice(0, 2).join(', ')}</span>
-                        </div>
-                      </div>
-                    </div>
+        {/* User Greeting */}
+        <p className="text-[11px] text-gray-400 shrink-0">
+          Good afternoon, <strong className="text-white">{user?.username || 'XJAY420X'}</strong>
+        </p>
 
-                    <button className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-transform ${
-                      isThisPlaying ? 'bg-cyan-500 text-black shadow-[0_0_8px_#06b6d4]' : 'bg-[#182338] text-gray-300 hover:text-white'
-                    }`}>
-                      {isThisPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current ml-0.5" />}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: LIVE PODCASTS & TALK DIRECTORY */}
-        {activeTab === 'PODCAST' && (
-          <div className="space-y-2">
-            {/* Podcast search bar */}
-            <form onSubmit={handleSearchPodcasts} className="relative">
-              <input
-                type="text"
-                value={podcastQuery}
-                onChange={(e) => setPodcastQuery(e.target.value)}
-                placeholder="Search millions of podcasts..."
-                className="w-full bg-[#111726] border border-gray-800 rounded-md py-1 pl-2.5 pr-7 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-              />
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300">
-                <Search className="w-3 h-3" />
-              </button>
-            </form>
-
-            {/* Live Broadcast / 24/7 Podcast Stations */}
-            <div>
-              <div className="text-[10px] text-gray-400 font-bold px-1 mb-1 flex items-center justify-between">
-                <span>LIVE TALK & CYBER PODCAST FEEDS</span>
-                <span className="text-[9px] text-emerald-400 font-mono">LIVE TUNER</span>
-              </div>
-              <div className="space-y-1">
-                {CURATED_STATIONS.filter(s => s.category === 'podcast').map(st => {
-                  const isThisPlaying = currentStation.id === st.id && isPlaying;
-                  return (
-                    <div
-                      key={st.id}
-                      onClick={() => playStation(st)}
-                      className={`p-1.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
-                        currentStation.id === st.id
-                          ? 'bg-purple-950/40 border-purple-500/60 shadow-[0_0_10px_rgba(168,85,247,0.25)]'
-                          : 'bg-[#0f1522] border-gray-800 hover:border-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded bg-purple-900/40 border border-purple-500/40 flex items-center justify-center shrink-0">
-                          <Podcast className="w-3.5 h-3.5 text-purple-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[11px] font-bold text-white truncate">{st.name}</div>
-                          <div className="text-[9px] text-gray-400 truncate">{st.description}</div>
-                        </div>
-                      </div>
-                      <button className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                        isThisPlaying ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-300'
-                      }`}>
-                        {isThisPlaying ? <Pause className="w-2.5 h-2.5 fill-current" /> : <Play className="w-2.5 h-2.5 fill-current ml-0.5" />}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Podcast Search Results */}
-            {podcastSearchResults.length > 0 && (
-              <div>
-                <div className="text-[10px] text-cyan-400 font-bold px-1 mb-1">
-                  PODCAST SHOW RESULTS ({podcastSearchResults.length})
+        {/* 2x2 Playlist Grid */}
+        <div className="grid grid-cols-2 gap-2 my-1 shrink-0">
+          {cards.map(c => {
+            const Icon = c.icon;
+            const isThisPlaying = currentStation.id === c.station.id && isPlaying;
+            return (
+              <div 
+                key={c.id}
+                onClick={() => handleCardClick(c.station)}
+                className={`bg-[#121927] border rounded-lg p-2 flex items-center gap-2 cursor-pointer transition-all ${
+                  isThisPlaying 
+                    ? 'border-cyan-400 bg-cyan-950/30 shadow-[0_0_8px_rgba(6,182,212,0.3)]' 
+                    : 'border-gray-800 hover:border-cyan-500/50'
+                }`}
+              >
+                <div className={`w-7 h-7 ${c.color} rounded flex items-center justify-center shrink-0 shadow`}>
+                  <Icon className="w-4 h-4 text-white" />
                 </div>
-                <div className="space-y-1">
-                  {podcastSearchResults.map(pod => (
-                    <div
-                      key={pod.id}
-                      onClick={() => handleSelectPodcastShow(pod)}
-                      className="p-1.5 rounded-lg border border-gray-800 bg-[#0c121e] hover:border-cyan-500/50 cursor-pointer flex items-center gap-2"
-                    >
-                      <img src={pod.artwork} alt="" className="w-7 h-7 rounded object-cover border border-gray-700 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[10px] font-bold text-white truncate">{pod.title}</div>
-                        <div className="text-[8px] text-gray-400 truncate">{pod.artist} • {pod.trackCount} eps</div>
-                      </div>
-                      <span className="text-[9px] text-cyan-400 font-extrabold uppercase shrink-0">TUNE IN ⮌</span>
-                    </div>
-                  ))}
+                <div className="min-w-0">
+                  <div className="text-[10px] font-bold text-white truncate flex items-center gap-1">
+                    <span>{c.title}</span>
+                    {isThisPlaying && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                  </div>
+                  <div className="text-[8px] text-gray-400 truncate">{c.sub}</div>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            );
+          })}
+        </div>
 
-        {/* TAB 3: 60K+ OPEN RADIO STATIONS BROWSER */}
-        {activeTab === 'RADIO' && (
-          <div className="space-y-2">
-            {/* Search input */}
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search 60,000+ stations worldwide..."
-                className="w-full bg-[#111726] border border-gray-800 rounded-md py-1 pl-2.5 pr-7 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-              />
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300">
-                <Search className="w-3 h-3" />
-              </button>
-            </form>
-
-            {/* Quick Genre Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pb-1 text-[9px] font-bold text-gray-400">
-              {['synthwave', 'cyberpunk', 'lofi', 'electronic', 'ambient', 'techno', 'rock', 'hiphop', 'jazz'].map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => {
-                    setSelectedTag(tag);
-                    loadRadioStations(tag);
-                  }}
-                  className={`px-2 py-0.5 rounded uppercase whitespace-nowrap transition-colors ${
-                    selectedTag === tag ? 'bg-cyan-500 text-black font-extrabold' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-
-            {/* Station List */}
-            {isSearching ? (
-              <div className="py-6 text-center text-xs text-cyan-400 flex items-center justify-center gap-2">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Scanning 60,000+ open stations...</span>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {stations.map(st => {
-                  const isThisPlaying = currentStation.id === st.id && isPlaying;
-                  return (
-                    <div
-                      key={st.id}
-                      onClick={() => playStation(st)}
-                      className={`p-1.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
-                        currentStation.id === st.id
-                          ? 'bg-cyan-950/40 border-cyan-500/60 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
-                          : 'bg-[#0f1522] border-gray-800 hover:border-gray-700'
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1 pr-2">
-                        <div className="text-[11px] font-bold text-white truncate flex items-center gap-1.5">
-                          <span>{st.name}</span>
-                          <span className="text-[8px] bg-gray-800 text-gray-400 px-1 rounded uppercase font-mono">{st.country}</span>
-                        </div>
-                        <div className="text-[9px] text-gray-400 truncate flex items-center gap-1">
-                          <span className="text-cyan-400 font-mono">{st.bitrate}k {st.codec}</span>
-                          <span>•</span>
-                          <span>{st.tags.slice(0, 2).join(', ')}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleToggleFavoriteStation(st); }}
-                          className="p-1 text-gray-500 hover:text-amber-400"
-                        >
-                          <Star className={`w-3 h-3 ${isFavorite(st) ? 'text-amber-400 fill-amber-400' : ''}`} />
-                        </button>
-                        <button className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                          isThisPlaying ? 'bg-cyan-500 text-black' : 'bg-gray-800 text-gray-300'
-                        }`}>
-                          {isThisPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current ml-0.5" />}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 4: FAVORITES (PINNED STATIONS) */}
-        {activeTab === 'FAVORITES' && (
-          <div className="space-y-1.5">
-            <div className="text-[10px] text-gray-400 px-1 flex items-center justify-between">
-              <span>SAVED BOOKMARKS ({favorites.length})</span>
-              <span className="text-[9px] text-amber-400 font-bold">LOCAL PERSISTENT</span>
-            </div>
-            {favorites.length === 0 ? (
-              <div className="py-8 text-center text-xs text-gray-500">
-                <Star className="w-6 h-6 mx-auto mb-1 text-gray-600" />
-                <p>No saved stations yet.</p>
-                <p className="text-[10px] text-gray-600">Click the star on any station to bookmark it!</p>
-              </div>
-            ) : (
-              favorites.map(st => {
-                const isThisPlaying = currentStation.id === st.id && isPlaying;
-                return (
-                  <div
-                    key={st.id}
-                    onClick={() => playStation(st)}
-                    className={`p-1.5 rounded-lg border flex items-center justify-between cursor-pointer ${
-                      currentStation.id === st.id ? 'bg-amber-950/30 border-amber-500/50' : 'bg-[#0f1522] border-gray-800'
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <div className="text-[11px] font-bold text-white truncate">{st.name}</div>
-                      <div className="text-[9px] text-gray-400 truncate">{st.description || st.tags.join(', ')}</div>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleToggleFavoriteStation(st); }}
-                        className="text-amber-400 p-1 hover:opacity-80"
-                      >
-                        <Star className="w-3 h-3 fill-amber-400" />
-                      </button>
-                      <button className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                        isThisPlaying ? 'bg-cyan-500 text-black' : 'bg-gray-800 text-gray-300'
-                      }`}>
-                        {isThisPlaying ? <Pause className="w-2.5 h-2.5 fill-current" /> : <Play className="w-2.5 h-2.5 fill-current ml-0.5" />}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-
-        {/* TAB 5: CUSTOM TUNE IN BY URL */}
-        {activeTab === 'CUSTOM' && (
-          <form onSubmit={handleCustomTuneIn} className="space-y-2 p-1">
-            <div className="text-[10px] text-gray-400">
-              Paste any live stream URL (Icecast, Shoutcast, HLS, or direct MP3/AAC/OGG):
-            </div>
-            <input
-              type="text"
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              placeholder="Station / Stream Label (optional)"
-              className="w-full bg-[#111726] border border-gray-800 rounded-md py-1 px-2.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-            />
-            <input
-              type="url"
-              required
-              value={customUrl}
-              onChange={(e) => setCustomUrl(e.target.value)}
-              placeholder="https://stream.example.com/audio.mp3"
-              className="w-full bg-[#111726] border border-gray-800 rounded-md py-1 px-2.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-            />
-            <button
-              type="submit"
-              className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-[10px] py-1.5 rounded-md flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.4)]"
-            >
-              <Zap className="w-3 h-3 fill-current" />
-              <span>TUNE IN LIVE STREAM</span>
-            </button>
-          </form>
-        )}
-
-      </div>
-
-      {/* -------------------------------------------------------------------- */}
-      {/* NOW PLAYING ACTIVE DOCK & AUDIO CONTROLS                              */}
-      {/* -------------------------------------------------------------------- */}
-      <div className="p-2 bg-[#0a0f1b] border-t border-gray-800/80 shrink-0">
-        
-        {/* Error Notification Banner */}
-        {errorMessage && (
-          <div className="mb-1 text-[9px] text-red-400 bg-red-950/40 border border-red-800/60 rounded px-1.5 py-0.5 truncate flex items-center justify-between">
-            <span>⚠ {errorMessage}</span>
-            <button onClick={() => setErrorMessage(null)} className="text-gray-400 hover:text-white">✕</button>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2">
-          {/* Station Avatar / Visualizer Thumbnail */}
-          <div className="relative w-10 h-10 rounded-lg bg-[#141b2a] border border-cyan-500/40 overflow-hidden shrink-0 flex items-center justify-center">
+        {/* Now Playing Active Track Bar */}
+        <div className="bg-[#0f1522] border border-[#1f2b3e] rounded-xl p-2 flex items-center gap-2.5 shrink-0 shadow-md">
+          {/* Station Cover Artwork */}
+          <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-purple-500/30 bg-black flex items-center justify-center relative">
             {currentStation.favicon ? (
-              <img src={currentStation.favicon} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as any).style.display = 'none'; }} />
+              <img 
+                src={currentStation.favicon} 
+                alt="" 
+                className="w-full h-full object-cover" 
+                onError={(e) => { (e.target as any).src = '/images/rooftop_garden.jpg'; }} 
+              />
             ) : (
-              <Headphones className="w-5 h-5 text-cyan-400" />
+              <img 
+                src="/images/rooftop_garden.jpg" 
+                alt="Track Cover" 
+                className="w-full h-full object-cover" 
+              />
             )}
-            
-            {/* Live Indicator Pill */}
-            <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-black shadow-[0_0_4px_#10b981]" />
+            {isPlaying && (
+              <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            )}
           </div>
 
-          {/* Station Details & Spectrum Visualizer */}
+          {/* Track Details & Visualizer Progress */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold text-white truncate max-w-[140px]">
+              <span className="text-[11px] font-bold text-white truncate max-w-[130px]">
                 {currentStation.name}
               </span>
               <span className="text-[8px] font-mono text-cyan-400 font-bold">
-                {playbackState === 'buffering' ? 'BUFFERING...' : isPlaying ? '● LIVE' : 'PAUSED'}
+                {playbackState === 'buffering' ? 'CONNECTING...' : isPlaying ? '● LIVE' : 'READY'}
               </span>
             </div>
 
-            {/* Frequency spectrum canvas visualizer */}
-            <div className="mt-1 h-3 w-full bg-black/40 rounded overflow-hidden flex items-center">
-              <canvas ref={canvasRef} width={180} height={12} className="w-full h-full" />
+            <div className="text-[9px] text-gray-400 truncate mt-0.5">
+              {currentStation.codec || 'MP3'} {currentStation.bitrate || 128}k • {currentStation.category.toUpperCase()}
+            </div>
+
+            {/* Visualizer Canvas & Time */}
+            <div className="flex items-center gap-1.5 mt-1">
+              <div className="flex-1 bg-gray-900 h-2 rounded-full overflow-hidden flex items-center px-0.5">
+                <canvas ref={canvasRef} width={120} height={8} className="w-full h-full" />
+              </div>
+              <span className="text-[8px] font-mono text-gray-400 shrink-0">
+                {isPlaying ? formatTimer(streamTime) : '0:00'} / LIVE
+              </span>
             </div>
           </div>
 
-          {/* Quick Audio Controls */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Prev */}
+          {/* Controls: Mute & Play/Pause */}
+          <div className="flex items-center gap-1 text-gray-300 shrink-0">
             <button 
-              onClick={handleSkipPrevious} 
-              className="p-1 text-gray-400 hover:text-white"
-              title="Previous Station"
+              onClick={handleToggleMute} 
+              className="hover:text-white p-1"
+              title={isMuted ? 'Unmute' : 'Mute'}
             >
-              <SkipBack className="w-3.5 h-3.5" />
+              {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
 
-            {/* Play / Pause Primary Button */}
-            <button
-              onClick={handleTogglePlay}
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                isPlaying 
-                  ? 'bg-cyan-400 text-black shadow-[0_0_12px_#00f3ff]' 
-                  : 'bg-emerald-500 text-black shadow-[0_0_10px_#10b981] hover:scale-105'
+            <button 
+              onClick={handleTogglePlay} 
+              className={`w-7 h-7 rounded-full text-black flex items-center justify-center hover:scale-105 transition-all shadow-[0_0_10px_#10b981] ${
+                isPlaying ? 'bg-cyan-400 text-black shadow-[0_0_10px_#00f3ff]' : 'bg-emerald-500'
               }`}
-              title={isPlaying ? 'Pause' : 'Play Live Stream'}
+              title={isPlaying ? 'Pause' : 'Play'}
             >
               {playbackState === 'buffering' ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -911,77 +576,42 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
                 <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
               )}
             </button>
-
-            {/* Next */}
-            <button 
-              onClick={handleSkipNext} 
-              className="p-1 text-gray-400 hover:text-white"
-              title="Next Station"
-            >
-              <SkipForward className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Volume Toggle */}
-            <button
-              onClick={handleToggleMute}
-              className="p-1 text-gray-400 hover:text-white relative"
-              title={isMuted ? 'Unmute' : 'Mute'}
-            >
-              {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5" />}
-            </button>
           </div>
         </div>
 
-        {/* Volume Scrubbing Slider */}
-        <div className="mt-1.5 flex items-center gap-2 px-1">
-          <span className="text-[8px] font-mono text-gray-500">VOL</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={isMuted ? 0 : volume}
-            onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-            className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-          />
-          <span className="text-[8px] font-mono text-gray-400 w-6 text-right">
-            {isMuted ? '0%' : `${Math.round(volume * 100)}%`}
-          </span>
-        </div>
       </div>
 
       {/* -------------------------------------------------------------------- */}
-      {/* EXPANDED FULL-SCREEN TUNER MODAL (60,000+ STATIONS EXPLORER)        */}
+      {/* 4. EXPANDED FULL-SCREEN 60,000+ STATIONS & PODCAST TUNER MODAL       */}
       {/* -------------------------------------------------------------------- */}
-      {isExpanded && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+      {showExplorer && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="w-full max-w-2xl bg-[#0a0f1b] border border-cyan-500/50 rounded-xl shadow-[0_0_40px_rgba(6,182,212,0.3)] flex flex-col max-h-[85vh] overflow-hidden">
             
-            {/* Modal Header */}
+            {/* Header */}
             <div className="p-3 bg-[#0d1424] border-b border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
                 <span className="text-sm font-black text-white tracking-wider">CIVICVERSE GLOBAL MEDIA TUNER</span>
                 <span className="text-[10px] bg-cyan-950 border border-cyan-500/40 text-cyan-300 px-2 py-0.5 rounded font-mono">
-                  60,000+ OPEN STATIONS
+                  60,000+ OPEN STATIONS & PODCASTS
                 </span>
               </div>
-              <button onClick={() => setIsExpanded(false)} className="text-gray-400 hover:text-white p-1">
+              <button onClick={() => setShowExplorer(false)} className="text-gray-400 hover:text-white p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-4 flex-1 overflow-y-auto space-y-4">
-              {/* Search input */}
-              <form onSubmit={handleSearch} className="flex gap-2">
+            {/* Search Bar & Tag Pills */}
+            <div className="p-4 border-b border-gray-800 space-y-3">
+              <form onSubmit={handleSearchStations} className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search any station, artist, language, country, or genre..."
+                    placeholder="Search 60,000+ radio stations, live podcasts, synthwave, genres..."
                     className="w-full bg-[#121929] border border-gray-700 rounded-lg py-2 pl-9 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
@@ -990,69 +620,84 @@ export const CivicMediaPlayer: React.FC<CivicMediaPlayerProps> = ({ onStationCha
                 </button>
               </form>
 
-              {/* Tag filters */}
-              <div className="flex flex-wrap gap-1.5">
-                {['synthwave', 'cyberpunk', 'lofi', 'podcast', 'ambient', 'techno', 'house', 'rock', 'hiphop', 'classical', 'jazz'].map(t => (
+              <div className="flex flex-wrap gap-1.5 text-xs font-bold">
+                {['cyberpunk', 'synthwave', 'podcast', 'lofi', 'ambient', 'techno', 'rock', 'hiphop', 'jazz'].map(t => (
                   <button
                     key={t}
-                    onClick={() => {
-                      setSelectedTag(t);
-                      loadRadioStations(t);
+                    onClick={async () => {
+                      setSearchQuery(t);
+                      setIsSearching(true);
+                      try {
+                        const res = await fetchStationsByTag(t, 20);
+                        setSearchResults(res);
+                      } finally {
+                        setIsSearching(false);
+                      }
                     }}
-                    className={`text-xs px-3 py-1 rounded-full uppercase font-bold transition-all ${
-                      selectedTag === t ? 'bg-cyan-400 text-black' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    }`}
+                    className="px-2.5 py-1 rounded-full uppercase bg-gray-800 hover:bg-gray-700 text-gray-300"
                   >
                     {t}
                   </button>
                 ))}
               </div>
-
-              {/* Stations Grid */}
-              <div className="grid grid-cols-2 gap-2">
-                {stations.map(st => {
-                  const isThisPlaying = currentStation.id === st.id && isPlaying;
-                  return (
-                    <div
-                      key={st.id}
-                      onClick={() => playStation(st)}
-                      className={`p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
-                        currentStation.id === st.id
-                          ? 'bg-cyan-950/40 border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
-                          : 'bg-[#101726] border-gray-800 hover:border-gray-700'
-                      }`}
-                    >
-                      <div className="min-w-0 pr-2">
-                        <div className="text-xs font-bold text-white truncate">{st.name}</div>
-                        <div className="text-[10px] text-gray-400 truncate flex items-center gap-1.5 mt-0.5">
-                          <span className="text-cyan-400 font-mono">{st.bitrate}k {st.codec}</span>
-                          <span>•</span>
-                          <span className="capitalize">{st.tags.slice(0, 2).join(', ')}</span>
-                        </div>
-                      </div>
-
-                      <button className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                        isThisPlaying ? 'bg-cyan-400 text-black' : 'bg-gray-800 text-gray-300 hover:text-white'
-                      }`}>
-                        {isThisPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
 
-            {/* Modal Footer */}
+            {/* Results Grid */}
+            <div className="p-4 flex-1 overflow-y-auto">
+              {isSearching ? (
+                <div className="py-12 text-center text-cyan-400 flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Querying open radio directory...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {(searchResults.length > 0 ? searchResults : CURATED_STATIONS).map(st => {
+                    const isThisPlaying = currentStation.id === st.id && isPlaying;
+                    return (
+                      <div
+                        key={st.id}
+                        onClick={() => {
+                          playStation(st);
+                          setShowExplorer(false);
+                        }}
+                        className={`p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
+                          currentStation.id === st.id
+                            ? 'bg-cyan-950/40 border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                            : 'bg-[#101726] border-gray-800 hover:border-gray-700'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-2">
+                          <div className="text-xs font-bold text-white truncate">{st.name}</div>
+                          <div className="text-[10px] text-gray-400 truncate flex items-center gap-1.5 mt-0.5">
+                            <span className="text-cyan-400 font-mono">{st.bitrate || 128}k {st.codec || 'MP3'}</span>
+                            <span>•</span>
+                            <span className="capitalize">{st.tags.slice(0, 2).join(', ')}</span>
+                          </div>
+                        </div>
+
+                        <button className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                          isThisPlaying ? 'bg-cyan-400 text-black' : 'bg-gray-800 text-gray-300'
+                        }`}>
+                          {isThisPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
             <div className="p-3 bg-[#0d1424] border-t border-gray-800 flex items-center justify-between text-xs text-gray-400">
-              <span className="flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Powered by Howler.js & Open Radio Browser Directory</span>
+              <span className="flex items-center gap-1.5 text-cyan-400">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Free & Open Source Radio-Browser API (60,000+ Stations)</span>
               </span>
               <button 
-                onClick={() => setIsExpanded(false)}
+                onClick={() => setShowExplorer(false)}
                 className="bg-[#192338] text-white px-3 py-1 rounded hover:bg-gray-700 text-xs font-bold"
               >
-                Close Tuner
+                Close
               </button>
             </div>
 

@@ -1,20 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CivicVerse Redirect</title>
     <script>
-      var path = window.location.pathname;
-      var segments = path.split("/").filter(Boolean);
-      var repo = segments.length > 0 ? segments[0] : "";
-      var subpath = segments.slice(1).join("/");
-      var query = window.location.search;
-      var hash = window.location.hash;
-      var target = "/" + repo + "/#/" + subpath + query + hash;
-      window.location.replace(target);
+      (function() {
+        var path = window.location.pathname;
+        var search = window.location.search || '';
+        var hash = window.location.hash || '';
+
+        // Detect if hosted under /Civicverse subpath
+        var isSubpath = path.toLowerCase().indexOf('/civicverse') === 0;
+        var basePath = isSubpath ? '/Civicverse' : '';
+        var cleanPath = isSubpath 
+          ? path.substring('/civicverse'.length).replace(/^\/+/, '') 
+          : path.replace(/^\/+/, '');
+
+        var targetHash = cleanPath ? ('#/' + cleanPath) : '#/foyer';
+        if (hash && hash.indexOf('#/') === 0) {
+          targetHash = hash;
+        }
+
+        var destination = basePath + '/' + targetHash + search;
+        window.location.replace(destination);
+      })();
     </script>
   </head>
-  <body>
-    <p>Redirecting to CivicVerse...</p>
+  <body style="background-color: #07090e; color: #00f3ff; font-family: monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+    <div style="text-align: center;">
+      <h2 style="letter-spacing: 0.15em;">CIVICVERSE</h2>
+      <p style="color: #94a3b8; font-size: 0.85rem;">REDIRECTING_TO_HUB...</p>
+    </div>
   </body>
 </html>
