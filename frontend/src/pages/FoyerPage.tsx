@@ -49,6 +49,7 @@ export default function FoyerPage() {
   const [activeTopTab, setActiveTopTab] = useState('WORLD');
   const [activeNewsTab, setActiveNewsTab] = useState('Following');
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   
   // Real-time Multiplayer Chat state
   const chatHistory = useMultiplayerStore(state => state.chatHistory);

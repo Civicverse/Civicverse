@@ -34,24 +34,11 @@ export default function App() {
     );
   }
 
-  // 1. Handle TOS
-  if (!tosAccepted) {
-    return (
-      <Routes>
-        <Route path="/tos" element={<TOSPage />} />
-        <Route path="*" element={<Navigate to="/tos" replace />} />
-      </Routes>
-    );
-  }
-
-  // 2. Handle Unauthenticated (Auth Flow & Direct Vault/Foyer Access)
+  // 1. Handle Unauthenticated (Auth Flow & Direct Foyer/Vault/Wardrobe Access)
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route path="/welcome" element={<WelcomePage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/signin" element={<SignInPage />} />
-        <Route path="/tos" element={<TOSPage />} />
+        <Route path="/foyer" element={<FoyerPage />} />
         <Route path="/vault" element={
           <MainLayout>
             <CivicVaultPage />
@@ -62,8 +49,11 @@ export default function App() {
             <CharacterCreatorPage />
           </MainLayout>
         } />
-        <Route path="/foyer" element={<FoyerPage />} />
-        <Route path="*" element={<Navigate to={hasIdentity ? "/signin" : "/vault"} replace />} />
+        <Route path="/welcome" element={<WelcomePage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/tos" element={<TOSPage />} />
+        <Route path="*" element={<Navigate to="/foyer" replace />} />
       </Routes>
     );
   }
