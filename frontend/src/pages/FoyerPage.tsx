@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
-import { GodotFoyer, CivicMediaPlayer } from '../components';
+import { GodotFoyer, CivicMediaPlayer, CivicNewsFeed } from '../components';
 import { 
   Shield, 
   Search, 
@@ -47,7 +47,6 @@ export default function FoyerPage() {
   const nav = useNavigate();
   const { user } = useGameStore();
   const [activeTopTab, setActiveTopTab] = useState('WORLD');
-  const [activeNewsTab, setActiveNewsTab] = useState('Following');
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   
@@ -60,83 +59,11 @@ export default function FoyerPage() {
   const sendMessage = useMultiplayerStore(state => state.sendMessage);
   const [streamChatInput, setStreamChatInput] = useState('');
 
-  // Newsfeed Posts Interactive State
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      author: 'CivicVerse Official',
-      handle: '@CivicVerse',
-      time: '2h',
-      verified: true,
-      avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=civicverse',
-      content: 'New governance proposal is LIVE! Vote now on funding for the Green District initiative 🌿',
-      comments: 256,
-      retweets: 1200,
-      likes: 3400,
-      liked: false
-    },
-    {
-      id: 2,
-      author: 'MetaMike',
-      handle: '@MetaMike',
-      time: '3h',
-      verified: true,
-      avatar: '/images/streamer_metamike.jpg',
-      content: 'Just discovered a hidden rooftop garden in New District 🤫 #Civicverse',
-      image: '/images/rooftop_garden.jpg',
-      comments: 89,
-      retweets: 420,
-      likes: 1100,
-      liked: false
-    },
-    {
-      id: 3,
-      author: 'SatoshiStreetBets',
-      handle: '@SatoshiSt...',
-      time: '4h',
-      verified: false,
-      avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=satoshistreet',
-      content: '$CVC breaking out! The future is decentralized 🚀',
-      chart: true,
-      comments: 120,
-      retweets: 560,
-      likes: 2100,
-      liked: false
-    },
-    {
-      id: 4,
-      author: 'Civician_Chick',
-      handle: '@CivicianChick',
-      time: '5h',
-      verified: true,
-      avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=civicianchick',
-      content: "Hosting a community clean up event this Saturday! Let's make Civic City beautiful 💚",
-      image: '/images/cleanup_event.jpg',
-      comments: 45,
-      retweets: 230,
-      likes: 900,
-      liked: false
-    }
-  ]);
-
   const handleSendStreamChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!streamChatInput.trim()) return;
     sendMessage(streamChatInput.trim(), 'text-cyan-400');
     setStreamChatInput('');
-  };
-
-  const toggleLike = (postId: number) => {
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        return {
-          ...p,
-          liked: !p.liked,
-          likes: p.liked ? p.likes - 1 : p.likes + 1
-        };
-      }
-      return p;
-    }));
   };
 
   return (
@@ -388,109 +315,10 @@ export default function FoyerPage() {
         </main>
 
         {/* ------------------------------------------------------ */}
-        {/* RIGHT COLUMN: NEWSFEED (MATCHING FOYER_FORMAT.JPG)     */}
+        {/* RIGHT COLUMN: REAL-TIME CIVIC & OPEN SOURCE NEWSFEED   */}
         {/* ------------------------------------------------------ */}
         <aside className="w-80 sharp-panel border-l border-[#1a2333]/80 flex flex-col shrink-0 overflow-hidden z-10">
-          
-          {/* Header */}
-          <div className="p-2.5 px-3 bg-[#0d131f] flex items-center justify-between border-b border-gray-800/60">
-            <span className="text-xs font-black tracking-wider text-gray-300 uppercase">NEWSFEED</span>
-            <div className="flex items-center gap-1 text-gray-400">
-              <button className="hover:text-white p-0.5"><MoreHorizontal className="w-3.5 h-3.5" /></button>
-              <button className="hover:text-white p-0.5"><X className="w-3.5 h-3.5" /></button>
-            </div>
-          </div>
-
-          {/* Navigation Tabs */}
-          <div className="flex items-center gap-6 px-3 py-2 border-b border-gray-800/50 text-xs font-bold text-gray-400">
-            {['Following', 'Trending', 'Civic News'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveNewsTab(tab)}
-                className={`relative py-0.5 transition-colors ${
-                  activeNewsTab === tab ? 'text-white font-extrabold' : 'hover:text-gray-300'
-                }`}
-              >
-                {tab}
-                {activeNewsTab === tab && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400 shadow-[0_0_8px_#00f3ff]" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Posts Scroll Feed */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin">
-            {posts.map((post) => (
-              <article key={post.id} className="bg-[#101622] border border-[#1d273a] rounded-xl p-3 shadow-lg">
-                {/* Author row */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <img 
-                      src={post.avatar} 
-                      alt={post.author} 
-                      className="w-7 h-7 rounded-full object-cover border border-cyan-500/40"
-                    />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs font-bold text-white truncate">{post.author}</span>
-                        {post.verified && <CheckCircle2 className="w-3 h-3 text-cyan-400 fill-cyan-400/20" />}
-                      </div>
-                      <span className="text-[10px] text-gray-400 font-mono">{post.handle}</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-gray-500 font-mono">{post.time}</span>
-                </div>
-
-                {/* Content */}
-                <p className="text-xs text-gray-200 leading-relaxed mb-2.5">{post.content}</p>
-
-                {/* Attached Image */}
-                {post.image && (
-                  <div className="rounded-lg overflow-hidden border border-gray-800 mb-2.5">
-                    <img src={post.image} alt="Attachment" className="w-full h-36 object-cover hover:scale-105 transition-transform duration-300" />
-                  </div>
-                )}
-
-                {/* Crypto Chart Graph Attachment */}
-                {post.chart && (
-                  <div className="bg-[#090d16] border border-emerald-950/60 rounded-lg p-2.5 mb-2.5">
-                    <div className="flex items-center justify-between text-[10px] text-emerald-400 font-bold mb-1">
-                      <span>$CVC / USD</span>
-                      <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" /> +14.2%</span>
-                    </div>
-                    {/* SVG Line Graph */}
-                    <svg className="w-full h-12 stroke-emerald-400 fill-emerald-500/10" viewBox="0 0 200 40">
-                      <path d="M0,35 Q30,20 60,28 T120,15 T180,8 L200,5 L200,40 L0,40 Z" />
-                      <path d="M0,35 Q30,20 60,28 T120,15 T180,8 L200,5" fill="none" strokeWidth="2" />
-                    </svg>
-                  </div>
-                )}
-
-                {/* Action Counts Row */}
-                <div className="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-800/60">
-                  <button className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    <span>{post.comments}</span>
-                  </button>
-                  <button className="flex items-center gap-1 hover:text-emerald-400 transition-colors">
-                    <Repeat2 className="w-3.5 h-3.5" />
-                    <span>{post.retweets > 999 ? `${(post.retweets/1000).toFixed(1)}K` : post.retweets}</span>
-                  </button>
-                  <button 
-                    onClick={() => toggleLike(post.id)}
-                    className={`flex items-center gap-1 transition-colors ${post.liked ? 'text-pink-500 font-bold' : 'hover:text-pink-400'}`}
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${post.liked ? 'fill-current' : ''}`} />
-                    <span>{post.likes > 999 ? `${(post.likes/1000).toFixed(1)}K` : post.likes}</span>
-                  </button>
-                  <button className="hover:text-gray-200">
-                    <Share2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+          <CivicNewsFeed />
         </aside>
       </div>
 
