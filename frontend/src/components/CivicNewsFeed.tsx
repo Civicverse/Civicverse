@@ -62,6 +62,7 @@ export const CivicNewsFeed: React.FC = () => {
 
   // Auto-scroll mechanics
   const feedScrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollPosRef = useRef<number>(0);
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [isUserInteracting, setIsUserInteracting] = useState<boolean>(false);
   const autoScrollRafRef = useRef<number | null>(null);
@@ -74,6 +75,14 @@ export const CivicNewsFeed: React.FC = () => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   };
+
+  // Reset scroll to top on tab change
+  useEffect(() => {
+    scrollPosRef.current = 0;
+    if (feedScrollRef.current) {
+      feedScrollRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
 
   // --------------------------------------------------------------------------
   // 1. DATA INITIALIZATION & REAL-TIME REFRESH
@@ -153,7 +162,7 @@ export const CivicNewsFeed: React.FC = () => {
   }, [activeTab, followingArticles, trendingArticles, civicArticles, searchQuery]);
 
   // --------------------------------------------------------------------------
-  // 3. SILKY AUTO-SCROLL ENGINE
+  // 3. SILKY AUTO-SCROLL ENGINE (CONTINUOUS TELEPROMPTER)
   // --------------------------------------------------------------------------
   useEffect(() => {
     const container = feedScrollRef.current;
@@ -163,27 +172,37 @@ export const CivicNewsFeed: React.FC = () => {
     }
 
     const speedMap = {
-      slow: 0.35,   // ~21 px/sec (teleprompter style)
-      normal: 0.75, // ~45 px/sec
-      fast: 1.35    // ~80 px/sec
+      slow: 0.65,    // ~39 px/sec
+      normal: 1.25,  // ~75 px/sec
+      fast: 2.2      // ~130 px/sec
     };
-    const speed = speedMap[preferences.scrollSpeed] || 0.35;
+    const speed = speedMap[preferences.scrollSpeed] || 0.65;
 
     let lastTimestamp = performance.now();
+    scrollPosRef.current = container.scrollTop;
 
     const step = (now: number) => {
-      const delta = (now - lastTimestamp) / 16.6; // normalized 60fps frame delta
+      const delta = Math.min(2.5, (now - lastTimestamp) / 16.6); // normalized 60fps delta
       lastTimestamp = now;
 
       const shouldPause = (preferences.pauseOnHover && isHovered) || isUserInteracting;
 
       if (!shouldPause && container) {
-        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 2) {
-          // Reached bottom: smooth loop back to top
-          container.scrollTop = 0;
-        } else {
-          container.scrollTop += speed * delta;
+        scrollPosRef.current += speed * delta;
+        const maxScroll = container.scrollHeight - container.clientHeight;
+
+        if (maxScroll > 10) {
+          if (scrollPosRef.current >= maxScroll) {
+            // Reached bottom: wrap back to top smoothly
+            scrollPosRef.current = 0;
+            container.scrollTop = 0;
+          } else {
+            container.scrollTop = Math.round(scrollPosRef.current);
+          }
         }
+      } else if (container) {
+        // Keep accumulator synced with user manual scroll
+        scrollPosRef.current = container.scrollTop;
       }
 
       autoScrollRafRef.current = requestAnimationFrame(step);
@@ -198,10 +217,13 @@ export const CivicNewsFeed: React.FC = () => {
 
   const handleUserWheel = () => {
     setIsUserInteracting(true);
+    if (feedScrollRef.current) {
+      scrollPosRef.current = feedScrollRef.current.scrollTop;
+    }
     if (interactionTimeoutRef.current) clearTimeout(interactionTimeoutRef.current);
     interactionTimeoutRef.current = setTimeout(() => {
       setIsUserInteracting(false);
-    }, 2500);
+    }, 1800);
   };
 
   // --------------------------------------------------------------------------
@@ -374,7 +396,7 @@ export const CivicNewsFeed: React.FC = () => {
           })}
         </div>
 
-        {/* Auto-Scroll Quick Status Pill */}
+        {/* Auto-Scroll Quick Status Pill & Speed Cycler */}
         <div className="flex items-center gap-1">
           <button
             onClick={() => handleUpdatePref('autoScroll', !preferences.autoScroll)}
@@ -383,11 +405,34 @@ export const CivicNewsFeed: React.FC = () => {
                 ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.3)]'
                 : 'bg-gray-900 border-gray-700 text-gray-500'
             }`}
-            title="Toggle Automatic Slow Scrolling"
+            title="Toggle Automatic Slow Scrolling (Play / Pause)"
           >
-            {preferences.autoScroll ? <Play className="w-2 h-2 fill-current" /> : <Pause className="w-2 h-2 fill-current" />}
-            <span>AUTO-SCROLL</span>
+            {preferences.autoScroll ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>ROLLING</span>
+              </>
+            ) : (
+              <>
+                <Pause className="w-2 h-2 fill-current" />
+                <span>PAUSED</span>
+              </>
+            )}
           </button>
+
+          {preferences.autoScroll && (
+            <button
+              onClick={() => {
+                const nextSpeed = preferences.scrollSpeed === 'slow' ? 'normal' : preferences.scrollSpeed === 'normal' ? 'fast' : 'slow';
+                handleUpdatePref('scrollSpeed', nextSpeed);
+                showToast(`Auto-Scroll Speed: ${nextSpeed.toUpperCase()}`);
+              }}
+              className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#101929] border border-cyan-500/30 text-cyan-300 hover:border-cyan-400"
+              title="Click to Cycle Speed (Slow / Normal / Fast)"
+            >
+              {preferences.scrollSpeed === 'slow' ? '0.6x' : preferences.scrollSpeed === 'normal' ? '1.2x' : '2.2x'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -396,8 +441,8 @@ export const CivicNewsFeed: React.FC = () => {
       {/* ==================================================================== */}
       <div
         ref={feedScrollRef}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={() => { if (preferences.pauseOnHover) setIsHovered(true); }}
+        onMouseLeave={() => { if (preferences.pauseOnHover) setIsHovered(false); }}
         onWheel={handleUserWheel}
         onTouchMove={handleUserWheel}
         className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin select-text"
