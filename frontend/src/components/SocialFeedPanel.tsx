@@ -220,8 +220,8 @@ export default function SocialFeedPanel() {
           <div className="flex items-center gap-6">
             {/* Logo */}
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                <Zap className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg shadow-orange-500/40 border border-orange-500/50 shrink-0">
+                <img src="/Civicverselogo.png" alt="Civicverse Logo" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                 CIVICVERSE SOCIAL

@@ -16,7 +16,10 @@ export default function MiningPoolPage() {
       <div className="relative z-10 container mx-auto max-w-5xl">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6 animate-slide-up">
           <div>
-            <span className="text-[10px] uppercase tracking-[0.4em] text-neon-orange font-bold mb-2 block">Network Infrastructure</span>
+            <div className="flex items-center gap-2 mb-2">
+              <img src="/Civicverselogo.png" alt="CV" className="w-5 h-5 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.5)] border border-orange-500/40" />
+              <span className="text-[10px] uppercase tracking-[0.4em] text-neon-orange font-bold block">Network Infrastructure</span>
+            </div>
             <NeonText size="5xl" gradient={true} className="block tracking-tighter uppercase font-black">
               Community Mining Pool
             </NeonText>

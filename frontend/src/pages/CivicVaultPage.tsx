@@ -184,7 +184,12 @@ export default function CivicVaultPage() {
 
         {/* Verification Status (Top Bar) */}
         <div className="flex justify-center mb-8 animate-slide-up">
-           <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-full px-6 py-3 flex items-center gap-6">
+           <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-full px-6 py-3 flex items-center gap-5">
+              <div className="flex items-center gap-2">
+                 <img src="/Civicverselogo.png" alt="CV" className="w-6 h-6 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.6)] border border-orange-500/50" />
+                 <span className="text-[11px] font-black text-white tracking-wider">CIVIC_VAULT</span>
+              </div>
+              <span className="text-gray-600">|</span>
               <div className="flex items-center gap-2">
                  <span className="text-[10px] uppercase tracking-widest font-black text-gray-400">PoP_VERIF</span>
                  <div className="flex gap-1.5">

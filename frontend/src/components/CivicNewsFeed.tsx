@@ -172,11 +172,11 @@ export const CivicNewsFeed: React.FC = () => {
     }
 
     const speedMap = {
-      slow: 1.0,    // ~60 px/sec (relaxed reading)
-      normal: 1.4,  // ~84 px/sec (casual phone scroll reading pace - comfortable while multitasking)
-      fast: 2.2     // ~132 px/sec (brisk scan)
+      slow: 0.45,   // ~27 px/sec (relaxed reading pace)
+      normal: 0.85, // ~50 px/sec (calm teleprompter pace, slowed down just a tad)
+      fast: 1.4     // ~84 px/sec (casual scanning pace)
     };
-    const speed = speedMap[preferences.scrollSpeed] || 1.4;
+    const speed = speedMap[preferences.scrollSpeed] || 0.85;
 
     let lastTimestamp = performance.now();
     scrollPosRef.current = container.scrollTop;
@@ -296,7 +296,7 @@ export const CivicNewsFeed: React.FC = () => {
       {/* ==================================================================== */}
       {/* 1. TOP HEADER: TITLE & CONTROLS                                     */}
       {/* ==================================================================== */}
-      <div className="p-2.5 px-3 bg-gradient-to-r from-[#0d1424] via-[#09101d] to-[#0d1424] flex items-center justify-between border-b border-gray-800/80 shrink-0">
+      <div className="p-2.5 px-3 bg-stainless-steel flex items-center justify-between border-b border-stainless-steel shrink-0">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -430,7 +430,7 @@ export const CivicNewsFeed: React.FC = () => {
               className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#101929] border border-cyan-500/30 text-cyan-300 hover:border-cyan-400"
               title="Click to Cycle Speed (Slow / Normal / Fast)"
             >
-              {preferences.scrollSpeed === 'slow' ? '0.8x' : preferences.scrollSpeed === 'normal' ? '1.2x' : '2.0x'}
+              {preferences.scrollSpeed === 'slow' ? '0.5x' : preferences.scrollSpeed === 'normal' ? '0.9x' : '1.4x'}
             </button>
           )}
         </div>
@@ -713,7 +713,7 @@ export const CivicNewsFeed: React.FC = () => {
                               : 'bg-[#121929] border-gray-700 text-gray-400 hover:text-white'
                           }`}
                         >
-                          {spd === 'slow' ? '0.8x Casual' : spd === 'normal' ? '1.2x Phone Scroll' : '2.0x Rapid'}
+                          {spd === 'slow' ? '0.5x Relaxed' : spd === 'normal' ? '0.9x Reading' : '1.4x Fast'}
                         </button>
                       ))}
                     </div>

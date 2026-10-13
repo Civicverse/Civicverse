@@ -42,7 +42,10 @@ export function MissionsPage() {
   return (
     <div className="min-h-screen bg-gradient-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-4xl font-bold text-white mb-2">CivicWatch Missions</h1>
+        <div className="flex items-center gap-3 mb-2">
+          <img src="/Civicverselogo.png" alt="Civicverse Logo" className="w-10 h-10 rounded-full object-cover shadow-[0_0_15px_rgba(255,107,0,0.5)] border border-orange-500/40" />
+          <h1 className="text-4xl font-bold text-white">CivicWatch Missions</h1>
+        </div>
         <p className="text-dark-300 mb-12">Complete real-world civic missions and earn CIVIC rewards</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

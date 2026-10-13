@@ -265,8 +265,8 @@ const CivicWatchPage: React.FC = () => {
       <header className="sticky top-0 z-50 bg-[#0a0c10]/80 backdrop-blur-md border-b border-gray-800 p-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/20">
-              <Shield className="text-white w-6 h-6" />
+            <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg shadow-orange-500/40 border border-orange-500/50 shrink-0">
+              <img src="/Civicverselogo.png" alt="Civicverse Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight italic">CivicWatch <span className="text-blue-500 text-xs font-mono ml-1">v1.3-SOVEREIGN</span></h1>

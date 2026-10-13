@@ -531,7 +531,7 @@ export const CivicMediaPlayer: React.FC = () => {
       {/* ==================================================================== */}
       {/* 1. SINGLE UNIFIED HEADER: FOYER FM (CLEAN & SLEEK)                  */}
       {/* ==================================================================== */}
-      <div className="p-2 px-3 bg-gradient-to-r from-[#0d1424] via-[#09101d] to-[#0d1424] flex items-center justify-between border-b border-[#1b273d] shrink-0">
+      <div className="p-2 px-3 bg-stainless-steel flex items-center justify-between border-b border-stainless-steel shrink-0">
         <div className="flex items-center gap-2">
           <div className="relative flex items-center justify-center">
             <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
@@ -589,7 +589,7 @@ export const CivicMediaPlayer: React.FC = () => {
       {/* ==================================================================== */}
       {/* 2. RETRO-CYBER BOOMBOX CHASSIS & CONSOLE                            */}
       {/* ==================================================================== */}
-      <div className="relative flex-1 bg-gradient-to-b from-[#0b101c] via-[#070b14] to-[#04060c] p-2 flex flex-col justify-between overflow-hidden">
+      <div className="relative flex-1 bg-stainless-steel-dark p-2 flex flex-col justify-between overflow-hidden">
         
         {/* Top Metallic Handle & Screw Accents */}
         <div className="flex items-center justify-between px-1 mb-1 shrink-0 opacity-70">

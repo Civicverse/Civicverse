@@ -122,7 +122,12 @@ export default function SignupPage() {
         <div className="absolute inset-0 grid-glow opacity-20 pointer-events-none" />
         
         <div className="relative z-10 w-full max-w-lg">
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 flex flex-col items-center">
+            <img 
+              src="/Civicverselogo.png" 
+              alt="Civicverse Logo" 
+              className="w-16 h-16 rounded-full object-cover shadow-[0_0_20px_rgba(255,107,0,0.6)] border border-orange-500/50 mb-3" 
+            />
             <NeonText size="4xl" gradient={true} className="block mb-2 uppercase tracking-tighter">
               {mode === 'create' ? '✨ Create CivicID' : '🔑 Restore CivicID'}
             </NeonText>

@@ -119,7 +119,7 @@ const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
     id: 'sys_2',
     playerId: 'system',
     username: '💡 PROTOCOL TIP',
-    text: 'WASD to move, Space to jump, V to toggle 1st/3rd person, T or Enter to chat. Microtransactions generate 1% passive UBI contribution!',
+    text: 'Right-Click to walk, Scroll Wheel to swap weapons, Left-Click to shoot, Space to jump, V for 1st/3rd person. Microtransactions generate 1% passive UBI contribution!',
     color: 'text-cyan-400',
     timestamp: new Date(Date.now() - 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     isSystem: true

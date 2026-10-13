@@ -17,9 +17,14 @@ export default function WelcomePage() {
 
       <div className="relative z-10 container mx-auto max-w-2xl py-12 px-4">
         {/* Header */}
-        <div className="text-center mb-12 animate-slide-up">
+        <div className="text-center mb-12 animate-slide-up flex flex-col items-center">
+          <img 
+            src="/Civicverselogo.png" 
+            alt="Civicverse Logo" 
+            className="w-24 h-24 rounded-full object-cover shadow-[0_0_30px_rgba(255,107,0,0.6)] border border-orange-500/50 mb-4 animate-pulse" 
+          />
           <NeonText size="5xl" gradient={true} className="block mb-4">
-            ∞ CIVICVERSE
+            CIVICVERSE
           </NeonText>
           <p className="text-l md:text-xl text-neon-cyan tracking-widest mb-2 uppercase">
             Sovereign Identity Protocol

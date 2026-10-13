@@ -46,7 +46,6 @@ import { useMultiplayerStore } from '../services/multiplayer';
 export default function FoyerPage() {
   const nav = useNavigate();
   const { user } = useGameStore();
-  const [activeTopTab, setActiveTopTab] = useState('WORLD');
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   
@@ -66,113 +65,40 @@ export default function FoyerPage() {
   };
 
   return (
-    <div className="w-screen h-screen bg-[#07090e] text-white flex flex-col overflow-hidden select-none font-sans">
+    <div className="w-screen h-screen bg-stainless-steel-dark text-white flex flex-col overflow-hidden select-none font-sans">
       
       {/* ======================================================== */}
-      {/* 1. TOP BAR HEADER (MATCHING FOYER_FORMAT.JPG EXACTLY)    */}
+      {/* 1. TOP BAR HEADER: OFFICIAL LOGO & CLEAN CIVICVERSE BRAND */}
       {/* ======================================================== */}
-      <header className="h-12 bg-[#0b1121] border-b border-[#1f293b]/60 px-4 flex items-center justify-between shrink-0 z-30 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-        <div className="flex items-center gap-6">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 via-purple-600 to-pink-500 flex items-center justify-center p-0.5 shadow-[0_0_10px_rgba(6,182,212,0.4)]">
-            <div className="w-full h-full bg-[#0c1017] rounded-[6px] flex items-center justify-center">
-              <span className="text-[11px] font-black text-cyan-400 tracking-tighter">CV</span>
-            </div>
-          </div>
-          <span className="font-extrabold text-sm tracking-wider text-white">CIVICVERSE</span>
+      <header className="h-12 bg-stainless-steel border-b border-stainless-steel px-4 flex items-center justify-between shrink-0 z-30 shadow-[0_12px_32px_rgba(0,0,0,0.6)]">
+        <div 
+          onClick={() => nav('/vault')}
+          className="flex items-center gap-3 cursor-pointer group"
+          title="Return to Civic Vault"
+        >
+          <img 
+            src="/Civicverselogo.png" 
+            alt="Civicverse Logo" 
+            className="w-8 h-8 rounded-full object-cover shadow-[0_0_15px_rgba(255,107,0,0.6)] border border-orange-500/50 group-hover:scale-105 transition-transform" 
+          />
+          <span className="font-black text-sm tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">CIVICVERSE</span>
         </div>
 
-        <div className="flex flex-1 items-center justify-between gap-3 ml-4 min-w-0">
-          <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none py-1 min-w-0">
-            {[
-              { id: 'WORLD', label: 'WORLD', icon: Globe, path: '/foyer' },
-              { id: 'VAULT', label: 'VAULT', icon: Wallet, path: '/vault', pill: '12,450 CVC' },
-              { id: 'GOVERN', label: 'GOVERN', icon: Shield, path: '/governance', badge: '2' },
-              { id: 'MISSIONS', label: 'MISSIONS', icon: Flower2, path: '/missions' },
-              { id: 'CIVICWATCH', label: 'CIVICWATCH', icon: Compass, path: '/civicwatch' },
-              { id: 'MINING', label: 'MINING', icon: Zap, path: '/mining-pool' },
-              { id: 'WARDROBE', label: 'WARDROBE', icon: Users, path: '/wardrobe' },
-              { id: 'SHOP', label: 'SHOP', icon: ShoppingBag, path: '/wardrobe' },
-              { id: 'FRIENDS', label: 'FRIENDS', icon: Users, badge: `${1 + peerCount}` },
-            ].map((link) => {
-              const Icon = link.icon;
-              const isActive = activeTopTab === link.id;
-              return (
-                <button
-                  key={link.id}
-                  onClick={() => {
-                    setActiveTopTab(link.id);
-                    if (link.path && link.path !== '/foyer') {
-                      nav(link.path);
-                    }
-                  }}
-                  className={`transition-all px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 relative whitespace-nowrap shrink-0 ${
-                    isActive
-                      ? 'text-white bg-cyan-950/60 border border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
-                      : 'text-gray-300 hover:text-white hover:bg-white/5 border border-transparent'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-400' : 'text-gray-400'}`} />
-                  <span>{link.label}</span>
-                  {link.badge && (
-                    <span className="bg-red-500 text-white font-black text-[8px] px-1 rounded-full leading-tight">
-                      {link.badge}
-                    </span>
-                  )}
-                  {link.pill && (
-                    <span className="bg-cyan-500/20 text-cyan-400 font-mono text-[8px] px-1 py-0.2 rounded font-extrabold border border-cyan-500/30">
-                      {link.pill}
-                    </span>
-                  )}
-                  {isActive && (
-                    <span className="absolute bottom-0 inset-x-1.5 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#00f3ff]" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="relative">
-              <Search className="w-3 h-3 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search Civicverse..."
-                className="bg-[#161c28] border border-[#263147] rounded-full py-1 pl-7 pr-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 w-32 xl:w-40 transition-all"
-              />
-            </div>
-
-            <div className="flex items-center gap-1 text-gray-400">
-              <button className="p-1 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50" title="Return to Civic Vault" onClick={() => nav('/vault')}>
-                <Shield className="w-3.5 h-3.5 text-cyan-400" />
-              </button>
-              <button className="p-1 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50" title="Missions" onClick={() => nav('/missions')}>
-                <Flower2 className="w-3.5 h-3.5" />
-              </button>
-              <button className="p-1 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50 relative">
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full text-[7px] font-black text-white flex items-center justify-center">2</span>
-              </button>
-              <button className="p-1 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50 relative">
-                <Bell className="w-3.5 h-3.5" />
-                <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
-              </button>
-            </div>
-
-            <div 
-              onClick={() => nav('/vault')}
-              className="flex items-center gap-1.5 bg-[#141b27] border border-[#232f45] rounded-full pl-1 pr-2.5 py-0.5 cursor-pointer hover:border-cyan-500/50 transition-all shrink-0"
-              title="Return to Civic Vault"
-            >
-              <img
-                src={user?.avatar || '/images/streamer_metamike.jpg'}
-                alt="Avatar"
-                className="w-5 h-5 rounded-full object-cover border border-cyan-400"
-              />
-              <span className="text-[11px] font-bold text-white">{user?.username || 'XJAY420X'}</span>
-              <span className="text-[8px] bg-cyan-500/20 text-cyan-400 font-extrabold px-1.5 py-0.5 rounded-full uppercase">
-                VAULT ⮌
-              </span>
-            </div>
+        <div className="flex items-center gap-3">
+          <div 
+            onClick={() => nav('/vault')}
+            className="flex items-center gap-2 bg-[#141b27]/85 hover:bg-[#1a2334] border border-[#323d4e] rounded-full pl-1.5 pr-3 py-1 cursor-pointer hover:border-cyan-500/50 transition-all shadow-[0_0_12px_rgba(0,0,0,0.4)]"
+            title="Return to Civic Vault (Access Govern, Missions, CivicWatch)"
+          >
+            <img
+              src={user?.avatar || '/images/streamer_metamike.jpg'}
+              alt="Avatar"
+              className="w-6 h-6 rounded-full object-cover border border-cyan-400"
+            />
+            <span className="text-xs font-bold text-white">{user?.username || 'XJAY420X'}</span>
+            <span className="text-[9px] bg-cyan-500/20 text-cyan-400 font-extrabold px-1.5 py-0.5 rounded-full uppercase">
+              VAULT ⮌
+            </span>
           </div>
         </div>
       </header>
@@ -180,7 +106,7 @@ export default function FoyerPage() {
       {/* ======================================================== */}
       {/* 2. SUB-HEADER / DISTRICT LOCATION BAR                    */}
       {/* ======================================================== */}
-      <div className="h-8 bg-[#0a0e16]/90 border-b border-[#1a2333]/80 px-4 flex items-center justify-between shrink-0 text-xs z-20">
+      <div className="h-8 bg-stainless-steel-dark/95 border-b border-stainless-steel px-4 flex items-center justify-between shrink-0 text-xs z-20">
         
         {/* Left: District Location & Live Population */}
         <div className="flex items-center gap-3">
@@ -188,14 +114,22 @@ export default function FoyerPage() {
             <MapPin className="w-3.5 h-3.5 fill-current text-cyan-400" />
             <span className="text-white font-bold">{currentLobbyName}</span>
           </div>
-          <span className="text-gray-600">|</span>
-          <span className="text-gray-400 text-[11px]">Citizens in Instance: <strong className="text-cyan-400 font-extrabold">{1 + peerCount}/20</strong></span>
+          <span className="text-gray-500">|</span>
+          <span className="text-gray-300 text-[11px]">Citizens in Instance: <strong className="text-cyan-400 font-extrabold">{1 + peerCount}/20</strong></span>
           <span className="flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> • {connectionMode.toUpperCase()}
           </span>
         </div>
 
-        {/* Right: Clean & Unobstructed above newsfeed (Filler junk removed) */}
+        {/* Right: Quick Controls Hint */}
+        <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono text-gray-400">
+          <span className="text-cyan-400 font-bold">CONTROLS:</span>
+          <span>Right-Click Walk</span>
+          <span>•</span>
+          <span>Left-Click Shoot</span>
+          <span>•</span>
+          <span>Scroll Wheel Swap</span>
+        </div>
       </div>
 
       {/* ======================================================== */}
@@ -206,12 +140,12 @@ export default function FoyerPage() {
         {/* ------------------------------------------------------ */}
         {/* LEFT COLUMN: LIVESTREAM & MEDIA PLAYER                 */}
         {/* ------------------------------------------------------ */}
-        <aside className="w-80 sharp-panel border-r border-[#1a2333]/80 flex flex-col shrink-0 overflow-hidden z-10">
+        <aside className="w-80 sharp-panel border-r border-stainless-steel bg-stainless-steel-dark flex flex-col shrink-0 overflow-hidden z-10 shadow-[5px_0_25px_rgba(0,0,0,0.5)]">
           
           {/* SECTION A: LIVESTREAM */}
-          <div className="flex-1 flex flex-col border-b border-[#1a2333]/80 overflow-hidden">
+          <div className="flex-1 flex flex-col border-b border-stainless-steel overflow-hidden">
             {/* Header */}
-            <div className="p-2.5 px-3 bg-[#0d131f] flex items-center justify-between border-b border-gray-800/60">
+            <div className="p-2.5 px-3 bg-stainless-steel flex items-center justify-between border-b border-stainless-steel">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="text-xs font-black tracking-wider text-white uppercase">DISTRICT LIVE CHAT</span>
@@ -223,7 +157,7 @@ export default function FoyerPage() {
             </div>
 
             {/* Video View */}
-            <div className="relative h-44 bg-black overflow-hidden group">
+            <div className="relative h-44 bg-stainless-steel-dark overflow-hidden group">
               <img 
                 src="/images/streamer_metamike.jpg" 
                 alt="Streamer" 
@@ -236,7 +170,7 @@ export default function FoyerPage() {
               </div>
 
               {/* Viewer Count */}
-              <div className="absolute top-2 right-2 bg-[#04070c] text-white text-[10px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border border-[#1a2233] shadow-[0_0_18px_rgba(0,0,0,0.25)]">
+              <div className="absolute top-2 right-2 bg-[#04070c]/90 text-white text-[10px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border border-[#323d4e] shadow-[0_0_18px_rgba(0,0,0,0.35)]">
                 👁 {1 + peerCount} CITIZENS
               </div>
 
@@ -252,12 +186,12 @@ export default function FoyerPage() {
             </div>
 
             {/* Stream Chat Feed */}
-            <div className="flex-1 flex flex-col p-2.5 overflow-hidden bg-[#090d16]">
+            <div className="flex-1 flex flex-col p-2.5 overflow-hidden bg-stainless-steel-dark">
               <div className="flex-1 overflow-y-auto space-y-2 pr-1 font-sans text-[11px] scrollbar-thin">
                 {chatHistory.map((msg) => (
                   <div key={msg.id} className="leading-tight break-words">
                     <span className={`font-bold mr-1.5 ${msg.color || 'text-cyan-400'}`}>{msg.username}:</span>
-                    <span className="text-gray-300">{msg.text}</span>
+                    <span className="text-gray-200">{msg.text}</span>
                   </div>
                 ))}
               </div>
@@ -269,7 +203,7 @@ export default function FoyerPage() {
                   value={streamChatInput}
                   onChange={(e) => setStreamChatInput(e.target.value)}
                   placeholder="Broadcast to district..."
-                  className="w-full bg-[#121824] border border-[#232f45] rounded-lg py-1.5 pl-3 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-[#121824]/90 border border-[#323d4e] rounded-lg py-1.5 pl-3 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                 />
                 <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300">
                   <Send className="w-3.5 h-3.5" />
@@ -279,7 +213,7 @@ export default function FoyerPage() {
           </div>
 
           {/* SECTION B: FOYER FM BOOMBOX MEDIA PLAYER */}
-          <div className="h-[310px] flex flex-col bg-[#080c14] overflow-hidden shrink-0">
+          <div className="h-[310px] flex flex-col bg-stainless-steel-panel overflow-hidden shrink-0 border-t border-stainless-steel">
             <CivicMediaPlayer />
           </div>
         </aside>
@@ -287,34 +221,34 @@ export default function FoyerPage() {
         {/* ------------------------------------------------------ */}
         {/* CENTER COLUMN: 3D GAME ENGINE VIEWPORT & HUD          */}
         {/* ------------------------------------------------------ */}
-        <main className="flex-1 relative bg-black overflow-hidden">
+        <main className="flex-1 relative bg-stainless-steel-dark overflow-hidden">
           <GodotFoyer onExit={() => nav('/vault')} />
         </main>
 
         {/* ------------------------------------------------------ */}
         {/* RIGHT COLUMN: REAL-TIME CIVIC & OPEN SOURCE NEWSFEED   */}
         {/* ------------------------------------------------------ */}
-        <aside className="w-80 sharp-panel border-l border-[#1a2333]/80 flex flex-col shrink-0 overflow-hidden z-10">
+        <aside className="w-80 sharp-panel border-l border-stainless-steel bg-stainless-steel-dark flex flex-col shrink-0 overflow-hidden z-10 shadow-[-5px_0_25px_rgba(0,0,0,0.5)]">
           <CivicNewsFeed />
         </aside>
       </div>
 
       {/* ======================================================== */}
-      {/* 4. BOTTOM STATUS HUD (CONSOLIDATED MAIN TABS AT TOP)     */}
+      {/* 4. BOTTOM STATUS HUD (STAINLESS STEEL FINISH)            */}
       {/* ======================================================== */}
-      <footer className="h-8 bg-[#090c12]/95 border-t border-[#1a2333]/80 px-4 flex items-center justify-between shrink-0 z-30">
+      <footer className="h-8 bg-stainless-steel border-t border-stainless-steel px-4 flex items-center justify-between shrink-0 z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.4)]">
         
         {/* Left: Civicverse OS & Mesh Network */}
         <div className="flex items-center gap-3">
           <button 
             onClick={() => nav('/vault')}
-            className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-[0_0_10px_rgba(6,182,212,0.4)] hover:scale-105 transition-transform" 
+            className="w-6 h-6 rounded-full overflow-hidden shadow-[0_0_10px_rgba(255,107,0,0.6)] border border-orange-500/50 hover:scale-105 transition-transform" 
             title="Return to Civic Vault"
           >
-            <Shield className="w-3.5 h-3.5 text-white" />
+            <img src="/Civicverselogo.png" alt="CV" className="w-full h-full object-cover" />
           </button>
-          <span className="text-[11px] font-mono font-bold text-gray-400">CIVICVERSE OS v2.4</span>
-          <span className="text-gray-600">|</span>
+          <span className="text-[11px] font-mono font-bold text-gray-300">CIVICVERSE OS v2.4</span>
+          <span className="text-gray-500">|</span>
           <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>P2P MESH ONLINE</span>

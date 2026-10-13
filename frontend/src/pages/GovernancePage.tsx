@@ -134,8 +134,8 @@ export function GovernancePage() {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-2">
-               <Shield className="text-blue-500 w-5 h-5" />
-               <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">Decentralized Autonomous Organization</span>
+               <img src="/Civicverselogo.png" alt="CV" className="w-6 h-6 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.5)] border border-orange-500/40" />
+               <span className="text-xs font-bold text-orange-400 uppercase tracking-widest">Decentralized Autonomous Organization</span>
             </div>
             <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase">Governance</h1>
             <p className="text-gray-400 mt-2 font-medium">Protocol parameters and treasury allocation controlled by <span className="text-blue-400">Civic IDs</span>.</p>

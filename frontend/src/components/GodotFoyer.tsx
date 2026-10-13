@@ -59,6 +59,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const [tipSuccess, setTipSuccess] = useState('');
   const isChatFocusedRef = useRef(false);
   const chatInputRef = useRef<HTMLInputElement>(null);
+  const activeSlotRef = useRef<number>(4);
 
   // Store camera mode ref so event listeners don't re-mount the Three.js scene
   const cameraModeRef = useRef<'3RD' | '1ST'>('3RD');
@@ -138,8 +139,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // ========================================================
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a0628); // Vibrant purple night sky
-    scene.fog = new THREE.FogExp2(0x2a083b, 0.0018); // Bright neon atmosphere
+    scene.background = new THREE.Color(0x181e28); // Sleek stainless steel night sky
+    scene.fog = new THREE.FogExp2(0x1e2532, 0.0014); // Brushed metal atmosphere
 
     // -----------------------------
     // Procedural PBR Texture Helpers
@@ -224,6 +225,28 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         normal: canvasToTexture(norm),
         roughness: canvasToTexture(rough),
         metalness: 0.2
+      };
+    };
+
+    const generateStainlessSteelPBR = () => {
+      const size = 512;
+      const alc = makeCanvas(size, size);
+      const actx = alc.getContext('2d')!;
+      actx.fillStyle = '#2b3342';
+      actx.fillRect(0, 0, size, size);
+      for (let y = 0; y < size; y++) {
+        const shade = Math.floor(190 + Math.random() * 65);
+        const a = 0.04 + Math.random() * 0.12;
+        actx.fillStyle = `rgba(${shade}, ${shade}, ${shade + 12}, ${a})`;
+        actx.fillRect(0, y, size, 1);
+      }
+      const norm = normalFromHeight(alc);
+      const rough = noise(size, size, 0.35);
+      return {
+        albedo: canvasToTexture(alc),
+        normal: canvasToTexture(norm),
+        roughness: canvasToTexture(rough),
+        metalness: 0.92
       };
     };
 
@@ -426,10 +449,40 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     islandMat.normalScale = new THREE.Vector2(0.6, 0.6);
     scene.add(islandBase);
 
-    // Main Plaza Surface
+    // ========================================================
+    // BRUSHED STAINLESS STEEL FOUNDATION (REPLACING BLACK VOID)
+    // ========================================================
+    const voidGroundGeo = new THREE.PlaneGeometry(4200, 4200);
+    const steelPBR = generateStainlessSteelPBR();
+    steelPBR.albedo.repeat.set(24, 24);
+    steelPBR.normal.repeat.set(24, 24);
+    steelPBR.roughness.repeat.set(24, 24);
+    const voidGroundMat = new THREE.MeshStandardMaterial({
+      map: steelPBR.albedo,
+      normalMap: steelPBR.normal,
+      roughnessMap: steelPBR.roughness,
+      metalness: 0.94,
+      roughness: 0.22,
+      color: 0x9ba6b6,
+      emissive: 0x161e2b
+    });
+    const voidGroundMesh = new THREE.Mesh(voidGroundGeo, voidGroundMat);
+    voidGroundMesh.rotation.x = -Math.PI / 2;
+    voidGroundMesh.position.y = -6.8;
+    voidGroundMesh.receiveShadow = true;
+    scene.add(voidGroundMesh);
+
+    // Main Plaza Surface with Brushed Stainless Steel Sheen
     const plazaGeo = new THREE.PlaneGeometry(280, 280);
-    const plazaTex = generatePBR('plaza', '#181c2e');
-    const plazaMat = new THREE.MeshStandardMaterial({ map: plazaTex.albedo, normalMap: plazaTex.normal, roughnessMap: plazaTex.roughness, metalness: 0.25, emissive: 0x120622 });
+    const plazaMat = new THREE.MeshStandardMaterial({ 
+      map: steelPBR.albedo, 
+      normalMap: steelPBR.normal, 
+      roughnessMap: steelPBR.roughness, 
+      metalness: 0.90, 
+      roughness: 0.26,
+      color: 0xa8b4c4,
+      emissive: 0x1a2230 
+    });
     const plaza = new THREE.Mesh(plazaGeo, plazaMat);
     plaza.rotation.x = -Math.PI / 2;
     plaza.position.set(0, 0.002, 0);
@@ -551,14 +604,27 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     rightWing.rotation.z = -Math.PI / 4;
     statueGroup.add(rightWing);
 
-    // Silver Geometric CV Logo Sculpture
+    // Official Civicverse Logo Medallion Sculpture
     const cvSculpture = new THREE.Group();
-    cvSculpture.position.set(0, 4, 9);
-    const torus = new THREE.Mesh(
-      new THREE.TorusGeometry(3.5, 0.45, 16, 32),
-        new THREE.MeshStandardMaterial({ color: 0xff00aa, emissive: 0xff00aa, emissiveIntensity: 1.5, metalness: 0.95 })
+    cvSculpture.position.set(0, 5, 9);
+
+    const logoTexture = loader.load('/Civicverselogo.png');
+    logoTexture.encoding = THREE.sRGBEncoding;
+
+    const medallionGeo = new THREE.CylinderGeometry(3.4, 3.4, 0.4, 48);
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x8a94a4, metalness: 0.95, roughness: 0.2 });
+    const faceMat = new THREE.MeshStandardMaterial({ map: logoTexture, metalness: 0.88, roughness: 0.22 });
+    const medallion = new THREE.Mesh(medallionGeo, [rimMat, faceMat, faceMat]);
+    medallion.rotation.x = Math.PI / 2;
+    cvSculpture.add(medallion);
+
+    // Glowing Neon Aura Ring around the medallion
+    const neonAura = new THREE.Mesh(
+      new THREE.TorusGeometry(3.8, 0.12, 16, 48),
+      new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 2.5 })
     );
-    cvSculpture.add(torus);
+    cvSculpture.add(neonAura);
+
     statueGroup.add(cvSculpture);
 
     scene.add(statueGroup);
@@ -828,7 +894,11 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       keys[e.code] = false;
     };
 
-    // WEAPON FIRE & SOUND EFFECT
+    // ========================================================
+    // GAME CONTROLS: FREE AIM, RIGHT-CLICK WALK, WEAPON SWAP
+    // ========================================================
+
+    let isRightMouseDown = false;
 
     const playLaserSound = () => {
       try {
@@ -858,9 +928,73 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       }
     };
 
+    const playWeaponSwapSound = () => {
+      try {
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        const ctx = audioCtxRef.current;
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(480, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(960, ctx.currentTime + 0.05);
+
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      } catch (err) {}
+    };
+
+    const slotPlasmaColors: Record<number, number> = {
+      1: 0x00f3ff, // Aegis Shield
+      2: 0xfacc15, // Golden Node
+      3: 0xef4444, // Crimson Blade
+      4: 0x06b6d4, // Cyan Rifle Core
+      5: 0xa855f7, // Void Orb
+      6: 0x10b981, // Emerald Arc
+      7: 0xec4899, // Pink Starlight
+      8: 0xf97316, // Solar Flare
+    };
+
+    const updateWeaponSlot = (newSlot: number) => {
+      activeSlotRef.current = newSlot;
+      setActiveSlot(newSlot);
+      playWeaponSwapSound();
+
+      const col = slotPlasmaColors[newSlot] || 0x00f3ff;
+      try {
+        if (magCore && magCore.material) {
+          (magCore.material as THREE.MeshStandardMaterial).color.setHex(col);
+          (magCore.material as THREE.MeshStandardMaterial).emissive.setHex(col);
+        }
+        if (muzzleLight) {
+          muzzleLight.color.setHex(col);
+        }
+      } catch (e) {}
+    };
+
     const onMouseDown = (e: MouseEvent) => {
       if (isChatFocusedRef.current) return;
-      if (e.button === 0 && document.pointerLockElement === containerRef.current) { // Left Click Shoot
+
+      // Auto-lock pointer for seamless mouse free aiming
+      if (document.pointerLockElement !== containerRef.current) {
+        const target = e.target as HTMLElement;
+        if (!target?.closest('form') && target?.tagName !== 'INPUT' && target?.tagName !== 'BUTTON') {
+          containerRef.current?.requestPointerLock();
+        }
+      }
+
+      // Left Click: Shoot
+      if (e.button === 0) {
         muzzleLight.intensity = 80;
         weaponGroup.position.z = -0.22; // Recoil kick back (small)
         weaponGroup.rotation.x = -0.12;
@@ -872,6 +1006,48 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         setTimeout(() => {
           muzzleLight.intensity = 0;
         }, 70);
+      }
+
+      // Right Click: Hold to Walk Forward
+      if (e.button === 2) {
+        e.preventDefault();
+        isRightMouseDown = true;
+        if (document.pointerLockElement !== containerRef.current) {
+          const target = e.target as HTMLElement;
+          if (!target?.closest('form') && target?.tagName !== 'INPUT' && target?.tagName !== 'BUTTON') {
+            containerRef.current?.requestPointerLock();
+          }
+        }
+      }
+    };
+
+    const onMouseUp = (e: MouseEvent) => {
+      if (e.button === 2) {
+        e.preventDefault();
+        isRightMouseDown = false;
+      }
+    };
+
+    const onContextMenu = (e: MouseEvent) => {
+      // Prevent browser context menu so right click walks smoothly
+      e.preventDefault();
+    };
+
+    const onWindowBlur = () => {
+      isRightMouseDown = false;
+    };
+
+    // Scroll Wheel: Swap Weapons
+    const onWheel = (e: WheelEvent) => {
+      if (isChatFocusedRef.current) return;
+      if (document.pointerLockElement === containerRef.current || containerRef.current?.contains(e.target as Node)) {
+        e.preventDefault();
+        const dir = e.deltaY > 0 ? 1 : -1;
+        const current = activeSlotRef.current;
+        let next = current + dir;
+        if (next > 8) next = 1;
+        if (next < 1) next = 8;
+        updateWeaponSlot(next);
       }
     };
 
@@ -889,6 +1065,10 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('contextmenu', onContextMenu);
+    window.addEventListener('blur', onWindowBlur);
     document.addEventListener('pointerlockchange', onPointerLockChange);
 
     // ========================================================
@@ -905,18 +1085,13 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
 
-        // Ocean vertex deformation disabled to avoid shimmering and z-fighting.
-
-        // 2. Player Movement Physics (smooth velocity)
+        // 2. Player Movement: Right Click of the mouse walks forward!
         const moveDir = new THREE.Vector3();
-        // Forward/back mapping: W should move forward in camera space.
-        if (keys['KeyW']) moveDir.z += 1;
-        if (keys['KeyS']) moveDir.z -= 1;
-        // Invert strafing to match camera orientation (A = left, D = right)
-        if (keys['KeyA']) moveDir.x += 1;
-        if (keys['KeyD']) moveDir.x -= 1;
+        if (isRightMouseDown) {
+          moveDir.z += 1;
+        }
 
-        const targetSpeed = keys['ShiftLeft'] ? 14 : 7; // units/sec
+        const targetSpeed = 8; // units/sec smooth walking speed
         let desired = new THREE.Vector3(0, 0, 0);
         if (moveDir.length() > 0) {
           moveDir.normalize();
@@ -1050,6 +1225,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
         // Rotate sky slowly for dynamic backdrop
         try { skyDome.rotation.y += 0.02 * delta; } catch (e) {}
+        try { cvSculpture.rotation.y += 0.6 * delta; } catch (e) {}
 
         // 3. CAMERA MODES & 360° PITCH/YAW POSITIONING
         if (cameraModeRef.current === '1ST') {
@@ -1124,6 +1300,10 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('contextmenu', onContextMenu);
+      window.removeEventListener('blur', onWindowBlur);
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('pointerlockchange', onPointerLockChange);
       try {
@@ -1170,11 +1350,21 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       {/* ======================================================== */}
       <div 
         onClick={toggleCameraMode}
-        className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-[#090d16]/90 border border-cyan-500/50 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer hover:border-cyan-400 transition-all pointer-events-auto"
+        className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-[#090d16]/90 border border-cyan-500/50 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer hover:border-cyan-400 transition-all pointer-events-auto"
       >
         <Camera className="w-4 h-4 text-cyan-400 animate-pulse" />
         <span className="text-xs font-black text-white uppercase tracking-wider">VIEW: {cameraMode} PERSON</span>
         <span className="bg-cyan-500/20 text-cyan-400 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded">PRESS 'V'</span>
+      </div>
+
+      {/* Controls HUD Badge */}
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-stainless-steel-dark/95 border border-cyan-500/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-mono text-gray-200 shadow-[0_0_15px_rgba(0,0,0,0.6)] pointer-events-none">
+        <span className="text-cyan-400 font-bold">CONTROLS:</span>
+        <span className="text-white font-bold">🖱️ Right-Click Walk</span>
+        <span className="text-gray-500">|</span>
+        <span className="text-white font-bold">🖱️ Left-Click Shoot</span>
+        <span className="text-gray-500">|</span>
+        <span className="text-white font-bold">⚙️ Scroll Wheel Swap</span>
       </div>
 
       {/* Quality Controls */}
@@ -1488,12 +1678,12 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             </button>
           ))}
 
-          {/* Center Level Diamond Emblem */}
+          {/* Center Official Civicverse Logo Emblem */}
           <div className="relative mx-2 flex flex-col items-center">
-            <div className="w-11 h-11 bg-gradient-to-br from-cyan-500 via-purple-600 to-pink-600 rounded-lg rotate-45 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.6)] border border-cyan-300">
-              <span className="-rotate-45 text-white font-black text-xs">CV</span>
+            <div className="w-11 h-11 rounded-full overflow-hidden shadow-[0_0_15px_rgba(255,107,0,0.6)] border border-orange-500/50 hover:scale-105 transition-transform">
+              <img src="/Civicverselogo.png" alt="CV" className="w-full h-full object-cover" />
             </div>
-            <div className="mt-2 text-[10px] font-extrabold text-cyan-400 font-mono tracking-tighter">LVL 42</div>
+            <div className="mt-1 text-[10px] font-extrabold text-orange-400 font-mono tracking-tighter">LVL 42</div>
           </div>
 
           {[
