@@ -39,7 +39,7 @@ export interface NewsPreferences {
 
 const DEFAULT_PREFERENCES: NewsPreferences = {
   autoScroll: true,
-  scrollSpeed: 'slow',
+  scrollSpeed: 'normal',
   pauseOnHover: false,
   autoRefreshInterval: 60,
   compactView: false,

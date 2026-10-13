@@ -55,7 +55,6 @@ export default function FoyerPage() {
   const peerCount = useMultiplayerStore(state => state.peerCount);
   const connectionMode = useMultiplayerStore(state => state.connectionMode);
   const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
-  const ubiStatus = useMultiplayerStore(state => state.ubiStatus);
   const sendMessage = useMultiplayerStore(state => state.sendMessage);
   const [streamChatInput, setStreamChatInput] = useState('');
 
@@ -82,78 +81,95 @@ export default function FoyerPage() {
           <span className="font-extrabold text-sm tracking-wider text-white">CIVICVERSE</span>
         </div>
 
-        <div className="flex flex-1 items-center justify-between gap-8 ml-6">
-          <nav className="flex items-center gap-5 text-xs font-semibold text-gray-300">
+        <div className="flex flex-1 items-center justify-between gap-3 ml-4 min-w-0">
+          <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none py-1 min-w-0">
             {[
-              { id: 'HOME', label: 'VAULT', path: '/vault' },
-              { id: 'WORLD', label: 'WORLD', path: '/foyer' },
-              { id: 'GOVERN', label: 'GOVERN', path: '/governance' },
-              { id: 'MISSIONS', label: 'MISSIONS', path: '/missions' },
-              { id: 'CIVICWATCH', label: 'CIVICWATCH', path: '/civicwatch' },
-              { id: 'MINING', label: 'MINING', path: '/mining-pool' },
-              { id: 'WARDROBE', label: 'WARDROBE', path: '/wardrobe' },
-            ].map((link) => (
-              <button
-                key={link.id}
-                onClick={() => {
-                  setActiveTopTab(link.id);
-                  if (link.path !== '/foyer') {
-                    nav(link.path);
-                  }
-                }}
-                className={`transition-colors py-1 relative ${
-                  activeTopTab === link.id
-                    ? 'text-white font-bold'
-                    : 'hover:text-cyan-400'
-                }`}
-              >
-                {link.label}
-                {activeTopTab === link.id && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#00f3ff]" />
-                )}
-              </button>
-            ))}
+              { id: 'WORLD', label: 'WORLD', icon: Globe, path: '/foyer' },
+              { id: 'VAULT', label: 'VAULT', icon: Wallet, path: '/vault', pill: '12,450 CVC' },
+              { id: 'GOVERN', label: 'GOVERN', icon: Shield, path: '/governance', badge: '2' },
+              { id: 'MISSIONS', label: 'MISSIONS', icon: Flower2, path: '/missions' },
+              { id: 'CIVICWATCH', label: 'CIVICWATCH', icon: Compass, path: '/civicwatch' },
+              { id: 'MINING', label: 'MINING', icon: Zap, path: '/mining-pool' },
+              { id: 'WARDROBE', label: 'WARDROBE', icon: Users, path: '/wardrobe' },
+              { id: 'SHOP', label: 'SHOP', icon: ShoppingBag, path: '/wardrobe' },
+              { id: 'FRIENDS', label: 'FRIENDS', icon: Users, badge: `${1 + peerCount}` },
+            ].map((link) => {
+              const Icon = link.icon;
+              const isActive = activeTopTab === link.id;
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => {
+                    setActiveTopTab(link.id);
+                    if (link.path && link.path !== '/foyer') {
+                      nav(link.path);
+                    }
+                  }}
+                  className={`transition-all px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 relative whitespace-nowrap shrink-0 ${
+                    isActive
+                      ? 'text-white bg-cyan-950/60 border border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-400' : 'text-gray-400'}`} />
+                  <span>{link.label}</span>
+                  {link.badge && (
+                    <span className="bg-red-500 text-white font-black text-[8px] px-1 rounded-full leading-tight">
+                      {link.badge}
+                    </span>
+                  )}
+                  {link.pill && (
+                    <span className="bg-cyan-500/20 text-cyan-400 font-mono text-[8px] px-1 py-0.2 rounded font-extrabold border border-cyan-500/30">
+                      {link.pill}
+                    </span>
+                  )}
+                  {isActive && (
+                    <span className="absolute bottom-0 inset-x-1.5 h-0.5 bg-cyan-400 rounded-full shadow-[0_0_8px_#00f3ff]" />
+                  )}
+                </button>
+              );
+            })}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3 h-3 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search Civicverse..."
-                className="bg-[#161c28] border border-[#263147] rounded-full py-1 pl-8 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 w-48 transition-all"
+                className="bg-[#161c28] border border-[#263147] rounded-full py-1 pl-7 pr-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 w-32 xl:w-40 transition-all"
               />
             </div>
 
-            <div className="flex items-center gap-1.5 text-gray-400">
-              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50" title="Return to Civic Vault" onClick={() => nav('/vault')}>
-                <Shield className="w-4 h-4 text-cyan-400" />
+            <div className="flex items-center gap-1 text-gray-400">
+              <button className="p-1 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50" title="Return to Civic Vault" onClick={() => nav('/vault')}>
+                <Shield className="w-3.5 h-3.5 text-cyan-400" />
               </button>
-              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50" title="Missions" onClick={() => nav('/missions')}>
-                <Flower2 className="w-4 h-4" />
+              <button className="p-1 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50" title="Missions" onClick={() => nav('/missions')}>
+                <Flower2 className="w-3.5 h-3.5" />
               </button>
-              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50 relative">
-                <MessageCircle className="w-4 h-4" />
-                <span className="absolute top-0.5 right-0.5 w-3 h-3 bg-red-500 rounded-full text-[8px] font-black text-white flex items-center justify-center">2</span>
+              <button className="p-1 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50 relative">
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full text-[7px] font-black text-white flex items-center justify-center">2</span>
               </button>
-              <button className="p-1.5 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50 relative">
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              <button className="p-1 hover:text-cyan-400 rounded-lg hover:bg-gray-800/50 relative">
+                <Bell className="w-3.5 h-3.5" />
+                <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
               </button>
             </div>
 
             <div 
               onClick={() => nav('/vault')}
-              className="flex items-center gap-2 bg-[#141b27] border border-[#232f45] rounded-full pl-1 pr-3 py-1 cursor-pointer hover:border-cyan-500/50 transition-all"
+              className="flex items-center gap-1.5 bg-[#141b27] border border-[#232f45] rounded-full pl-1 pr-2.5 py-0.5 cursor-pointer hover:border-cyan-500/50 transition-all shrink-0"
               title="Return to Civic Vault"
             >
               <img
                 src={user?.avatar || '/images/streamer_metamike.jpg'}
                 alt="Avatar"
-                className="w-6 h-6 rounded-full object-cover border border-cyan-400"
+                className="w-5 h-5 rounded-full object-cover border border-cyan-400"
               />
-              <span className="text-xs font-bold text-white">{user?.username || 'XJAY420X'}</span>
-              <span className="text-[9px] bg-cyan-500/20 text-cyan-400 font-extrabold px-1.5 py-0.5 rounded-full uppercase">
+              <span className="text-[11px] font-bold text-white">{user?.username || 'XJAY420X'}</span>
+              <span className="text-[8px] bg-cyan-500/20 text-cyan-400 font-extrabold px-1.5 py-0.5 rounded-full uppercase">
                 VAULT ⮌
               </span>
             </div>
@@ -162,63 +178,24 @@ export default function FoyerPage() {
       </header>
 
       {/* ======================================================== */}
-      {/* 2. SUB-HEADER / STATS BAR (LOCATION & ECONOMY TICKER)   */}
+      {/* 2. SUB-HEADER / DISTRICT LOCATION BAR                    */}
       {/* ======================================================== */}
-      <div className="h-9 bg-[#0a0e16]/90 border-b border-[#1a2333]/80 px-4 flex items-center justify-between shrink-0 text-xs z-20">
+      <div className="h-8 bg-[#0a0e16]/90 border-b border-[#1a2333]/80 px-4 flex items-center justify-between shrink-0 text-xs z-20">
         
         {/* Left: District Location & Live Population */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-cyan-400 font-bold">
-            <MapPin className="w-4 h-4 fill-current text-cyan-400" />
+            <MapPin className="w-3.5 h-3.5 fill-current text-cyan-400" />
             <span className="text-white font-bold">{currentLobbyName}</span>
           </div>
-          <span className="text-gray-500">|</span>
-          <span className="text-gray-400">Citizens in Instance: <strong className="text-cyan-400 font-extrabold">{1 + peerCount}/20</strong></span>
+          <span className="text-gray-600">|</span>
+          <span className="text-gray-400 text-[11px]">Citizens in Instance: <strong className="text-cyan-400 font-extrabold">{1 + peerCount}/20</strong></span>
           <span className="flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> • {connectionMode.toUpperCase()}
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> • {connectionMode.toUpperCase()}
           </span>
         </div>
 
-        {/* Right: Economy Ticker Pills */}
-        <div className="flex items-center gap-4">
-          {/* 1% UBI POOL */}
-          <div className="flex items-center gap-1.5 bg-neon-pink/10 border border-neon-pink/30 px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(255,0,128,0.2)]">
-            <span className="text-neon-pink font-bold text-[10px] uppercase">1% UBI POOL</span>
-            <span className="text-white font-extrabold font-mono text-[11px]">{ubiStatus?.ubiPool ? ubiStatus.ubiPool.toFixed(2) : '1,240.50'} CIVIC</span>
-          </div>
-
-          {/* $CVC */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-gray-400 font-bold">$CVC</span>
-            <span className="text-white font-extrabold">2.45</span>
-            <span className="text-emerald-400 font-bold text-[11px]">+4.35%</span>
-          </div>
-
-          {/* CREDIT */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-gray-400 font-bold">CREDIT</span>
-            <span className="text-white font-extrabold">12,450</span>
-            <span className="text-emerald-400 font-bold text-[11px]">+3.2%</span>
-          </div>
-
-          {/* REPUTATION */}
-          <div className="flex items-center gap-1.5">
-            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            <span className="text-gray-400 font-bold">REPUTATION</span>
-            <span className="text-white font-extrabold">8,920</span>
-            <span className="text-amber-400 font-serif italic font-bold">Legendary</span>
-          </div>
-
-          {/* ENERGY */}
-          <div className="flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400" />
-            <span className="text-gray-400 font-bold">ENERGY</span>
-            <div className="w-16 h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
-              <div className="bg-cyan-400 h-full w-[86%]" />
-            </div>
-            <span className="text-white font-bold font-mono text-[11px]">86/100</span>
-          </div>
-        </div>
+        {/* Right: Clean & Unobstructed above newsfeed (Filler junk removed) */}
       </div>
 
       {/* ======================================================== */}
@@ -323,87 +300,63 @@ export default function FoyerPage() {
       </div>
 
       {/* ======================================================== */}
-      {/* 4. BOTTOM NAVIGATION BAR / DOCK                          */}
+      {/* 4. BOTTOM STATUS HUD (CONSOLIDATED MAIN TABS AT TOP)     */}
       {/* ======================================================== */}
-      <footer className="h-12 bg-[#090c12]/95 border-t border-[#1a2333]/80 px-4 flex items-center justify-between shrink-0 z-30">
+      <footer className="h-8 bg-[#090c12]/95 border-t border-[#1a2333]/80 px-4 flex items-center justify-between shrink-0 z-30">
         
-        {/* Left: Civicverse Emblem */}
-        <button className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.4)] hover:scale-105 transition-transform">
-          <Shield className="w-4 h-4 text-white" />
-        </button>
-
-        {/* Center: Dock Navigation Buttons with Badges */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50">
-            <span>Civic ID</span>
+        {/* Left: Civicverse OS & Mesh Network */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => nav('/vault')}
+            className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-[0_0_10px_rgba(6,182,212,0.4)] hover:scale-105 transition-transform" 
+            title="Return to Civic Vault"
+          >
+            <Shield className="w-3.5 h-3.5 text-white" />
           </button>
+          <span className="text-[11px] font-mono font-bold text-gray-400">CIVICVERSE OS v2.4</span>
+          <span className="text-gray-600">|</span>
+          <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>P2P MESH ONLINE</span>
+          </div>
+        </div>
 
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50 relative">
-            <Wallet className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Wallet</span>
-            <span className="bg-red-500 text-white font-black text-[9px] px-1 rounded-full">12</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-xs text-cyan-400 font-extrabold border border-cyan-500/30">
-            <span>12,450 CVC</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50">
-            <span>Messages</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50">
-            <Users className="w-3.5 h-3.5 text-purple-400" />
-            <span>Friends</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50">
-            <span>Inventory</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50">
-            <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
-            <span>Shop</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50">
-            <MapIcon className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Map</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50">
-            <span>Quests</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50 relative">
-            <span>Governance</span>
-            <span className="bg-red-500 text-white font-black text-[9px] px-1 rounded-full">2</span>
-          </button>
-
-          <button className="p-1.5 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-xs text-gray-200 font-bold border border-gray-700/50 relative">
-            <MoreHorizontal className="w-3.5 h-3.5" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white font-black text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center">3</span>
-          </button>
+        {/* Center: Subtle District Status */}
+        <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono text-gray-500">
+          <span>INSTANCE: {currentLobbyName.toUpperCase()}</span>
+          <span>•</span>
+          <span className="text-cyan-500/70">HUD ACTIVE</span>
         </div>
 
         {/* Right: Performance & System Specs */}
         <div className="flex items-center gap-3 text-xs font-mono font-bold text-gray-400">
           <span className="text-emerald-400">60 FPS</span>
           <span>45 MS</span>
+          <span className="text-gray-600">|</span>
 
-          <button onClick={() => setIsMicMuted(!isMicMuted)} className="hover:text-white p-1">
+          <button onClick={() => setIsMicMuted(!isMicMuted)} className="hover:text-white p-1" title={isMicMuted ? "Unmute Mic" : "Mute Mic"}>
             {isMicMuted ? <MicOff className="w-3.5 h-3.5 text-red-400" /> : <Mic className="w-3.5 h-3.5" />}
           </button>
 
-          <button onClick={() => setIsMuted(!isMuted)} className="hover:text-white p-1">
+          <button onClick={() => setIsMuted(!isMuted)} className="hover:text-white p-1" title={isMuted ? "Unmute Audio" : "Mute Audio"}>
             {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
 
-          <button className="hover:text-white p-1">
+          <button className="hover:text-white p-1" title="Settings">
             <Settings className="w-3.5 h-3.5" />
           </button>
 
-          <button className="hover:text-white p-1">
+          <button 
+            className="hover:text-white p-1" 
+            title="Fullscreen"
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+              } else {
+                document.exitFullscreen().catch(() => {});
+              }
+            }}
+          >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
         </div>

@@ -172,11 +172,11 @@ export const CivicNewsFeed: React.FC = () => {
     }
 
     const speedMap = {
-      slow: 0.65,    // ~39 px/sec
-      normal: 1.25,  // ~75 px/sec
-      fast: 2.2      // ~130 px/sec
+      slow: 1.0,    // ~60 px/sec (relaxed reading)
+      normal: 1.4,  // ~84 px/sec (casual phone scroll reading pace - comfortable while multitasking)
+      fast: 2.2     // ~132 px/sec (brisk scan)
     };
-    const speed = speedMap[preferences.scrollSpeed] || 0.65;
+    const speed = speedMap[preferences.scrollSpeed] || 1.4;
 
     let lastTimestamp = performance.now();
     scrollPosRef.current = container.scrollTop;
@@ -265,7 +265,7 @@ export const CivicNewsFeed: React.FC = () => {
 
     setTrendingArticles(updater);
     setCivicArticles(updater);
-    showToast(nextRetweet ? 'Broadcasted to Civicfeed' : 'Broadcast removed');
+    showToast(nextRetweet ? 'Broadcasted to Foyer Feed' : 'Broadcast removed');
   };
 
   const handleShare = (e: React.MouseEvent, article: NewsArticle) => {
@@ -301,7 +301,7 @@ export const CivicNewsFeed: React.FC = () => {
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-black tracking-wider text-white uppercase drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]">
-              CIVIC NEWSFEED
+              FOYER FEED
             </span>
           </div>
           <span className="text-[9px] font-mono text-cyan-400/80 bg-cyan-950/60 border border-cyan-500/30 px-1.5 py-0.2 rounded font-bold uppercase">
@@ -332,7 +332,7 @@ export const CivicNewsFeed: React.FC = () => {
           <button 
             onClick={() => setShowSettingsModal(true)}
             className="p-1 rounded hover:text-white transition-colors"
-            title="Newsfeed Preferences & Auto-Scroll"
+            title="Foyer Feed Preferences & Auto-Scroll"
           >
             <Settings className="w-3.5 h-3.5" />
           </button>
@@ -430,7 +430,7 @@ export const CivicNewsFeed: React.FC = () => {
               className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#101929] border border-cyan-500/30 text-cyan-300 hover:border-cyan-400"
               title="Click to Cycle Speed (Slow / Normal / Fast)"
             >
-              {preferences.scrollSpeed === 'slow' ? '0.6x' : preferences.scrollSpeed === 'normal' ? '1.2x' : '2.2x'}
+              {preferences.scrollSpeed === 'slow' ? '0.8x' : preferences.scrollSpeed === 'normal' ? '1.2x' : '2.0x'}
             </button>
           )}
         </div>
@@ -670,7 +670,7 @@ export const CivicNewsFeed: React.FC = () => {
             <div className="p-3 bg-[#0d1424] border-b border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-black text-white tracking-wider uppercase">NEWSFEED PREFERENCES</span>
+                <span className="text-xs font-black text-white tracking-wider uppercase">FOYER FEED PREFERENCES</span>
               </div>
               <button onClick={() => setShowSettingsModal(false)} className="text-gray-400 hover:text-white p-1">
                 <X className="w-4 h-4" />
@@ -686,9 +686,9 @@ export const CivicNewsFeed: React.FC = () => {
                   <div>
                     <div className="font-bold text-white flex items-center gap-1.5">
                       <Play className="w-3 h-3 text-cyan-400 fill-current" />
-                      <span>Automatic Slow Scrolling</span>
+                      <span>Automatic Casual Scrolling</span>
                     </div>
-                    <div className="text-[10px] text-gray-400">Silky teleprompter scroll through active articles</div>
+                    <div className="text-[10px] text-gray-400">Silky phone-scroll pace through active articles</div>
                   </div>
                   <input
                     type="checkbox"
@@ -713,7 +713,7 @@ export const CivicNewsFeed: React.FC = () => {
                               : 'bg-[#121929] border-gray-700 text-gray-400 hover:text-white'
                           }`}
                         >
-                          {spd === 'slow' ? '0.5x Slow' : spd === 'normal' ? '1.0x Normal' : '2.0x Fast'}
+                          {spd === 'slow' ? '0.8x Casual' : spd === 'normal' ? '1.2x Phone Scroll' : '2.0x Rapid'}
                         </button>
                       ))}
                     </div>
