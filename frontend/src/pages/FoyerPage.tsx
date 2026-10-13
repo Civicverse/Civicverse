@@ -374,8 +374,8 @@ export default function FoyerPage() {
             </div>
           </div>
 
-          {/* SECTION B: CIVIC MEDIA PLAYER (FREE & OPEN SOURCE 60,000+ STATIONS & LIVE PODCASTS) */}
-          <div className="h-72 flex flex-col bg-[#080c14] overflow-hidden shrink-0">
+          {/* SECTION B: FOYER FM BOOMBOX MEDIA PLAYER */}
+          <div className="h-[310px] flex flex-col bg-[#080c14] overflow-hidden shrink-0">
             <CivicMediaPlayer />
           </div>
         </aside>

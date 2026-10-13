@@ -19,6 +19,14 @@ export interface MediaStation {
   description?: string;
 }
 
+export interface TrackMetadata {
+  title: string;
+  artist: string;
+  album?: string;
+  artwork?: string;
+  stationName: string;
+}
+
 export interface PodcastEpisode {
   id: string;
   title: string;
@@ -28,6 +36,110 @@ export interface PodcastEpisode {
   description?: string;
   podcastTitle: string;
   artwork?: string;
+}
+
+/**
+ * Fetch live track metadata (Title, Artist, Album, Artwork) from public station endpoints
+ */
+export async function fetchLiveTrackMetadata(station: MediaStation): Promise<TrackMetadata> {
+  if (!station) {
+    return {
+      title: 'Civicverse Broadcast',
+      artist: 'Foyer FM',
+      stationName: 'Foyer FM'
+    };
+  }
+
+  // 1. Check for SomaFM channels
+  const somaMatch = station.url.match(/somafm\.com\/([a-z0-9]+)/i) || 
+                    station.id.match(/^soma-([a-z0-9]+)/i) || 
+                    (station.id === 'defcon-radio' ? [null, 'defcon'] : null);
+  if (somaMatch && somaMatch[1]) {
+    try {
+      const channel = somaMatch[1].toLowerCase().replace(/^soma-/, '');
+      const res = await fetch(`https://somafm.com/songs/${channel}.json`);
+      if (res.ok) {
+        const data = await res.json();
+        const topSong = data.songs?.[0];
+        if (topSong && topSong.title) {
+          return {
+            title: topSong.title.trim(),
+            artist: topSong.artist ? topSong.artist.trim() : 'SomaFM Broadcast',
+            album: topSong.album ? topSong.album.trim() : station.name,
+            artwork: topSong.albumArt || station.favicon,
+            stationName: station.name
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('SomaFM metadata fetch error:', e);
+    }
+  }
+
+  // 2. Nightwave Plaza
+  if (station.id === 'nightwave-plaza' || station.url.includes('plaza.one')) {
+    try {
+      const res = await fetch('https://api.plaza.one/status');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.song && data.song.title) {
+          return {
+            title: data.song.title.trim(),
+            artist: data.song.artist ? data.song.artist.trim() : 'Nightwave Plaza',
+            album: data.song.album ? data.song.album.trim() : 'Vaporwave Cyberspace',
+            artwork: data.song.artwork_src || data.song.artwork_sm_src || station.favicon,
+            stationName: station.name
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Plaza metadata fetch error:', e);
+    }
+  }
+
+  // 3. Laut.fm channels (e.g. Atomicwave FM)
+  const lautMatch = station.url.match(/laut\.fm\/([a-z0-9_-]+)/i) || 
+                    (station.id === 'atomicwave-fm' ? [null, 'atomicwavefm'] : null);
+  if (lautMatch && lautMatch[1]) {
+    try {
+      const channel = lautMatch[1].toLowerCase();
+      const res = await fetch(`https://api.laut.fm/station/${channel}/current_song`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.title) {
+          return {
+            title: data.title.trim(),
+            artist: data.artist?.name ? data.artist.name.trim() : 'Laut.FM Radio',
+            album: data.album ? data.album.trim() : station.name,
+            artwork: data.image || station.favicon,
+            stationName: station.name
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Laut.fm metadata fetch error:', e);
+    }
+  }
+
+  // 4. Default / Radio-Browser / Icecast station metadata parsing
+  let title = station.name;
+  let artist = station.tags?.length 
+    ? station.tags.slice(0, 3).map(t => t.toUpperCase()).join(' • ') 
+    : '24/7 BROADCAST';
+
+  if (station.name.includes(' - ')) {
+    const parts = station.name.split(' - ');
+    artist = parts[0].trim();
+    title = parts.slice(1).join(' - ').trim();
+  }
+
+  return {
+    title: title || 'Live Audio Stream',
+    artist: artist || 'Civicverse Radio',
+    album: station.description || `${station.bitrate || 128}kbps ${station.codec || 'MP3'}`,
+    artwork: station.favicon,
+    stationName: station.name
+  };
 }
 
 // Verified 100% High-Uptime Curated Stations for Instant Fallback & Seamless Playback
