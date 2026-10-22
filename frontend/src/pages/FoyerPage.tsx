@@ -46,6 +46,13 @@ import { useMultiplayerStore } from '../services/multiplayer';
 export default function FoyerPage() {
   const nav = useNavigate();
   const { user } = useGameStore();
+
+  const handleReturnToVault = () => {
+    if (document.pointerLockElement) {
+      try { document.exitPointerLock(); } catch {}
+    }
+    nav('/vault');
+  };
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   
@@ -71,9 +78,10 @@ export default function FoyerPage() {
       {/* 1. TOP BAR HEADER: OFFICIAL LOGO & CLEAN CIVICVERSE BRAND */}
       {/* ======================================================== */}
       <header className="h-12 bg-stainless-steel border-b border-stainless-steel px-4 flex items-center justify-between shrink-0 z-30 shadow-[0_12px_32px_rgba(0,0,0,0.6)]">
-        <div 
-          onClick={() => nav('/vault')}
-          className="flex items-center gap-3 cursor-pointer group"
+        <button 
+          type="button"
+          onClick={handleReturnToVault}
+          className="flex items-center gap-3 cursor-pointer group bg-transparent border-none p-0 text-left outline-none"
           title="Return to Civic Vault"
         >
           <img 
@@ -82,12 +90,13 @@ export default function FoyerPage() {
             className="w-8 h-8 rounded-full object-cover shadow-[0_0_15px_rgba(255,107,0,0.6)] border border-orange-500/50 group-hover:scale-105 transition-transform" 
           />
           <span className="font-black text-sm tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">CIVICVERSE</span>
-        </div>
+        </button>
 
         <div className="flex items-center gap-3">
-          <div 
-            onClick={() => nav('/vault')}
-            className="flex items-center gap-2 bg-[#141b27]/85 hover:bg-[#1a2334] border border-[#323d4e] rounded-full pl-1.5 pr-3 py-1 cursor-pointer hover:border-cyan-500/50 transition-all shadow-[0_0_12px_rgba(0,0,0,0.4)]"
+          <button 
+            type="button"
+            onClick={handleReturnToVault}
+            className="flex items-center gap-2 bg-[#141b27]/85 hover:bg-[#1a2334] border border-[#323d4e] rounded-full pl-1.5 pr-3 py-1 cursor-pointer hover:border-cyan-500/50 transition-all shadow-[0_0_12px_rgba(0,0,0,0.4)] outline-none"
             title="Return to Civic Vault (Access Govern, Missions, CivicWatch)"
           >
             <img
@@ -99,7 +108,7 @@ export default function FoyerPage() {
             <span className="text-[9px] bg-cyan-500/20 text-cyan-400 font-extrabold px-1.5 py-0.5 rounded-full uppercase">
               VAULT ⮌
             </span>
-          </div>
+          </button>
         </div>
       </header>
 
@@ -241,8 +250,9 @@ export default function FoyerPage() {
         {/* Left: Civicverse OS & Mesh Network */}
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => nav('/vault')}
-            className="w-6 h-6 rounded-full overflow-hidden shadow-[0_0_10px_rgba(255,107,0,0.6)] border border-orange-500/50 hover:scale-105 transition-transform" 
+            type="button"
+            onClick={handleReturnToVault}
+            className="w-6 h-6 rounded-full overflow-hidden shadow-[0_0_10px_rgba(255,107,0,0.6)] border border-orange-500/50 hover:scale-105 transition-transform outline-none" 
             title="Return to Civic Vault"
           >
             <img src="/Civicverselogo.png" alt="CV" className="w-full h-full object-cover" />
