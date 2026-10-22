@@ -43,8 +43,8 @@ namespace CivicverseLauncher
 
         public LauncherForm()
         {
-            InitializeComponent();
             LocateEnvironment();
+            InitializeComponent();
             EnsureDesktopShortcut();
             StartServices();
         }
@@ -61,6 +61,11 @@ namespace CivicverseLauncher
 
             // Try loading app icon
             string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
+            if (!File.Exists(iconPath) && !string.IsNullOrEmpty(repoDir))
+            {
+                string candidate = Path.Combine(repoDir, "app.ico");
+                if (File.Exists(candidate)) iconPath = candidate;
+            }
             if (!File.Exists(iconPath))
             {
                 string candidate = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Civicverse", "app.ico");
@@ -268,6 +273,8 @@ namespace CivicverseLauncher
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             List<string> potentialDirs = new List<string>
             {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Civicverse"),
+                @"C:\Users\frybo\Civicverse",
                 baseDir,
                 Path.Combine(baseDir, "Civicverse"),
                 Path.Combine(baseDir, "..", "Civicverse"),
@@ -617,11 +624,13 @@ namespace CivicverseLauncher
                 if (this.IsDisposed || !this.IsHandleCreated) return;
                 this.BeginInvoke(new Action(() =>
                 {
+                    string time = DateTime.Now.ToString("HH:mm:ss");
+                    string logLine = "[" + time + "] " + message + Environment.NewLine;
                     if (txtLogs != null && !txtLogs.IsDisposed)
                     {
-                        string time = DateTime.Now.ToString("HH:mm:ss");
-                        txtLogs.AppendText("[" + time + "] " + message + Environment.NewLine);
+                        txtLogs.AppendText(logLine);
                     }
+                    try { File.AppendAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "launcher_debug.log"), logLine); } catch {}
                 }));
             }
             catch { }
@@ -648,6 +657,7 @@ namespace CivicverseLauncher
 
         private void LauncherForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            try { File.AppendAllText(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "launcher_debug.log"), "[EXIT] FormClosing triggered. Reason: " + e.CloseReason + Environment.NewLine); } catch {}
             if (!isExiting && e.CloseReason == CloseReason.UserClosing)
             {
                 DialogResult dr = MessageBox.Show(
@@ -679,9 +689,18 @@ namespace CivicverseLauncher
         [STAThread]
         public static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new LauncherForm());
+            try
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new LauncherForm());
+            }
+            catch (Exception ex)
+            {
+                string logFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "launcher_error.txt");
+                File.WriteAllText(logFile, ex.ToString());
+                MessageBox.Show(ex.ToString(), "Civicverse Startup Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
