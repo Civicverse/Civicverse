@@ -1,7 +1,7 @@
 const { spawn } = require('child_process');
 
 function startProcess(command, args, name) {
-  const proc = spawn(command, args, { stdio: 'inherit', shell: true });
+  const proc = spawn(command, args, { stdio: 'inherit', shell: true, cwd: __dirname });
   proc.on('close', (code) => {
     console.log(`${name} exited with code ${code}`);
   });
