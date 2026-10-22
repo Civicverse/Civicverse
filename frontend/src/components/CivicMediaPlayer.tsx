@@ -782,7 +782,7 @@ export const CivicMediaPlayer: React.FC = () => {
           <div className="flex items-center gap-1.5">
             {/* Prev Channel */}
             <button
-              onClick={handlePrevStation}
+              onClick={(e) => { e.stopPropagation(); handlePrevStation(); }}
               className="p-1 text-gray-400 hover:text-white hover:bg-gray-800/60 rounded transition-colors"
               title="Previous Preset Channel"
             >
@@ -791,7 +791,7 @@ export const CivicMediaPlayer: React.FC = () => {
 
             {/* Play / Pause Master Center Button */}
             <button
-              onClick={handleTogglePlay}
+              onClick={(e) => { e.stopPropagation(); handleTogglePlay(); }}
               className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-md active:scale-95 ${
                 isPlaying 
                   ? (visualizerMode === 'xbox' 
@@ -812,7 +812,7 @@ export const CivicMediaPlayer: React.FC = () => {
 
             {/* Next Channel */}
             <button
-              onClick={handleNextStation}
+              onClick={(e) => { e.stopPropagation(); handleNextStation(); }}
               className="p-1 text-gray-400 hover:text-white hover:bg-gray-800/60 rounded transition-colors"
               title="Next Preset Channel"
             >
@@ -823,7 +823,7 @@ export const CivicMediaPlayer: React.FC = () => {
           {/* Volume Deck */}
           <div className="flex items-center gap-1.5">
             <button
-              onClick={handleToggleMute}
+              onClick={(e) => { e.stopPropagation(); handleToggleMute(); }}
               className="p-1 text-gray-400 hover:text-white transition-colors"
               title={isMuted ? 'Unmute' : 'Mute'}
             >

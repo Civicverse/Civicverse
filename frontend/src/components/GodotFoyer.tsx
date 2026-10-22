@@ -839,7 +839,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     const onMouseMove = (e: MouseEvent) => {
       if (isChatFocusedRef.current) return;
-      if (document.pointerLockElement === containerRef.current) {
+      if (document.pointerLockElement === canvasElement) {
         // Horizontal look: use natural movement (positive movementX -> look right)
         yaw -= e.movementX * 0.0022;
         // Vertical look: use natural movement (positive movementY -> look down)
@@ -989,28 +989,23 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     };
 
     // ========================================================
-    // CONTAINER-SCOPED INTERACTION & POINTER LOCK MANAGEMENT
+    // STRICT CANVAS-ONLY INTERACTION & POINTER LOCK ISOLATION
     // ========================================================
-    const onContainerMouseDown = (e: MouseEvent) => {
+    const canvasElement = renderer.domElement;
+    canvasElement.id = 'cv-3d-engine-canvas';
+
+    const onCanvasMouseDown = (e: MouseEvent) => {
       if (isChatFocusedRef.current) return;
 
-      const target = e.target as HTMLElement | null;
-
-      // Do not engage pointer lock or trigger game actions if clicking interactive HUD elements
-      const isInteractiveHUD = target?.closest(
-        'button, input, textarea, select, form, a, [role="button"], [data-hud="true"]'
-      );
-      if (isInteractiveHUD) {
-        return;
-      }
-
-      // If pointer is NOT locked yet, clicking inside the 3D viewport requests pointer lock
-      if (document.pointerLockElement !== containerRef.current) {
-        containerRef.current?.requestPointerLock();
+      // Only engage pointer lock if clicking directly on the 3D WebGL Canvas
+      if (document.pointerLockElement !== canvasElement) {
+        try {
+          canvasElement.requestPointerLock?.();
+        } catch (err) {}
         return; // Do not fire weapon or initiate walking on the lock acquisition click
       }
 
-      // Pointer lock IS active:
+      // Pointer lock IS active strictly on canvas:
       // Left Click: Shoot weapon
       if (e.button === 0) {
         muzzleLight.intensity = 80;
@@ -1039,8 +1034,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       }
     };
 
-    const onContainerContextMenu = (e: MouseEvent) => {
-      // Prevent browser context menu only within 3D viewport so right click walks smoothly
+    const onCanvasContextMenu = (e: MouseEvent) => {
+      // Prevent browser context menu only on 3D canvas so right click walks smoothly
       e.preventDefault();
     };
 
@@ -1049,13 +1044,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       Object.keys(keys).forEach(k => { keys[k] = false; });
     };
 
-    // Scroll Wheel: Swap Weapons inside 3D viewport or when locked
-    const onContainerWheel = (e: WheelEvent) => {
+    // Scroll Wheel: Swap Weapons inside 3D viewport canvas or when locked
+    const onCanvasWheel = (e: WheelEvent) => {
       if (isChatFocusedRef.current) return;
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('.scrollbar-thin, [data-scrollable="true"]')) {
-        return; // Allow scrolling inside HUD menus
-      }
       e.preventDefault();
       const dir = e.deltaY > 0 ? 1 : -1;
       const current = activeSlotRef.current;
@@ -1066,16 +1057,16 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     };
 
     const onPointerLockChange = () => {
-      const locked = document.pointerLockElement === containerRef.current;
+      const locked = document.pointerLockElement === canvasElement;
       setIsPointerLocked(locked);
       if (!locked) {
         isRightMouseDown = false;
       }
     };
 
-    containerRef.current.addEventListener('mousedown', onContainerMouseDown);
-    containerRef.current.addEventListener('contextmenu', onContainerContextMenu);
-    containerRef.current.addEventListener('wheel', onContainerWheel, { passive: false });
+    canvasElement.addEventListener('mousedown', onCanvasMouseDown);
+    canvasElement.addEventListener('contextmenu', onCanvasContextMenu);
+    canvasElement.addEventListener('wheel', onCanvasWheel, { passive: false });
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('keydown', onKeyDown);
@@ -1311,11 +1302,10 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     return () => {
       cancelAnimationFrame(frameId);
-      if (containerRef.current) {
-        containerRef.current.removeEventListener('mousedown', onContainerMouseDown);
-        containerRef.current.removeEventListener('contextmenu', onContainerContextMenu);
-        containerRef.current.removeEventListener('wheel', onContainerWheel);
-      }
+      canvasElement.removeEventListener('mousedown', onCanvasMouseDown);
+      canvasElement.removeEventListener('contextmenu', onCanvasContextMenu);
+      canvasElement.removeEventListener('wheel', onCanvasWheel);
+
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
@@ -1323,7 +1313,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       window.removeEventListener('blur', onWindowBlur);
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('pointerlockchange', onPointerLockChange);
-      if (document.pointerLockElement === containerRef.current) {
+      if (document.pointerLockElement === canvasElement) {
         try { document.exitPointerLock(); } catch {}
       }
       try {

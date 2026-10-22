@@ -40,9 +40,13 @@ if (fs.existsSync(docsAssetsDir)) {
   fs.mkdirSync(docsAssetsDir, { recursive: true });
 }
 
-// Copy dist index.html to root and docs/
-fs.copyFileSync(path.join(distDir, 'index.html'), path.join(rootDir, 'index.html'));
-fs.copyFileSync(path.join(distDir, 'index.html'), path.join(docsDir, 'index.html'));
+// Copy dist index.html to root and docs with cache buster query string
+const buildTimestamp = Date.now();
+let indexContent = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8');
+indexContent = indexContent.replace(/src="(\.\/assets\/index-[^"]+\.js)"/g, `src="$1?t=${buildTimestamp}"`);
+indexContent = indexContent.replace(/href="(\.\/assets\/index-[^"]+\.css)"/g, `href="$1?t=${buildTimestamp}"`);
+fs.writeFileSync(path.join(rootDir, 'index.html'), indexContent);
+fs.writeFileSync(path.join(docsDir, 'index.html'), indexContent);
 
 // Copy all dist assets to root/assets and docs/assets
 for (const asset of distAssets) {

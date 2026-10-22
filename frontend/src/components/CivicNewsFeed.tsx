@@ -374,7 +374,7 @@ export const CivicNewsFeed: React.FC = () => {
             return (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={(e) => { e.stopPropagation(); setActiveTab(tab); }}
                 className={`relative py-1 transition-all flex items-center gap-1.5 ${
                   isActive ? 'text-white font-extrabold' : 'text-gray-400 hover:text-gray-200'
                 }`}
