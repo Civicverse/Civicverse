@@ -105,7 +105,10 @@ jobs:
       
       - name: SSH Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
-        if: ${{ vars.DEPLOY_HOST != '' && secrets.DEPLOY_USER != '' && secrets.DEPLOY_KEY != '' }}
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        if: ${{ vars.DEPLOY_HOST != '' && env.DEPLOY_USER != '' && env.DEPLOY_KEY != '' }}
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
