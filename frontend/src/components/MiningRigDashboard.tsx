@@ -20,7 +20,7 @@ export type MiningConfig = {
 
 const defaultConfig: MiningConfig = {
   workerName: 'rig-01',
-  poolUrl: 'xmr.pool.minexmr.com:4444',
+  poolUrl: 'pool.supportxmr.com:3333',
   walletAddress: '438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp',
   preset: 'medium',
   threads: navigator.hardwareConcurrency || 4,

@@ -335,6 +335,15 @@ namespace CivicverseLauncher
                 if (Directory.Exists(desktop))
                 {
                     string shortcutPath = Path.Combine(desktop, "Civicverse.lnk");
+                    string desktopExe = Path.Combine(desktop, "Civicverse.exe");
+                    if (File.Exists(desktopExe))
+                    {
+                        if (File.Exists(shortcutPath))
+                        {
+                            try { File.Delete(shortcutPath); } catch { }
+                        }
+                        return;
+                    }
                     string exePath = Path.Combine(repoDir, "Civicverse.exe");
                     string iconPath = Path.Combine(repoDir, "app.ico");
 
