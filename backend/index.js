@@ -18,6 +18,10 @@ const ubiEngine = require('./services/UBI-engine/ubi-service');
 const civicWatch = require('./services/civicwatch-service');
 
 // Security Middleware
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  next();
+});
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false

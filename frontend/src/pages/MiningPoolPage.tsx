@@ -152,7 +152,7 @@ export default function MiningPoolPage() {
                  </div>
               </div>
               <iframe
-                src={`https://supportxmr.com/#/dashboard?address=${TREASURY_WALLET}`}
+                src={`https://www.supportxmr.com/?addr=${TREASURY_WALLET}`}
                 title="Support XMR Mining Pool Dashboard"
                 className="w-full h-[800px] border-0 bg-[#0a0c10]"
                 sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation allow-popups-to-escape-sandbox allow-pointer-lock"

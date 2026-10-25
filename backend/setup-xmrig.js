@@ -60,7 +60,17 @@ async function setup() {
         if (platform === 'win32') {
             // Need powershell or similar for zip on windows if no tool available
             // For now, assume common tools or skip detailed windows logic for brevity
-            console.log('Please extract xmrig.tmp manually on Windows to ' + MINER_DIR);
+            const zipPath = path.join(MINER_DIR, 'xmrig.zip');
+            if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+            fs.renameSync(tmpFile, zipPath);
+            execSync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${MINER_DIR}\\extracted' -Force"`);
+            const subdirs = fs.readdirSync(path.join(MINER_DIR, 'extracted'));
+            const extractedDir = path.join(MINER_DIR, 'extracted', subdirs[0]);
+            for (const f of fs.readdirSync(extractedDir)) {
+                fs.copyFileSync(path.join(extractedDir, f), path.join(MINER_DIR, f));
+            }
+            fs.rmSync(path.join(MINER_DIR, 'extracted'), { recursive: true, force: true });
+            fs.unlinkSync(zipPath);
         } else {
             execSync(`tar -xzf "${tmpFile}" -C "${MINER_DIR}" --strip-components=1`);
             fs.unlinkSync(tmpFile);
