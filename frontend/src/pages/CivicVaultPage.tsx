@@ -50,6 +50,42 @@ export default function CivicVaultPage() {
   const [showSendModal, setShowSendModal] = useState(false)
   const [sendData, setSendData] = useState({ address: '', amount: '' })
   const [microTxMessage, setMicroTxMessage] = useState('')
+  const [copiedTreasury, setCopiedTreasury] = useState(false)
+
+  const TREASURY_WALLET = '438XTJJvpD96uBFFM3jv1fevMx33YW5cjHtPZQ4bXABjfh9RV2eRNa8LiRyVJbDQgEHWpmZSCH836DcvzrQJa52CGBHVSEp'
+
+  const [treasuryStats, setTreasuryStats] = useState({
+    pendingXmr: 0.001615,
+    paidXmr: 0,
+    totalHashes: 1609912860,
+    validShares: 7528,
+    activeWorkers: 1,
+    loading: true
+  })
+
+  useEffect(() => {
+    const fetchTreasuryStats = async () => {
+      try {
+        const res = await fetch(`https://www.supportxmr.com/api/miner/${TREASURY_WALLET}/stats`)
+        if (res.ok) {
+          const data = await res.json()
+          setTreasuryStats({
+            pendingXmr: (data.amtDue || 0) / 1e12,
+            paidXmr: (data.amtPaid || 0) / 1e12,
+            totalHashes: data.totalHashes || 0,
+            validShares: data.validShares || 0,
+            activeWorkers: data.hash > 0 ? 1 : 0,
+            loading: false
+          })
+        }
+      } catch (e) {
+        // Fallback to initial stats
+      }
+    }
+    fetchTreasuryStats()
+    const interval = setInterval(fetchTreasuryStats, 15000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Mock Receipts / Asset Proofs
   const [receipts] = useState([
@@ -131,7 +167,7 @@ export default function CivicVaultPage() {
   }
 
   const stats = [
-    { label: 'Monero Balance', value: `${multiChainAddresses?.MONERO_BALANCE || '0.00'} XMR`, color: 'text-neon-pink' },
+    { label: 'Community Treasury', value: `${(treasuryStats.pendingXmr + treasuryStats.paidXmr).toFixed(4)} XMR`, color: 'text-neon-orange' },
     { label: 'Civic Reputation', value: `${user.trustScore}/100`, color: 'text-neon-cyan' },
     { label: 'Citizen Level', value: `LVL ${user.level}`, color: 'text-neon-purple' },
     { label: 'Badges Earned', value: String(receipts.length), color: 'text-neon-green' },
@@ -141,7 +177,8 @@ export default function CivicVaultPage() {
     { title: 'Gathering Grounds', desc: 'Main Hub', icon: '🌐', path: '/foyer', color: 'border-neon-cyan' },
     { title: 'CivicWatch', desc: 'Missions', icon: '📋', path: '/civicwatch', color: 'border-neon-pink' },
     { title: 'Governance', desc: 'Voting', icon: '🏛️', path: '/governance', color: 'border-neon-purple' },
-    { title: 'Mining Pool', desc: 'Rewards', icon: '⛏️', path: '/mining-pool', color: 'border-neon-orange' },
+    { title: 'Community Treasury', desc: 'Monero Funds', icon: '🏛️', path: '#treasury-section', color: 'border-neon-orange', isAnchor: true },
+    { title: 'Mining Pool', desc: 'Compute Hash', icon: '⛏️', path: '/mining-pool', color: 'border-neon-orange', isAnchor: false },
   ]
 
   return (
@@ -311,11 +348,18 @@ export default function CivicVaultPage() {
           )}
 
           {/* Portal Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 w-full max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-8 w-full max-w-5xl">
             {portals.map((portal, i) => (
               <button 
                 key={i} 
-                onClick={() => nav(portal.path)}
+                onClick={() => {
+                  if (portal.isAnchor) {
+                    const el = document.getElementById('treasury-section');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    nav(portal.path);
+                  }
+                }}
                 className={`group relative text-center p-4 bg-white/5 border ${portal.color}/20 rounded-2xl hover:bg-white/10 hover:${portal.color}/50 backdrop-blur-md transition-all duration-300`}
               >
                 <div className="text-2xl group-hover:scale-110 transition-transform mb-2">{portal.icon}</div>
@@ -337,6 +381,131 @@ export default function CivicVaultPage() {
                 <p className={`text-lg font-black ${stat.color} tracking-tight`}>{stat.value}</p>
               </div>
             ))}
+          </div>
+
+          {/* Civicverse Community Treasury & Monero Reserve Section */}
+          <div id="treasury-section" className="bg-white/5 border border-neon-orange/40 backdrop-blur-xl p-6 sm:p-8 rounded-3xl relative overflow-hidden shadow-[0_0_35px_rgba(255,107,0,0.15)]">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-2xl shadow-[0_0_15px_rgba(255,107,0,0.3)] shrink-0">
+                  🏛️
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-black uppercase tracking-tight text-white">Community Treasury & Monero Reserve</h3>
+                    <span className="text-[9px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold uppercase tracking-widest animate-pulse">
+                      Live Synced
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Real-time view of funds accumulated from community CPU compute to fund Ground Zero physical infrastructure.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => nav('/mining-pool')}
+                  className="px-4 py-2 rounded-xl bg-neon-orange/20 hover:bg-neon-orange/30 border border-neon-orange/50 text-neon-orange text-xs font-bold uppercase tracking-wider transition-all"
+                >
+                  ⛏️ Mine to Treasury
+                </button>
+                <button
+                  onClick={() => nav('/governance')}
+                  className="px-4 py-2 rounded-xl bg-neon-purple/20 hover:bg-neon-purple/30 border border-neon-purple/50 text-neon-purple text-xs font-bold uppercase tracking-wider transition-all"
+                >
+                  🗳️ Vote on Proposals
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-dark-800/60 border border-white/10 p-4 rounded-2xl">
+                <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-1">Accumulated Monero Balance</p>
+                <p className="text-2xl font-black text-neon-orange font-mono">
+                  {(treasuryStats.pendingXmr + treasuryStats.paidXmr).toFixed(6)} <span className="text-xs text-gray-400">XMR</span>
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1">Pending Pool Settlement: {treasuryStats.pendingXmr.toFixed(6)} XMR</p>
+              </div>
+
+              <div className="bg-dark-800/60 border border-white/10 p-4 rounded-2xl">
+                <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-1">Total Community Hashes</p>
+                <p className="text-2xl font-black text-neon-cyan font-mono">
+                  {(treasuryStats.totalHashes / 1e9).toFixed(2)} <span className="text-xs text-gray-400">GH</span>
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1">{treasuryStats.validShares.toLocaleString()} Valid PoW Shares</p>
+              </div>
+
+              <div className="bg-dark-800/60 border border-white/10 p-4 rounded-2xl">
+                <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-1">Next GUI Wallet Payout</p>
+                <p className="text-2xl font-black text-white font-mono">
+                  0.0100 <span className="text-xs text-gray-400">XMR</span>
+                </p>
+                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-2">
+                  <div
+                    className="h-full bg-neon-orange transition-all duration-500"
+                    style={{ width: `${Math.min(100, (treasuryStats.pendingXmr / 0.01) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">{((treasuryStats.pendingXmr / 0.01) * 100).toFixed(1)}% to on-chain payout</p>
+              </div>
+
+              <div className="bg-dark-800/60 border border-white/10 p-4 rounded-2xl">
+                <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-1">Primary Allocation Target</p>
+                <p className="text-base font-black text-emerald-400 mt-1">Ground Zero Node 01</p>
+                <p className="text-[10px] text-gray-400 mt-1">Off-Grid Solar Mining & Shelters</p>
+              </div>
+            </div>
+
+            {/* Public Monero Treasury Address Bar */}
+            <div className="p-4 rounded-2xl bg-black/40 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3 overflow-hidden w-full">
+                <span className="text-xl shrink-0">🔐</span>
+                <div className="overflow-hidden">
+                  <div className="text-[10px] text-gray-400 uppercase tracking-widest font-mono font-bold">Public Monero Treasury Address</div>
+                  <div className="text-xs text-neon-cyan font-mono truncate select-all">{TREASURY_WALLET}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(TREASURY_WALLET)
+                    setCopiedTreasury(true)
+                    setTimeout(() => setCopiedTreasury(false), 2000)
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all active:scale-95"
+                >
+                  {copiedTreasury ? '✓ Copied' : '📋 Copy Address'}
+                </button>
+                <a
+                  href={`https://www.supportxmr.com/?addr=${TREASURY_WALLET}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-neon-orange transition-all flex items-center gap-1"
+                >
+                  <span>Pool Ledger</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+
+            {/* Monero GUI Wallet Sync Explanation */}
+            <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 text-xs text-gray-300">
+              <div className="flex items-start gap-3">
+                <span className="text-xl shrink-0">ℹ️</span>
+                <div className="space-y-1">
+                  <p className="font-bold text-neon-purple uppercase tracking-wide">
+                    How Monero GUI Wallet Syncs With This Page
+                  </p>
+                  <p className="text-[11px] text-gray-300 leading-relaxed">
+                    • <strong>Real-Time Mining Stream:</strong> All hashes from community rigs pool on SupportXMR. Real-time yield (<code className="text-neon-cyan font-bold">{treasuryStats.pendingXmr.toFixed(6)} XMR</code>) updates on this page automatically every 15 seconds.<br />
+                    • <strong>Automated On-Chain Settlement:</strong> When pending balance reaches the 0.01 XMR payout threshold, SupportXMR automatically broadcasts an on-chain transaction directly to our desktop Monero GUI Wallet.<br />
+                    • <strong>Auditable View-Only Key:</strong> Because Monero keeps on-chain balances private, our community audits reserves using our wallet&apos;s read-only <span className="text-white font-semibold">Public View Key</span> (Settings → Keys in Monero GUI). It proves funds without ever compromising the spend key.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Verification Info / PoP Details */}
