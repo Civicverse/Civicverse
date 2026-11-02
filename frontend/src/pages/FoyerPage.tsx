@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { GodotFoyer, CivicMediaPlayer, CivicNewsFeed } from '../components';
+import CivicWatchDistrictPanel from '../components/CivicWatchDistrictPanel';
 import { 
   Shield, 
   Search, 
@@ -9,7 +10,6 @@ import {
   Mail, 
   Globe, 
   Flower2, 
-  MessageCircle, 
   MapPin, 
   TrendingUp, 
   Zap, 
@@ -31,15 +31,11 @@ import {
   Maximize2, 
   Share2, 
   Repeat2, 
-  CheckCircle2, 
   Wallet, 
   Users, 
   ShoppingBag, 
   Map as MapIcon, 
   Compass, 
-  Radio, 
-  Music,
-  Send
 } from 'lucide-react';
 import { useMultiplayerStore } from '../services/multiplayer';
 
@@ -56,20 +52,9 @@ export default function FoyerPage() {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   
-  // Real-time Multiplayer Chat state
-  const chatHistory = useMultiplayerStore(state => state.chatHistory);
   const peerCount = useMultiplayerStore(state => state.peerCount);
   const connectionMode = useMultiplayerStore(state => state.connectionMode);
   const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
-  const sendMessage = useMultiplayerStore(state => state.sendMessage);
-  const [streamChatInput, setStreamChatInput] = useState('');
-
-  const handleSendStreamChat = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!streamChatInput.trim()) return;
-    sendMessage(streamChatInput.trim(), 'text-cyan-400');
-    setStreamChatInput('');
-  };
 
   return (
     <div className="w-screen h-screen bg-stainless-steel-dark text-white flex flex-col overflow-hidden select-none font-sans">
@@ -115,7 +100,7 @@ export default function FoyerPage() {
       {/* ======================================================== */}
       {/* 2. SUB-HEADER / DISTRICT LOCATION BAR                    */}
       {/* ======================================================== */}
-      <div className="h-8 bg-stainless-steel-dark/95 border-b border-stainless-steel px-4 flex items-center justify-between shrink-0 text-xs z-20">
+      <div className="min-h-8 bg-stainless-steel-dark/95 border-b border-stainless-steel px-4 py-1 flex items-center justify-between gap-4 shrink-0 text-xs z-20">
         
         {/* Left: District Location & Live Population */}
         <div className="flex items-center gap-3">
@@ -131,13 +116,10 @@ export default function FoyerPage() {
         </div>
 
         {/* Right: Quick Controls Hint */}
-        <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono text-gray-400">
-          <span className="text-cyan-400 font-bold">CONTROLS:</span>
-          <span>Right-Click Walk</span>
-          <span>•</span>
-          <span>Left-Click Shoot</span>
-          <span>•</span>
-          <span>Scroll Wheel Swap</span>
+        <div className="hidden sm:block max-w-[58%] text-right text-[10px] leading-relaxed font-mono text-gray-300">
+          <span className="font-bold text-cyan-400">HOW TO PLAY:</span>
+          <span> Right-click walks · Click a billboard/building or aim + E for links · T/Enter opens nearby chat with timed gamertag bubbles · V camera · Scroll hotbar</span>
+          <span className="block text-gray-400">CivicWatch tabs: community, static cams, drone, entertainment, news, education · play a video to join its CivicWatch chat · emojis and donations</span>
         </div>
       </div>
 
@@ -147,82 +129,13 @@ export default function FoyerPage() {
       <div className="flex-1 flex overflow-hidden relative">
         
         {/* ------------------------------------------------------ */}
-        {/* LEFT COLUMN: LIVESTREAM & MEDIA PLAYER                 */}
+        {/* LEFT COLUMN: CIVICWATCH HUB & MEDIA PLAYER             */}
         {/* ------------------------------------------------------ */}
         <aside className="w-80 sharp-panel border-r border-stainless-steel bg-stainless-steel-dark flex flex-col shrink-0 overflow-hidden z-10 shadow-[5px_0_25px_rgba(0,0,0,0.5)]">
-          
-          {/* SECTION A: LIVESTREAM */}
-          <div className="flex-1 flex flex-col border-b border-stainless-steel overflow-hidden">
-            {/* Header */}
-            <div className="p-2.5 px-3 bg-stainless-steel flex items-center justify-between border-b border-stainless-steel">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-xs font-black tracking-wider text-white uppercase">DISTRICT LIVE CHAT</span>
-              </div>
-              <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-mono font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{1 + peerCount} ONLINE</span>
-              </div>
-            </div>
-
-            {/* Video View */}
-            <div className="relative h-44 bg-stainless-steel-dark overflow-hidden group">
-              <img 
-                src="/images/streamer_metamike.jpg" 
-                alt="Streamer" 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-
-              {/* LIVE Badge */}
-              <div className="absolute top-2 left-2 bg-red-600/90 text-white font-black text-[9px] px-1.5 py-0.5 rounded flex items-center gap-1 uppercase tracking-wider shadow">
-                ★ LIVE
-              </div>
-
-              {/* Viewer Count */}
-              <div className="absolute top-2 right-2 bg-[#04070c]/90 text-white text-[10px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border border-[#323d4e] shadow-[0_0_18px_rgba(0,0,0,0.35)]">
-                👁 {1 + peerCount} CITIZENS
-              </div>
-
-              {/* Streamer Title Overlay */}
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/60 to-transparent p-2.5">
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-xs font-bold text-white">MetaMike</span>
-                  <CheckCircle2 className="w-3 h-3 text-cyan-400 fill-cyan-400/20" />
-                </div>
-                <p className="text-[11px] text-gray-200 font-medium truncate">Exploring New District!</p>
-                <div className="text-[9px] text-cyan-400 font-mono mt-0.5">#Civicverse #Gameplay #Web3</div>
-              </div>
-            </div>
-
-            {/* Stream Chat Feed */}
-            <div className="flex-1 flex flex-col p-2.5 overflow-hidden bg-stainless-steel-dark">
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1 font-sans text-[11px] scrollbar-thin">
-                {chatHistory.map((msg) => (
-                  <div key={msg.id} className="leading-tight break-words">
-                    <span className={`font-bold mr-1.5 ${msg.color || 'text-cyan-400'}`}>{msg.username}:</span>
-                    <span className="text-gray-200">{msg.text}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Stream Chat Input */}
-              <form onSubmit={handleSendStreamChat} className="mt-2 relative">
-                <input
-                  type="text"
-                  value={streamChatInput}
-                  onChange={(e) => setStreamChatInput(e.target.value)}
-                  placeholder="Broadcast to district..."
-                  className="w-full bg-[#121824]/90 border border-[#323d4e] rounded-lg py-1.5 pl-3 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-                />
-                <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300">
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </div>
-          </div>
+          <CivicWatchDistrictPanel />
 
           {/* SECTION B: FOYER FM BOOMBOX MEDIA PLAYER */}
-          <div className="h-[310px] flex flex-col bg-stainless-steel-panel overflow-hidden shrink-0 border-t border-stainless-steel">
+          <div className="h-[120px] flex flex-col bg-stainless-steel-panel overflow-hidden shrink-0 border-t border-stainless-steel">
             <CivicMediaPlayer />
           </div>
         </aside>
@@ -238,7 +151,7 @@ export default function FoyerPage() {
         {/* RIGHT COLUMN: REAL-TIME CIVIC & OPEN SOURCE NEWSFEED   */}
         {/* ------------------------------------------------------ */}
         <aside className="w-80 sharp-panel border-l border-stainless-steel bg-stainless-steel-dark flex flex-col shrink-0 overflow-hidden z-10 shadow-[-5px_0_25px_rgba(0,0,0,0.5)]">
-          <CivicNewsFeed />
+          <div className="min-h-0 flex-1 overflow-hidden"><CivicNewsFeed /></div>
         </aside>
       </div>
 

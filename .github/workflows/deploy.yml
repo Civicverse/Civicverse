@@ -19,7 +19,32 @@ permissions:
   packages: write
 
 jobs:
+  validate-deployment:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+    steps:
+      - name: Validate Deployment Configuration
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?Missing required Actions variable DEPLOY_HOST}"
+          : "${DEPLOY_USER:?Missing required Actions secret DEPLOY_USER}"
+          : "${DEPLOY_KEY:?Missing required Actions secret DEPLOY_KEY}"
+
+          port="${DEPLOY_PORT:-22}"
+          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || ((10#$port < 1 || 10#$port > 65535)); then
+            echo "::error::DEPLOY_PORT must be an integer between 1 and 65535"
+            exit 1
+          fi
+
   build-and-push:
+    needs: validate-deployment
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -125,25 +150,6 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
       
-      - name: Validate Deployment Configuration
-        shell: bash
-        env:
-          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
-        run: |
-          set -euo pipefail
-          : "${DEPLOY_HOST:?Missing required Actions variable DEPLOY_HOST}"
-          : "${DEPLOY_USER:?Missing required Actions secret DEPLOY_USER}"
-          : "${DEPLOY_KEY:?Missing required Actions secret DEPLOY_KEY}"
-
-          port="${DEPLOY_PORT:-22}"
-          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || ((10#$port < 1 || 10#$port > 65535)); then
-            echo "::error::DEPLOY_PORT must be an integer between 1 and 65535"
-            exit 1
-          fi
-
       - name: SSH Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
         env:

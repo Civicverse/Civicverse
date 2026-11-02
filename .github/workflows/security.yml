@@ -59,14 +59,24 @@ jobs:
           languages: 'javascript-typescript'
       
       - name: Perform CodeQL Analysis
+        id: codeql
         uses: github/codeql-action/analyze@v3
         with:
+          output: codeql-results
           post-processed-sarif-path: codeql-processed-results
 
       - name: Fail when CodeQL reports findings
         shell: bash
+        env:
+          SARIF_DIRECTORY: ${{ steps.codeql.outputs.sarif-output }}
         run: |
-          mapfile -d '' sarif_files < <(find codeql-processed-results -type f -name '*.sarif' -print0)
+          set -euo pipefail
+          if [[ -z "$SARIF_DIRECTORY" || ! -d "$SARIF_DIRECTORY" ]]; then
+            echo "::error::CodeQL analysis did not provide a SARIF results directory"
+            exit 1
+          fi
+
+          mapfile -d '' sarif_files < <(find "$SARIF_DIRECTORY" -type f -name '*.sarif' -print0)
           if [ "${#sarif_files[@]}" -eq 0 ]; then
             echo "::error::CodeQL analysis did not produce a SARIF results file"
             exit 1

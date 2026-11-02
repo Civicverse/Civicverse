@@ -101,6 +101,7 @@ class Player {
   constructor(id) {
     this.id = id;
     this.username = `Guest_${id}`;
+    this.civicId = '';
     this.character = null;
     this.lobbyId = 'district-lobby-1';
     this.position = { x: 0, y: 0, z: 20 };
@@ -119,6 +120,7 @@ class Player {
     return {
       id: this.id,
       username: this.username,
+      civicId: this.civicId,
       character: this.character,
       lobbyId: this.lobbyId,
       position: this.position,
@@ -178,6 +180,12 @@ function broadcastLobbyChat(lobbyId, chatMsg) {
 
   lobby.playerIds.forEach(pid => {
     const ws = wsByPlayerId.get(pid);
+    const recipient = players.get(pid);
+    if (chatMsg.proximity && recipient && chatMsg.position) {
+      const dx = recipient.position.x - chatMsg.position.x;
+      const dz = recipient.position.z - chatMsg.position.z;
+      if (dx * dx + dz * dz > 30 * 30) return;
+    }
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(message);
     }
@@ -233,7 +241,12 @@ function assignPlayerToLobby(player, targetLobbyId) {
     ws.send(JSON.stringify({
       type: 'chat_history',
       lobbyId: targetLobby.id,
-      history: targetLobby.chatHistory,
+      history: targetLobby.chatHistory.filter(message => {
+        if (!message.proximity || !message.position) return true;
+        const dx = player.position.x - message.position.x;
+        const dz = player.position.z - message.position.z;
+        return dx * dx + dz * dz <= 30 * 30;
+      }),
     }));
   }
 
@@ -351,6 +364,7 @@ wss.on('connection', (ws) => {
           if (players.has(playerId)) {
             const p = players.get(playerId);
             p.username = message.username || `Guest_${playerId}`;
+            p.civicId = typeof message.civicId === 'string' ? message.civicId.slice(0, 128) : p.civicId;
             if (message.character) {
               p.character = message.character;
             }
@@ -367,7 +381,11 @@ wss.on('connection', (ws) => {
               username: message.username || p.username,
               text: message.text,
               color: message.color || 'text-cyan-400',
-              timestamp: new Date().toISOString()
+              proximity: message.proximity === true,
+              position: p.position,
+              timestamp: new Date().toISOString(),
+              sentAt: Date.now(),
+              channelId: typeof message.channelId === 'string' ? message.channelId.slice(0, 256) : undefined
             };
             broadcastLobbyChat(p.lobbyId, chatMsg);
           }

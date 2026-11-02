@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
@@ -7,6 +8,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { 
   Shield, 
   ChevronDown, 
@@ -28,8 +30,25 @@ interface GodotFoyerProps {
   onExit?: () => void;
 }
 
+interface BillboardStory {
+  id: string;
+  title: string;
+  author: string;
+  category: string;
+  imageUrl?: string;
+  sourceUrl: string;
+  profileUrl?: string;
+  authorId?: string;
+}
+
+interface ChatBubble {
+  sprite: THREE.Sprite;
+  messageId: string;
+}
+
 const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const { user } = useGameStore();
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const composerRef = useRef<any>(null);
@@ -45,6 +64,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
   // Multiplayer state (20 per Lobby Instance)
   const chatHistory = useMultiplayerStore(state => state.chatHistory);
+  const players = useMultiplayerStore(state => state.players);
   const peerCount = useMultiplayerStore(state => state.peerCount);
   const connectionMode = useMultiplayerStore(state => state.connectionMode);
   const currentLobbyId = useMultiplayerStore(state => state.currentLobbyId);
@@ -53,10 +73,13 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const switchLobby = useMultiplayerStore(state => state.switchLobby);
   const ubiStatus = useMultiplayerStore(state => state.ubiStatus);
   const [hudChatInput, setHudChatInput] = useState('');
+  const [nearbyChat, setNearbyChat] = useState(true);
+  const [playerSearch, setPlayerSearch] = useState('');
   const [showLobbyModal, setShowLobbyModal] = useState(false);
   const [showTipModal, setShowTipModal] = useState(false);
   const [tipAmount, setTipAmount] = useState('5.0');
   const [tipSuccess, setTipSuccess] = useState('');
+  const [selectedBillboardStory, setSelectedBillboardStory] = useState<BillboardStory | null>(null);
   const isChatFocusedRef = useRef(false);
   const chatInputRef = useRef<HTMLInputElement>(null);
   const activeSlotRef = useRef<number>(4);
@@ -69,22 +92,42 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
   // Initialize and synchronize multiplayer connection
   useEffect(() => {
-    const uninit = useMultiplayerStore.getState().initialize(user?.username || 'Citizen', user?.character);
+    const uninit = useMultiplayerStore.getState().initialize(user?.username || 'Citizen', user?.character, user?.civicId);
     return () => {
       if (typeof uninit === 'function') uninit();
     };
   }, [user?.username, user?.character]);
 
   useEffect(() => {
-    useMultiplayerStore.getState().setIdentity(user?.username || 'Citizen', user?.character);
-  }, [user?.username, user?.character]);
+    useMultiplayerStore.getState().setIdentity(user?.username || 'Citizen', user?.character, user?.civicId);
+  }, [user?.username, user?.character, user?.civicId]);
 
   const handleSendHudChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!hudChatInput.trim()) return;
-    useMultiplayerStore.getState().sendMessage(hudChatInput.trim(), 'text-cyan-400');
+    useMultiplayerStore.getState().sendMessage(hudChatInput.trim(), 'text-cyan-400', nearbyChat);
     setHudChatInput('');
   };
+
+  const openBillboardSource = () => {
+    if (!selectedBillboardStory) return;
+    try {
+      const source = new URL(selectedBillboardStory.sourceUrl, window.location.origin);
+      if (!['http:', 'https:'].includes(source.protocol)) return;
+      if (source.origin === window.location.origin) {
+        navigate(`${source.pathname}${source.search}${source.hash}`);
+      } else {
+        window.open(source.href, '_blank', 'noopener,noreferrer');
+      }
+      setSelectedBillboardStory(null);
+    } catch (error) {
+      console.error('[GodotFoyer] Billboard source URL is invalid.', error);
+    }
+  };
+
+  const visiblePlayers = Array.from(players.values()).filter(player =>
+    `${player.username} ${player.civicId || ''}`.toLowerCase().includes(playerSearch.trim().toLowerCase())
+  );
 
   const toggleCameraMode = () => {
     const nextMode = cameraModeRef.current === '3RD' ? '1ST' : '3RD';
@@ -122,6 +165,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     if (!containerRef.current) return;
 
     let setupError = false
+    let sceneDisposed = false
+    let civicWatchMediaTimer: number | undefined
+    let billboardRotationTimer: number | undefined
 
     const showFallback = (msg: string) => {
       if (!containerRef.current) return
@@ -139,8 +185,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // ========================================================
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x181e28); // Sleek stainless steel night sky
-    scene.fog = new THREE.FogExp2(0x1e2532, 0.0014); // Brushed metal atmosphere
+    scene.background = new THREE.Color(0x11182f);
+    scene.fog = new THREE.FogExp2(0x3b3250, 0.0009);
 
     // -----------------------------
     // Procedural PBR Texture Helpers
@@ -254,7 +300,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       70, 
       containerRef.current.clientWidth / containerRef.current.clientHeight, 
       0.2, 
-      4000
+      60000
     );
 
     // Renderer setup with high tone mapping exposure for bright visuals
@@ -266,7 +312,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     // Reduce exposure to avoid HDR clipping and shimmering
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 0.9;
     // Use physically correct light intensity scaling to avoid extreme per-light values
     renderer.physicallyCorrectLights = true;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -282,9 +328,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(containerRef.current.clientWidth, containerRef.current.clientHeight), 0.9, 0.4, 0.1);
-    bloomPass.threshold = 0.18;
-    bloomPass.strength = 0.5; // reduced to avoid softening details
-    bloomPass.radius = 0.28;
+    bloomPass.threshold = 0.7;
+    bloomPass.strength = 0.18;
+    bloomPass.radius = 0.36;
     composer.addPass(bloomPass);
     // Use SMAA for superior AA with less blurring than FXAA
     const smaaPass = new SMAAPass(containerRef.current.clientWidth * renderer.getPixelRatio(), containerRef.current.clientHeight * renderer.getPixelRatio());
@@ -302,7 +348,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           mats.forEach((m: any) => {
             ['map','emissiveMap'].forEach((k) => {
               if (m && m[k]) {
-                m[k].encoding = THREE.sRGBEncoding;
+                m[k].colorSpace = THREE.SRGBColorSpace;
                 m[k].anisotropy = maxAniso;
                 m[k].minFilter = THREE.LinearMipmapLinearFilter;
                 m[k].magFilter = THREE.LinearFilter;
@@ -312,7 +358,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             });
             ['normalMap','roughnessMap','metalnessMap','aoMap'].forEach((k) => {
               if (m && m[k]) {
-                m[k].encoding = THREE.LinearEncoding;
+                m[k].colorSpace = THREE.NoColorSpace;
                 m[k].anisotropy = maxAniso;
                 m[k].minFilter = THREE.LinearMipmapLinearFilter;
                 m[k].magFilter = THREE.LinearFilter;
@@ -336,54 +382,134 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       smaaPass.enabled = aaMode === 'smaa';
     } catch (e) {}
 
-    // ========================================================
-    // SYNTH_SKY BACKDROP DOME & STARRY SKY
-    // ========================================================
-
-    const loader = new THREE.TextureLoader();
-    const skyTexture = loader.load('/images/synth_sky.jpg');
-    skyTexture.wrapS = THREE.ClampToEdgeWrapping;
-    skyTexture.wrapT = THREE.ClampToEdgeWrapping;
-    skyTexture.encoding = THREE.sRGBEncoding;
-
-    const skyDomeGeo = new THREE.SphereGeometry(4000, 48, 48);
-    const skyDomeMat = new THREE.MeshBasicMaterial({
-      map: skyTexture,
-      side: THREE.BackSide,
-      fog: false
-    });
-    const skyDome = new THREE.Mesh(skyDomeGeo, skyDomeMat);
-    skyDome.rotation.y = Math.PI / 4;
-    scene.add(skyDome);
-
-    // Prefilter the sky into a PMREM environment for realistic specular lighting
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    pmremGenerator.compileEquirectangularShader();
-    try {
-      const envMap = pmremGenerator.fromEquirectangular(skyTexture).texture;
-      scene.environment = envMap;
-    } catch (e) {
-      // fallback: ignore if prefilter fails in dev
-    }
-    pmremGenerator.dispose();
-
-    // Starfield particles
+    // Atmospheric scattering is evaluated from view direction; no panorama is wrapped around the world.
+    // Stars and nebulae are world-space particles, not a panorama or enclosing dome.
     const starGeo = new THREE.BufferGeometry();
-    const starCount = 2000;
+    const starCount = 1800;
     const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i += 3) {
-      starPositions[i] = (Math.random() - 0.5) * 2400;
-      starPositions[i + 1] = 150 + Math.random() * 900;
-      starPositions[i + 2] = (Math.random() - 0.5) * 2400;
+      const azimuth = Math.random() * Math.PI * 2;
+      const elevation = 0.08 + Math.random() * 1.48;
+      const radius = 42000 + Math.random() * 5000;
+      starPositions[i] = Math.sin(azimuth) * Math.cos(elevation) * radius;
+      starPositions[i + 1] = Math.sin(elevation) * radius;
+      starPositions[i + 2] = Math.cos(azimuth) * Math.cos(elevation) * radius;
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, transparent: true, opacity: 0.9 });
+    const starMat = new THREE.ShaderMaterial({
+      uniforms: { time: { value: 0 } },
+      vertexShader: `
+        uniform float time;
+        varying float vTwinkle;
+        void main() {
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = clamp(360.0 * (300.0 / max(1.0, -mvPosition.z)), 1.0, 3.2);
+          vTwinkle = 0.68 + 0.32 * sin(time * 1.5 + position.x * 0.007 + position.z * 0.004);
+        }
+      `,
+      fragmentShader: `
+        varying float vTwinkle;
+        void main() {
+          vec2 centered = gl_PointCoord - vec2(0.5);
+          float radius = dot(centered, centered);
+          if (radius > 0.25) discard;
+          float glow = smoothstep(0.25, 0.0, radius);
+          gl_FragColor = vec4(vec3(0.72, 0.82, 1.0), glow * vTwinkle);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      fog: false
+    });
     const starField = new THREE.Points(starGeo, starMat);
     scene.add(starField);
 
-    // 80s SYNTHWAVE MAGENTA MOON LIGHTING
-    const moonLight = new THREE.DirectionalLight(0xff00aa, 2.0);
-    moonLight.position.set(0, 400, -800);
+    const nebulaCount = 240;
+    const nebulaPositions = new Float32Array(nebulaCount * 3);
+    const nebulaSizes = new Float32Array(nebulaCount);
+    const nebulaColors = new Float32Array(nebulaCount * 3);
+    const nebulaPalette = [0x7250e8, 0x3e9ee8, 0xc34da8, 0x8262d8].map(color => new THREE.Color(color));
+    for (let index = 0; index < nebulaCount; index += 1) {
+      const offset = index * 3;
+      const azimuth = Math.floor(index / (nebulaCount / 4)) * Math.PI / 2 + (Math.random() - 0.5) * 0.65;
+      const distance = 26000 + Math.random() * 9000;
+      const elevation = 0.18 + Math.random() * 0.42;
+      const spread = 1800 + Math.random() * 5000;
+      nebulaPositions[offset] = Math.sin(azimuth) * Math.cos(elevation) * distance + (Math.random() - 0.5) * spread;
+      nebulaPositions[offset + 1] = Math.sin(elevation) * distance + (Math.random() - 0.5) * spread;
+      nebulaPositions[offset + 2] = Math.cos(azimuth) * Math.cos(elevation) * distance + (Math.random() - 0.5) * spread;
+      nebulaSizes[index] = 5500 + Math.random() * 9000;
+      const color = nebulaPalette[index % nebulaPalette.length];
+      nebulaColors[offset] = color.r;
+      nebulaColors[offset + 1] = color.g;
+      nebulaColors[offset + 2] = color.b;
+    }
+    const nebulaGeometry = new THREE.BufferGeometry();
+    nebulaGeometry.setAttribute('position', new THREE.BufferAttribute(nebulaPositions, 3));
+    nebulaGeometry.setAttribute('size', new THREE.BufferAttribute(nebulaSizes, 1));
+    nebulaGeometry.setAttribute('nebulaColor', new THREE.BufferAttribute(nebulaColors, 3));
+    const nebulaMaterial = new THREE.ShaderMaterial({
+      uniforms: { time: { value: 0 } },
+      vertexShader: `
+        attribute float size;
+        attribute vec3 nebulaColor;
+        uniform float time;
+        varying vec3 vNebulaColor;
+        void main() {
+          vec3 drift = position;
+          drift.x += sin(time * 0.012 + position.z * 0.0002) * 180.0;
+          drift.z += cos(time * 0.01 + position.x * 0.0002) * 140.0;
+          vec4 mvPosition = modelViewMatrix * vec4(drift, 1.0);
+          gl_Position = projectionMatrix * mvPosition;
+          gl_PointSize = clamp(size * (300.0 / max(1.0, -mvPosition.z)), 1.0, 220.0);
+          vNebulaColor = nebulaColor;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vNebulaColor;
+        void main() {
+          vec2 centered = gl_PointCoord - vec2(0.5);
+          float radius = dot(centered, centered) * 4.0;
+          float haze = exp(-radius * 3.2);
+          gl_FragColor = vec4(vNebulaColor * 2.2, haze * 0.16);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false
+    });
+    const nebula = new THREE.Points(nebulaGeometry, nebulaMaterial);
+    nebula.frustumCulled = false;
+    scene.add(nebula);
+
+    const rainCount = 1800;
+    const rainPositions = new Float32Array(rainCount * 6);
+    for (let index = 0; index < rainCount; index += 1) {
+      const offset = index * 6;
+      const x = (Math.random() - 0.5) * 120;
+      const y = Math.random() * 55 + 5;
+      const z = (Math.random() - 0.5) * 120;
+      rainPositions.set([x, y, z, x + 0.2, y - 1.8, z + 0.08], offset);
+    }
+    const rainGeometry = new THREE.BufferGeometry();
+    rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+    rainGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 30, 0), 100);
+    const rain = new THREE.LineSegments(
+      rainGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0xa8c6f4,
+        transparent: true,
+        opacity: 0.2,
+        depthWrite: false
+      })
+    );
+    scene.add(rain);
+
+    // Soft moonlight and a camera-facing fill keep the nighttime architecture readable.
+    const moonLight = new THREE.DirectionalLight(0xdce6f4, 1.3);
+    moonLight.position.set(-120, 240, 180);
     moonLight.castShadow = true;
     // Reduce shadow map size to reduce aliasing artifacts and improve stability
     moonLight.shadow.mapSize.width = 1024;
@@ -391,32 +517,15 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // Small bias to reduce shadow acne and shimmering when moving
     moonLight.shadow.bias = -0.0005;
     scene.add(moonLight);
+    const lightning = new THREE.DirectionalLight(0xa9c8ff, 0);
+    lightning.position.set(-180, 260, 100);
+    scene.add(lightning);
 
     // Helper to try loading PBR textures from /textures/{name}_*.jpg in public
-    const tryLoadPBRFromPublic = async (name: string) => {
-      const tLoader = new THREE.TextureLoader();
-      const base = `/textures/${name}`;
-      const load = (suffix: string) => new Promise<THREE.Texture | null>((resolve) => {
-        tLoader.load(`${base}_${suffix}.jpg`, (tex) => {
-          tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-          tex.repeat.set(4, 4);
-          resolve(tex);
-        }, undefined, () => resolve(null));
-      });
-
-      const albedo = await load('albedo');
-      if (!albedo) return null;
-      const normal = await load('normal');
-      const rough = await load('roughness');
-      const metal = await load('metalness');
-      return { albedo, normal, rough, metal };
-    };
-
-    const cyanAmbient = new THREE.DirectionalLight(0x00f3ff, 1.5);
+    const cyanAmbient = new THREE.DirectionalLight(0xffdfb8, 0.78);
     cyanAmbient.position.set(400, 300, 400);
     scene.add(cyanAmbient);
-    // Softer ambient to reduce extreme specular changes while moving
-    scene.add(new THREE.AmbientLight(0x7e22ce, 1.0)); // Purple Ambient
+    scene.add(new THREE.HemisphereLight(0xc9d2fa, 0x39324a, 1.35));
 
     // ========================================================
     // ROARING ANIMATED OCEAN (ISLAND CITY ENVIRONMENT)
@@ -432,130 +541,320 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     ocean.receiveShadow = true;
     oceanMat.normalScale = new THREE.Vector2(0.35, 0.35);
     ocean.renderOrder = 0;
+    ocean.visible = false;
     scene.add(ocean);
 
     // Ocean vertex deformation disabled (was causing shimmering/z-fighting).
-    const oceanPosAttr = oceanGeo.attributes.position;
-
     // ========================================================
     // CITY ISLAND & HIGH-SPECULAR WET PLAZA GROUND
     // ========================================================
 
     const islandGeo = new THREE.CylinderGeometry(180, 220, 4, 32);
-    const islandTex = generatePBR('island', '#1e1b2e');
-    const islandMat = new THREE.MeshStandardMaterial({ map: islandTex.albedo, normalMap: islandTex.normal, roughnessMap: islandTex.roughness, metalness: 0.04 });
+    const islandMat = new THREE.MeshStandardMaterial({ color: 0x263e2d, roughness: 1 });
     const islandBase = new THREE.Mesh(islandGeo, islandMat);
     islandBase.position.y = -2;
     islandMat.normalScale = new THREE.Vector2(0.6, 0.6);
     scene.add(islandBase);
 
     // ========================================================
-    // BRUSHED STAINLESS STEEL FOUNDATION (REPLACING BLACK VOID)
+    // Wet urban pavement foundation
     // ========================================================
     const voidGroundGeo = new THREE.PlaneGeometry(4200, 4200);
-    const steelPBR = generateStainlessSteelPBR();
-    steelPBR.albedo.repeat.set(24, 24);
-    steelPBR.normal.repeat.set(24, 24);
-    steelPBR.roughness.repeat.set(24, 24);
-    const voidGroundMat = new THREE.MeshStandardMaterial({
-      map: steelPBR.albedo,
-      normalMap: steelPBR.normal,
-      roughnessMap: steelPBR.roughness,
-      metalness: 0.94,
-      roughness: 0.22,
-      color: 0x9ba6b6,
-      emissive: 0x161e2b
-    });
+    const voidGroundMat = new THREE.MeshStandardMaterial({ color: 0x27452d, roughness: 1 });
     const voidGroundMesh = new THREE.Mesh(voidGroundGeo, voidGroundMat);
     voidGroundMesh.rotation.x = -Math.PI / 2;
     voidGroundMesh.position.y = -6.8;
     voidGroundMesh.receiveShadow = true;
     scene.add(voidGroundMesh);
 
-    // Main Plaza Surface with Brushed Stainless Steel Sheen
-    const plazaGeo = new THREE.PlaneGeometry(280, 280);
-    const plazaMat = new THREE.MeshStandardMaterial({ 
-      map: steelPBR.albedo, 
-      normalMap: steelPBR.normal, 
-      roughnessMap: steelPBR.roughness, 
-      metalness: 0.90, 
-      roughness: 0.26,
-      color: 0xa8b4c4,
-      emissive: 0x1a2230 
+    const districtGround = new THREE.Mesh(
+      new THREE.PlaneGeometry(280, 280),
+      new THREE.MeshStandardMaterial({ color: 0x477d4c, emissive: 0x153718, emissiveIntensity: 0.5, roughness: 1 })
+    );
+    districtGround.rotation.x = -Math.PI / 2;
+    districtGround.position.y = -0.02;
+    districtGround.receiveShadow = true;
+    scene.add(districtGround);
+
+    const asphaltPbr = generatePBR('night city asphalt', '#282c32');
+    asphaltPbr.albedo.repeat.set(2, 8);
+    asphaltPbr.normal.repeat.set(2, 8);
+    asphaltPbr.roughness.repeat.set(2, 8);
+    const roadMaterial = new THREE.MeshStandardMaterial({
+      map: asphaltPbr.albedo,
+      normalMap: asphaltPbr.normal,
+      roughnessMap: asphaltPbr.roughness,
+      color: 0x666d75,
+      roughness: 0.88,
+      metalness: 0.02
     });
-    const plaza = new THREE.Mesh(plazaGeo, plazaMat);
-    plaza.rotation.x = -Math.PI / 2;
-    plaza.position.set(0, 0.002, 0);
-    plaza.receiveShadow = true;
-    plazaMat.normalScale = new THREE.Vector2(0.7, 0.7);
-    // Apply polygon offset on plaza material to reduce z-fighting with grid and decals
-    (plazaMat as any).polygonOffset = true;
-    (plazaMat as any).polygonOffsetFactor = 1;
-    (plazaMat as any).polygonOffsetUnits = 1;
-    scene.add(plaza);
+    const sidewalkMaterial = new THREE.MeshStandardMaterial({ color: 0x666d72, roughness: 0.92 });
+    const curbMaterial = new THREE.MeshStandardMaterial({ color: 0xadb2ad, roughness: 0.8 });
+    const roadPaintMaterial = new THREE.MeshStandardMaterial({
+      color: 0xe7d59a,
+      emissive: 0x4a3210,
+      emissiveIntensity: 0.14,
+      roughness: 0.72
+    });
+    const streetSegments: Array<[number, number]> = [[-113, 54], [90, 100]];
+    for (const [centerZ, length] of streetSegments) {
+      const road = new THREE.Mesh(new THREE.PlaneGeometry(27, length), roadMaterial);
+      road.rotation.x = -Math.PI / 2;
+      road.position.set(0, 0.01, centerZ);
+      road.receiveShadow = true;
+      scene.add(road);
 
-    // Emissive Cyan & Magenta Floor Grid Lines
-    const gridLines = new THREE.GridHelper(280, 56, 0xff00aa, 0x00f3ff);
-    gridLines.position.y = 0.02;
-    (gridLines.material as THREE.Material).opacity = 0.35;
-    (gridLines.material as THREE.Material).transparent = true;
-    scene.add(gridLines);
+      for (const side of [-1, 1]) {
+        const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(4.5, length), sidewalkMaterial);
+        sidewalk.rotation.x = -Math.PI / 2;
+        sidewalk.position.set(side * 16, 0.025, centerZ);
+        sidewalk.receiveShadow = true;
+        scene.add(sidewalk);
+        const curb = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.3, length), curbMaterial);
+        curb.position.set(side * 13.72, 0.14, centerZ);
+        curb.receiveShadow = true;
+        scene.add(curb);
+        const laneEdge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.025, length - 2), roadPaintMaterial);
+        laneEdge.position.set(side * 11.1, 0.035, centerZ);
+        scene.add(laneEdge);
+      }
 
-    // Seawall Railing & Glowing Coastal Perimeter Lights
-    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 16) {
-      const px = Math.cos(angle) * 135;
-      const pz = Math.sin(angle) * 135;
+      for (let z = centerZ - length / 2 + 5; z < centerZ + length / 2 - 3; z += 7) {
+        const dash = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.025, 3.2), roadPaintMaterial);
+        dash.position.set(0, 0.035, z);
+        scene.add(dash);
+      }
+      if (centerZ > 0) {
+        const crosswalkZ = centerZ - length / 2 + 4;
+        for (let x = -10; x <= 10; x += 2) {
+          const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.025, 0.7), curbMaterial);
+          stripe.position.set(x, 0.04, crosswalkZ);
+          scene.add(stripe);
+        }
+      }
+    }
 
-      const post = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.3, 0.3, 2.5),
-        new THREE.MeshStandardMaterial({ color: 0x00f3ff, emissive: 0x00f3ff, emissiveIntensity: 2 })
-      );
-      post.position.set(px, 1.25, pz);
-      scene.add(post);
+    const park = new THREE.Mesh(
+      new THREE.PlaneGeometry(74, 90),
+      new THREE.MeshStandardMaterial({ color: 0x4c9850, emissive: 0x183f1b, emissiveIntensity: 0.42, roughness: 1 })
+    );
+    park.rotation.x = -Math.PI / 2;
+    park.position.set(0, 0.045, -5);
+    park.receiveShadow = true;
+    scene.add(park);
+
+    const parkPathMaterial = new THREE.MeshStandardMaterial({ color: 0x85877d, roughness: 0.92 });
+    const parkPath = new THREE.Mesh(new THREE.PlaneGeometry(7, 90), parkPathMaterial);
+    parkPath.rotation.x = -Math.PI / 2;
+    parkPath.position.set(0, 0.07, -5);
+    parkPath.receiveShadow = true;
+    scene.add(parkPath);
+    for (const z of [-32, -12]) {
+      for (const side of [-1, 1]) {
+        const bollard = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.16, 0.22, 1.5, 10),
+          new THREE.MeshStandardMaterial({ color: 0x273440, metalness: 0.65, roughness: 0.36 })
+        );
+        bollard.position.set(side * 5, 0.8, z);
+        scene.add(bollard);
+        const bollardGlow = new THREE.Mesh(
+          new THREE.SphereGeometry(0.19, 12, 8),
+          new THREE.MeshBasicMaterial({ color: 0x79eaff })
+        );
+        bollardGlow.position.set(side * 5, 1.55, z);
+        scene.add(bollardGlow);
+        const pathLight = new THREE.PointLight(0x43cfff, 2.8, 14);
+        pathLight.position.set(side * 5, 1.8, z);
+        scene.add(pathLight);
+      }
     }
 
     // ========================================================
-    // TROPICAL CYBER PALM TREES
+    // PALM BOULEVARD AND PARK FOLIAGE
     // ========================================================
 
-    const createPalmTree = (x: number, z: number) => {
-      const palmGroup = new THREE.Group();
-      palmGroup.position.set(x, 0, z);
-
-      // Neon Cyan Ring on Trunk
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.65, 0.1, 8, 16),
-        new THREE.MeshStandardMaterial({ color: 0x00f3ff, emissive: 0x00f3ff, emissiveIntensity: 2 })
+    const palmFrondShape = new THREE.Shape();
+    palmFrondShape.moveTo(-0.02, 0);
+    palmFrondShape.quadraticCurveTo(-0.09, 0.35, -0.07, 0.72);
+    palmFrondShape.quadraticCurveTo(-0.025, 0.63, 0, 0.58);
+    palmFrondShape.quadraticCurveTo(0.025, 0.78, 0.07, 0.72);
+    palmFrondShape.quadraticCurveTo(0.09, 0.35, 0.02, 0);
+    palmFrondShape.closePath();
+    const palmLeafGeometry = new THREE.ShapeGeometry(palmFrondShape, 5);
+    const palmLeafMaterial = new THREE.MeshStandardMaterial({
+      color: 0x51b56c,
+      emissive: 0x123b20,
+      emissiveIntensity: 0.35,
+      roughness: 0.88,
+      side: THREE.DoubleSide
+    });
+    const palmTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x76513d, roughness: 0.94 });
+    const palmStemMaterial = new THREE.MeshStandardMaterial({ color: 0x4e8d5b, roughness: 0.9 });
+    const createPalmTree = (x: number, z: number, scale: number) => {
+      const tree = new THREE.Group();
+      tree.position.set(x, 0, z);
+      tree.scale.setScalar(scale);
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2, 0.52, 9.5, 12, 8),
+        palmTrunkMaterial
       );
-      ring.rotation.x = Math.PI / 2;
-      ring.position.y = 4.5;
-      palmGroup.add(ring);
+      trunk.position.y = 4.75;
+      trunk.rotation.z = x < 0 ? -0.035 : 0.035;
+      trunk.castShadow = true;
+      trunk.receiveShadow = true;
+      tree.add(trunk);
 
-      // Palm Fronds
-      for (let i = 0; i < 8; i++) {
-        const frond = new THREE.Mesh(
-          new THREE.BoxGeometry(6.5, 0.12, 1.2),
-          new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.3 })
-        );
-        frond.position.y = 9;
-        frond.rotation.y = (i / 8) * Math.PI * 2;
-        frond.rotation.z = Math.PI / 5;
-        palmGroup.add(frond);
+      const frondCount = 11;
+      const leafletsPerSide = 15;
+      const leaflets = new THREE.InstancedMesh(
+        palmLeafGeometry,
+        palmLeafMaterial,
+        frondCount * leafletsPerSide * 2
+      );
+      const leafTransform = new THREE.Object3D();
+      let leafIndex = 0;
+      for (let frond = 0; frond < frondCount; frond += 1) {
+        const angle = frond * Math.PI * 2 / frondCount;
+        const radial = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+        const tip = new THREE.Vector3(radial.x * 5.2, 7.25, radial.z * 5.2);
+        const stemCurve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(0, 9.25, 0),
+          new THREE.Vector3(radial.x * 1.5, 9.7, radial.z * 1.5),
+          new THREE.Vector3(radial.x * 3.4, 9.3, radial.z * 3.4),
+          tip
+        ]);
+        const stem = new THREE.Mesh(new THREE.TubeGeometry(stemCurve, 16, 0.055, 5, false), palmStemMaterial);
+        stem.castShadow = true;
+        tree.add(stem);
+        for (let leaflet = 0; leaflet < leafletsPerSide; leaflet += 1) {
+          const progress = 0.12 + leaflet * 0.052;
+          const stemPoint = stemCurve.getPoint(progress);
+          const tangent = stemCurve.getTangent(progress).normalize();
+          for (const side of [-1, 1]) {
+            const lateral = new THREE.Vector3(-radial.z, 0, radial.x).multiplyScalar(side);
+            const direction = tangent.clone().multiplyScalar(0.32).addScaledVector(lateral, 0.92).normalize();
+            leafTransform.position.copy(stemPoint).addScaledVector(lateral, 0.06);
+            leafTransform.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+            const size = 0.8 + Math.sin(progress * Math.PI) * 0.42;
+            leafTransform.scale.set(size, size, size);
+            leafTransform.updateMatrix();
+            leaflets.setMatrixAt(leafIndex, leafTransform.matrix);
+            leaflets.setColorAt(
+              leafIndex,
+              new THREE.Color([0x277b50, 0x328c58, 0x3c985f][(leaflet + frond) % 3])
+            );
+            leafIndex += 1;
+          }
+        }
       }
-      return palmGroup;
+      leaflets.instanceMatrix.needsUpdate = true;
+      leaflets.computeBoundingSphere();
+      leaflets.castShadow = true;
+      leaflets.receiveShadow = true;
+      tree.add(leaflets);
+      return tree;
     };
 
-    for (let z = -60; z <= 60; z += 25) {
-      scene.add(createPalmTree(-35, z));
-      scene.add(createPalmTree(35, z));
+    for (let index = 0; index < 9; index += 1) {
+      const z = -138 + index * 31;
+      scene.add(createPalmTree(-24 + Math.sin(index * 1.6) * 1.5, z, 1.12 + (index % 3) * 0.08));
+      scene.add(createPalmTree(24 + Math.cos(index * 1.7) * 1.5, z - 5, 1.14 + (index % 2) * 0.1));
     }
 
+    const parkTreeTrunk = new THREE.MeshStandardMaterial({ color: 0x684a35, roughness: 0.95 });
+    const parkTreeLeaves = [
+      new THREE.MeshStandardMaterial({ color: 0x438e4e, emissive: 0x193b1b, emissiveIntensity: 0.42, roughness: 0.9 }),
+      new THREE.MeshStandardMaterial({ color: 0x63a657, emissive: 0x1d421c, emissiveIntensity: 0.4, roughness: 0.9 })
+    ];
+    for (const [x, z] of [[-33, -42], [33, -42], [-33, 32], [33, 32]] as const) {
+      const tree = new THREE.Group();
+      tree.position.set(x, 0, z);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.62, 7, 10), parkTreeTrunk);
+      trunk.position.y = 3.5;
+      trunk.castShadow = true;
+      tree.add(trunk);
+      for (const [offsetX, offsetY, offsetZ, scale] of [
+        [0, 7.2, 0, 2.9], [-1.35, 6.7, 0.5, 2.15], [1.4, 6.6, -0.35, 2.25], [0.2, 8.35, -0.6, 2.05]
+      ] as const) {
+        const crown = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), parkTreeLeaves[(Math.abs(x + z) + Math.round(scale)) % 2]);
+        crown.position.set(offsetX, offsetY, offsetZ);
+        crown.scale.set(scale, scale * 0.72, scale * 0.88);
+        crown.castShadow = true;
+        tree.add(crown);
+      }
+      scene.add(tree);
+    }
+
+    const parkShrubMaterial = new THREE.MeshStandardMaterial({
+      color: 0x5ca85b,
+      emissive: 0x153b17,
+      emissiveIntensity: 0.34,
+      roughness: 0.94
+    });
+    for (const [x, z] of [[-25, 7], [-25, -23], [25, 7], [25, -23]] as const) {
+      for (let index = 0; index < 5; index += 1) {
+        const shrub = new THREE.Mesh(
+          new THREE.SphereGeometry(0.8 + (index % 2) * 0.22, 12, 9),
+          parkShrubMaterial
+        );
+        shrub.position.set(x + (index - 2) * 0.75, 0.58, z + Math.sin(index * 2) * 0.5);
+        shrub.scale.y = 0.78;
+        shrub.castShadow = true;
+        scene.add(shrub);
+      }
+    }
+
+    const fountain = new THREE.Group();
+    fountain.position.set(-7, 0.09, 8);
+    const fountainStone = new THREE.MeshStandardMaterial({ color: 0x9ca7a9, metalness: 0.28, roughness: 0.42 });
+    const fountainWater = new THREE.MeshPhysicalMaterial({
+      color: 0x33c6e8,
+      emissive: 0x07516a,
+      emissiveIntensity: 0.58,
+      metalness: 0.25,
+      roughness: 0.12,
+      transparent: true,
+      opacity: 0.88
+    });
+    const basin = new THREE.Mesh(new THREE.CylinderGeometry(5.4, 5.7, 0.75, 48), fountainStone);
+    basin.position.y = 0.38;
+    basin.receiveShadow = true;
+    fountain.add(basin);
+    const waterSurface = new THREE.Mesh(new THREE.CircleGeometry(5.1, 48), fountainWater);
+    waterSurface.rotation.x = -Math.PI / 2;
+    waterSurface.position.y = 0.79;
+    fountain.add(waterSurface);
+    const basinLip = new THREE.Mesh(new THREE.TorusGeometry(5.35, 0.24, 10, 48), fountainStone);
+    basinLip.rotation.x = Math.PI / 2;
+    basinLip.position.y = 0.78;
+    fountain.add(basinLip);
+    const fountainColumn = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.05, 2.5, 20), fountainStone);
+    fountainColumn.position.y = 1.85;
+    fountain.add(fountainColumn);
+    const upperBowl = new THREE.Mesh(new THREE.CylinderGeometry(2.05, 0.85, 0.42, 32), fountainStone);
+    upperBowl.position.y = 3.18;
+    fountain.add(upperBowl);
+    const upperWater = new THREE.Mesh(new THREE.CircleGeometry(1.9, 32), fountainWater);
+    upperWater.rotation.x = -Math.PI / 2;
+    upperWater.position.y = 3.42;
+    fountain.add(upperWater);
+    const waterJet = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.12, 2.3, 10),
+      new THREE.MeshBasicMaterial({ color: 0x84edff, transparent: true, opacity: 0.74 })
+    );
+    waterJet.position.y = 4.55;
+    fountain.add(waterJet);
+    const fountainLight = new THREE.PointLight(0x2edbff, 2.1, 18);
+    fountainLight.position.y = 2.8;
+    fountain.add(fountainLight);
+    scene.add(fountain);
+
     // ========================================================
-    // MONUMENT & GEOMETRIC CV SCULPTURE
+    // WINGED CIVIC MONUMENT
     // ========================================================
 
     const statueGroup = new THREE.Group();
-    statueGroup.position.set(0, 0, -50);
+    statueGroup.position.set(0, 0, -40);
 
     const pedestal = new THREE.Mesh(
       new THREE.BoxGeometry(12, 4.5, 12),
@@ -567,181 +866,672 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     statueGroup.add(pedestal);
 
     const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.5, 4, 12, 16),
-      new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.2 })
+      new THREE.CylinderGeometry(3.5, 4, 8.5, 16),
+      new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.48, roughness: 0.38 })
     );
-    pillar.position.y = 10.5;
+    pillar.position.y = 8.75;
     statueGroup.add(pillar);
 
-    // Golden Guardian Statue Body
-    const statueMat = new THREE.MeshStandardMaterial({ 
-      color: 0xf59e0b, 
-      metalness: 0.95, 
-      roughness: 0.05, 
-      emissive: 0xd97706, 
-      emissiveIntensity: 0.35 
+    const statueMat = new THREE.MeshStandardMaterial({ color: 0x987044, metalness: 0.84, roughness: 0.3 });
+    const statueHighlightMat = new THREE.MeshStandardMaterial({ color: 0xc3a16b, metalness: 0.88, roughness: 0.24 });
+    const maskMat = new THREE.MeshStandardMaterial({ color: 0x6625a8, metalness: 0.58, roughness: 0.24 });
+    const maskTrimMat = new THREE.MeshStandardMaterial({ color: 0xdbc080, metalness: 0.88, roughness: 0.2 });
+    const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x342e2b, metalness: 0.76, roughness: 0.34 });
+
+    const addStatuePart = (geometry: THREE.BufferGeometry, material: THREE.Material, position: THREE.Vector3, scale: THREE.Vector3) => {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.copy(position);
+      mesh.scale.copy(scale);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      statueGroup.add(mesh);
+      return mesh;
+    };
+
+    addStatuePart(new THREE.SphereGeometry(1, 24, 18), statueMat, new THREE.Vector3(0, 19.8, 0), new THREE.Vector3(1.7, 2.6, 0.9));
+    addStatuePart(new THREE.SphereGeometry(1, 20, 16), statueHighlightMat, new THREE.Vector3(0, 17.3, 0), new THREE.Vector3(1.25, 1.15, 0.78));
+    addStatuePart(new THREE.CylinderGeometry(1.05, 0.62, 3.8, 12), statueMat, new THREE.Vector3(0, 14.85, 0), new THREE.Vector3(1, 1, 0.9));
+    addStatuePart(new THREE.SphereGeometry(0.8, 20, 16), statueMat, new THREE.Vector3(0, 22.25, 0), new THREE.Vector3(0.95, 0.52, 0.78));
+    addStatuePart(new THREE.SphereGeometry(0.76, 24, 20), statueMat, new THREE.Vector3(0, 23.45, 0.04), new THREE.Vector3(0.88, 1.08, 0.76));
+
+    const addStatueLimb = (start: THREE.Vector3, end: THREE.Vector3, radius: number, material: THREE.Material) => {
+      const direction = new THREE.Vector3().subVectors(end, start);
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.78, radius, direction.length(), 12), material);
+      mesh.position.copy(start).add(end).multiplyScalar(0.5);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      statueGroup.add(mesh);
+      return mesh;
+    };
+
+    for (const side of [-1, 1]) {
+      addStatueLimb(new THREE.Vector3(side * 1.35, 21.3, 0), new THREE.Vector3(side * 2.6, 20.25, 0.05), 0.62, statueMat);
+      addStatuePart(new THREE.SphereGeometry(0.58, 16, 12), statueHighlightMat, new THREE.Vector3(side * 2.6, 20.25, 0.05), new THREE.Vector3(1, 1, 0.9));
+      addStatueLimb(new THREE.Vector3(side * 2.6, 20.25, 0.05), new THREE.Vector3(side * 3.85, 20.85, 0.08), 0.42, statueMat);
+      addStatuePart(new THREE.SphereGeometry(0.48, 16, 12), statueHighlightMat, new THREE.Vector3(side * 4.04, 20.94, 0.08), new THREE.Vector3(0.7, 0.4, 0.36));
+      addStatueLimb(new THREE.Vector3(side * 0.62, 16.9, 0), new THREE.Vector3(side * 0.72, 13.8, 0.02), 0.58, statueMat);
+      addStatuePart(new THREE.SphereGeometry(0.55, 16, 12), statueHighlightMat, new THREE.Vector3(side * 0.72, 13.8, 0.02), new THREE.Vector3(0.9, 0.9, 0.82));
+      addStatuePart(new THREE.SphereGeometry(0.52, 16, 12), darkMetalMat, new THREE.Vector3(side * 0.72, 13.2, 0.42), new THREE.Vector3(0.72, 0.25, 1.2));
+    }
+
+    const featherShape = new THREE.Shape();
+    featherShape.moveTo(-0.2, 0);
+    featherShape.quadraticCurveTo(-0.45, 1.1, -0.28, 2.35);
+    featherShape.quadraticCurveTo(-0.12, 3.55, 0.02, 4.15);
+    featherShape.quadraticCurveTo(0.34, 3.2, 0.42, 2.1);
+    featherShape.quadraticCurveTo(0.46, 0.75, 0.2, 0);
+    featherShape.closePath();
+    const featherGeometry = new THREE.ExtrudeGeometry(featherShape, {
+      depth: 0.14,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: 0.08,
+      bevelThickness: 0.06
     });
-    const statueBody = new THREE.Mesh(new THREE.CapsuleGeometry(1.8, 6, 8, 16), statueMat);
-    statueBody.position.y = 19.5;
-    statueBody.castShadow = true;
-    statueGroup.add(statueBody);
+    const featherMaterials = [
+      new THREE.MeshStandardMaterial({ color: 0x6e5136, metalness: 0.82, roughness: 0.3, side: THREE.DoubleSide }),
+      new THREE.MeshStandardMaterial({ color: 0xc1a16d, metalness: 0.85, roughness: 0.25, side: THREE.DoubleSide })
+    ];
 
-    // Glowing Holographic Wings
-    const wingMat = new THREE.MeshStandardMaterial({ 
-      color: 0x00f3ff, 
-      emissive: 0x00f3ff, 
-      emissiveIntensity: 1.2,
-      transparent: true,
-      opacity: 0.9
-    });
-    const leftWing = new THREE.Mesh(new THREE.ConeGeometry(3.5, 11, 4), wingMat);
-    leftWing.position.set(-3.2, 21, -0.5);
-    leftWing.rotation.z = Math.PI / 4;
-    statueGroup.add(leftWing);
+    for (const side of [-1, 1]) {
+      const wingBones = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(side * 1.1, 21.6, -0.72),
+        new THREE.Vector3(side * 4.2, 22.2, -0.78),
+        new THREE.Vector3(side * 8.5, 22.8, -0.78),
+        new THREE.Vector3(side * 12.6, 23.2, -0.72)
+      ]);
+      const wingFrame = new THREE.Mesh(new THREE.TubeGeometry(wingBones, 24, 0.2, 10, false), statueHighlightMat);
+      wingFrame.castShadow = true;
+      statueGroup.add(wingFrame);
 
-    const rightWing = new THREE.Mesh(new THREE.ConeGeometry(3.5, 11, 4), wingMat);
-    rightWing.position.set(3.2, 21, -0.5);
-    rightWing.rotation.z = -Math.PI / 4;
-    statueGroup.add(rightWing);
+      for (let feather = 0; feather < 9; feather += 1) {
+        const x = side * (0.9 + feather * 1.42);
+        const angle = -side * (0.34 + feather * 0.065);
+        const lengthScale = 0.82 + feather * 0.055;
+        const primary = new THREE.Mesh(featherGeometry, featherMaterials[feather % 2]);
+        primary.position.set(x, 21.95 + feather * 0.1, -0.65);
+        primary.rotation.z = angle;
+        primary.scale.set(1, lengthScale, 1);
+        primary.castShadow = true;
+        primary.receiveShadow = true;
+        statueGroup.add(primary);
 
-    // Official Civicverse Logo Medallion Sculpture
-    const cvSculpture = new THREE.Group();
-    cvSculpture.position.set(0, 5, 9);
+        const covert = new THREE.Mesh(featherGeometry, featherMaterials[(feather + 1) % 2]);
+        covert.position.set(side * (0.65 + feather * 1.26), 20.85, -0.32);
+        covert.rotation.z = angle * 0.72;
+        covert.scale.set(0.72, 0.63 + feather * 0.025, 0.8);
+        covert.castShadow = true;
+        covert.receiveShadow = true;
+        statueGroup.add(covert);
+      }
+    }
 
-    const logoTexture = loader.load('/Civicverselogo.png');
-    logoTexture.encoding = THREE.sRGBEncoding;
-
-    const medallionGeo = new THREE.CylinderGeometry(3.4, 3.4, 0.4, 48);
-    const rimMat = new THREE.MeshStandardMaterial({ color: 0x8a94a4, metalness: 0.95, roughness: 0.2 });
-    const faceMat = new THREE.MeshStandardMaterial({ map: logoTexture, metalness: 0.88, roughness: 0.22 });
-    const medallion = new THREE.Mesh(medallionGeo, [rimMat, faceMat, faceMat]);
-    medallion.rotation.x = Math.PI / 2;
-    cvSculpture.add(medallion);
-
-    // Glowing Neon Aura Ring around the medallion
-    const neonAura = new THREE.Mesh(
-      new THREE.TorusGeometry(3.8, 0.12, 16, 48),
-      new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 2.5 })
+    const mask = addStatuePart(
+      new THREE.SphereGeometry(0.76, 32, 24),
+      maskMat,
+      new THREE.Vector3(0, 23.55, 0.66),
+      new THREE.Vector3(1.12, 0.66, 0.34)
     );
-    cvSculpture.add(neonAura);
+    mask.rotation.x = -0.08;
+    for (const side of [-1, 1]) {
+      addStatuePart(new THREE.SphereGeometry(0.16, 16, 10), darkMetalMat, new THREE.Vector3(side * 0.31, 23.59, 0.955), new THREE.Vector3(1.15, 0.42, 0.3));
+    }
 
-    statueGroup.add(cvSculpture);
+    const maskCrest = new THREE.Group();
+    maskCrest.position.set(0, 23.93, 1.0);
+    for (const side of [-1, 1]) {
+      const chevron = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.36, 0.08), maskTrimMat);
+      chevron.rotation.z = side * -0.58;
+      chevron.position.x = side * 0.1;
+      maskCrest.add(chevron);
+    }
+    const crestDot = new THREE.Mesh(new THREE.SphereGeometry(0.085, 12, 8), maskTrimMat);
+    crestDot.position.y = 0.2;
+    maskCrest.add(crestDot);
+    statueGroup.add(maskCrest);
+
+    const plaque = new THREE.Mesh(
+      new THREE.BoxGeometry(7.2, 1.35, 0.34),
+      new THREE.MeshStandardMaterial({ color: 0x352c25, metalness: 0.74, roughness: 0.32 })
+    );
+    plaque.position.set(0, 3.15, 6.19);
+    plaque.castShadow = true;
+    statueGroup.add(plaque);
+
+    const plaqueCanvas = document.createElement('canvas');
+    plaqueCanvas.width = 1024;
+    plaqueCanvas.height = 256;
+    const plaqueContext = plaqueCanvas.getContext('2d');
+    if (!plaqueContext) throw new Error('Could not create the monument plaque.');
+    plaqueContext.fillStyle = '#352c25';
+    plaqueContext.fillRect(0, 0, plaqueCanvas.width, plaqueCanvas.height);
+    plaqueContext.strokeStyle = '#c9a96f';
+    plaqueContext.lineWidth = 12;
+    plaqueContext.strokeRect(18, 18, plaqueCanvas.width - 36, plaqueCanvas.height - 36);
+    plaqueContext.textAlign = 'center';
+    plaqueContext.textBaseline = 'middle';
+    plaqueContext.font = 'bold 116px Georgia, serif';
+    plaqueContext.fillStyle = '#f0d7a3';
+    plaqueContext.shadowColor = '#100d0a';
+    plaqueContext.shadowBlur = 8;
+    plaqueContext.fillText('THE GAT', plaqueCanvas.width / 2, plaqueCanvas.height / 2 + 4);
+    const plaqueTexture = new THREE.CanvasTexture(plaqueCanvas);
+    plaqueTexture.colorSpace = THREE.SRGBColorSpace;
+    const plaqueFace = new THREE.Mesh(
+      new THREE.PlaneGeometry(6.7, 1.1),
+      new THREE.MeshStandardMaterial({ map: plaqueTexture, metalness: 0.5, roughness: 0.38 })
+    );
+    plaqueFace.position.set(0, 3.15, 6.37);
+    statueGroup.add(plaqueFace);
 
     scene.add(statueGroup);
 
-    // Try to replace procedural textures with real PBR textures if present in public/textures
+    // Load locally bundled CC0 assets; retain the scene-built fallback if a file cannot load.
     (async () => {
       try {
-        const plazaPBR = await tryLoadPBRFromPublic('plaza');
-        if (plazaPBR) {
-          plazaMat.map = plazaPBR.albedo;
-          if (plazaPBR.normal) plazaMat.normalMap = plazaPBR.normal;
-          if (plazaPBR.rough) plazaMat.roughnessMap = plazaPBR.rough;
-          if (plazaPBR.metal) plazaMat.metalness = 1.0;
-          plazaMat.needsUpdate = true;
+        const gltfLoader = new GLTFLoader();
+        const lampAsset = await gltfLoader.loadAsync('/assets/foyer/models/street_lamp_01/street_lamp_01_1k.gltf');
+        if (!sceneDisposed) {
+          fallbackStreetLights.forEach(fallback => scene.remove(fallback));
+          for (const fallback of fallbackStreetLights) {
+            const side = Math.sign(fallback.position.x);
+            const index = Math.round((fallback.position.z + 104) / 29);
+            const lamp = lampAsset.scene.clone(true);
+            const originalBounds = new THREE.Box3().setFromObject(lamp);
+            const dimensions = originalBounds.getSize(new THREE.Vector3());
+            lamp.scale.setScalar(8 / dimensions.y);
+            const bounds = new THREE.Box3().setFromObject(lamp);
+            lamp.position.set(
+              fallback.position.x - (bounds.min.x + bounds.max.x) / 2,
+              -bounds.min.y,
+              fallback.position.z - (bounds.min.z + bounds.max.z) / 2
+            );
+            lamp.traverse(object => {
+              if (object instanceof THREE.Mesh) {
+                object.castShadow = true;
+                object.receiveShadow = true;
+              }
+            });
+            scene.add(lamp);
+            const lampLight = new THREE.PointLight(index % 2 === 0 ? 0x3acbff : 0xd85bff, 3.2, 38, 1.8);
+            lampLight.position.set(side * 28, 7.3, -104 + index * 29);
+            scene.add(lampLight);
+          }
         }
-
-        const islandPBR = await tryLoadPBRFromPublic('island');
-        if (islandPBR) {
-          islandMat.map = islandPBR.albedo;
-          if (islandPBR.normal) islandMat.normalMap = islandPBR.normal;
-          if (islandPBR.rough) islandMat.roughnessMap = islandPBR.rough;
-          islandMat.needsUpdate = true;
-        }
-
-        const oceanPBR = await tryLoadPBRFromPublic('ocean');
-        if (oceanPBR) {
-          oceanMat.map = oceanPBR.albedo;
-          if (oceanPBR.normal) oceanMat.normalMap = oceanPBR.normal;
-          if (oceanPBR.rough) oceanMat.roughnessMap = oceanPBR.rough;
-          oceanMat.needsUpdate = true;
-        }
-
-        const suitPBR = await tryLoadPBRFromPublic('suit');
-        if (suitPBR) {
-          playerGroup.traverse((c: any) => {
-            if (c.isMesh && c.material && c.material.emissive !== undefined) {
-              c.material.map = suitPBR.albedo;
-              if (suitPBR.normal) c.material.normalMap = suitPBR.normal;
-              if (suitPBR.rough) c.material.roughnessMap = suitPBR.rough;
-              c.material.needsUpdate = true;
-            }
-          });
-        }
-      } catch (e) {
-        // ignore; procedural textures still present
+      } catch (error) {
+        console.error('[GodotFoyer] Failed to load the local street-lamp model; using procedural lamps.', error);
       }
+
+      try {
+        const gltfLoader = new GLTFLoader();
+        const benchAsset = await gltfLoader.loadAsync('/assets/foyer/models/modular_street_seating/modular_street_seating_1k.gltf');
+        if (!sceneDisposed) {
+          const benchBounds = new THREE.Box3().setFromObject(benchAsset.scene);
+          const benchSize = benchBounds.getSize(new THREE.Vector3());
+          const scale = 5.2 / Math.max(benchSize.x, benchSize.z);
+          for (const [x, z, rotation] of [
+            [-19, -36, 0], [19, -48, Math.PI], [-20, -81, 0], [20, -95, Math.PI]
+          ] as const) {
+            const bench = benchAsset.scene.clone(true);
+            bench.scale.setScalar(scale);
+            const bounds = new THREE.Box3().setFromObject(bench);
+            bench.position.set(
+              x - (bounds.min.x + bounds.max.x) / 2,
+              -bounds.min.y,
+              z - (bounds.min.z + bounds.max.z) / 2
+            );
+            bench.rotation.y = rotation;
+            bench.traverse(object => {
+              if (object instanceof THREE.Mesh) {
+                object.castShadow = true;
+                object.receiveShadow = true;
+              }
+            });
+            scene.add(bench);
+          }
+        }
+      } catch (error) {
+        console.error('[GodotFoyer] Failed to load the local seating models.', error);
+      }
+
     })();
 
     // ========================================================
     // VIBRANT HIGH-RISE SKYSCRAPERS & NEON BILLBOARDS
     // ========================================================
 
+    type CivicWatchBillboard = {
+      canvas: HTMLCanvasElement;
+      context: CanvasRenderingContext2D;
+      texture: THREE.CanvasTexture;
+      version: number;
+      story?: BillboardStory;
+      mesh?: THREE.Mesh;
+      building?: THREE.Group;
+    };
+    const mediaBillboards: CivicWatchBillboard[] = [];
+    let billboardStories: BillboardStory[] = [];
+    let billboardStoryIndex = 0;
+    const drawCivicWatchBillboard = (screen: CivicWatchBillboard, story?: BillboardStory) => {
+      const { canvas, context, texture } = screen;
+      const version = ++screen.version;
+      screen.story = story;
+      if (screen.mesh) screen.mesh.userData.billboardStory = story;
+      if (screen.building) screen.building.userData.billboardStory = story;
+      context.fillStyle = '#07111d';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      if (!story) {
+        context.fillStyle = '#102339';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.strokeStyle = '#16cce8';
+        context.lineWidth = 6;
+        context.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
+        context.fillStyle = '#22d8f6';
+        context.font = 'bold 43px sans-serif';
+        context.fillText('CIVICVERSE COMMUNITY + OPEN NEWS', 42, 105);
+        context.fillStyle = '#e6f4ff';
+        context.font = '30px sans-serif';
+        context.fillText('No community stories are available right now', 42, 180);
+        context.fillStyle = '#9db2c5';
+        context.font = '24px sans-serif';
+        context.fillText('Interact with a screen to open its source.', 42, 235);
+        texture.needsUpdate = true;
+        return;
+      }
+
+      const paintStory = (image?: HTMLImageElement) => {
+        if (sceneDisposed || screen.version !== version) return;
+        if (image) {
+          const scale = Math.max(canvas.width / image.width, 430 / image.height);
+          const width = image.width * scale;
+          const height = image.height * scale;
+          context.drawImage(image, (canvas.width - width) / 2, (430 - height) / 2, width, height);
+        } else {
+          const gradient = context.createLinearGradient(0, 0, canvas.width, 430);
+          gradient.addColorStop(0, story.category === 'OPEN SOURCE' ? '#123f37' : '#12334f');
+          gradient.addColorStop(1, '#101327');
+          context.fillStyle = gradient;
+          context.fillRect(0, 0, canvas.width, 430);
+          context.fillStyle = '#e3f7ff';
+          context.font = 'bold 42px sans-serif';
+          const words = story.title.split(/\s+/);
+          let line = '';
+          let y = 150;
+          for (const word of words) {
+            const candidate = `${line}${word} `;
+            if (context.measureText(candidate).width > canvas.width - 100 && line) {
+              context.fillText(line.trim(), 48, y);
+              line = `${word} `;
+              y += 58;
+            } else line = candidate;
+          }
+          if (line && y < 410) context.fillText(line.trim(), 48, y);
+        }
+
+        const footer = context.createLinearGradient(0, 380, 0, 512);
+        footer.addColorStop(0, 'rgba(2, 9, 20, 0.15)');
+        footer.addColorStop(1, 'rgba(2, 9, 20, 0.97)');
+        context.fillStyle = footer;
+        context.fillRect(0, 360, canvas.width, 152);
+        context.fillStyle = '#27e6ff';
+        context.font = 'bold 22px sans-serif';
+        context.fillText(`${story.category}  ·  INTERACT TO OPEN SOURCE`, 34, 400);
+        context.fillStyle = '#ffffff';
+        context.font = 'bold 27px sans-serif';
+        context.fillText(story.title.slice(0, 55), 34, 445);
+        context.fillStyle = '#aebed0';
+        context.font = '19px sans-serif';
+        context.fillText(`by ${story.author}`.slice(0, 72), 34, 480);
+        texture.needsUpdate = true;
+      };
+
+      if (story.imageUrl) {
+        const image = new Image();
+        image.onload = () => paintStory(image);
+        image.onerror = () => paintStory();
+        image.src = story.imageUrl;
+      } else paintStory();
+    };
+
+    const addBillboard = (
+      building: THREE.Group,
+      width: number,
+      height: number,
+      y: number,
+      faceOffset: number,
+      kind: 'logo' | 'community',
+      face: 'front' | 'rear' | 'left' | 'right' = 'front'
+    ) => {
+      const isSide = face === 'left' || face === 'right';
+      const faceSign = face === 'rear' || face === 'left' ? -1 : 1;
+      const screenWidth = width;
+      const screenHeight = height;
+      const x = isSide ? faceSign * (faceOffset + 0.14) : 0;
+      const screenZ = isSide ? 0 : faceSign * (faceOffset + 0.14);
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(screenWidth + 0.7, screenHeight + 0.7, 0.48),
+        new THREE.MeshStandardMaterial({ color: 0x111a26, metalness: 0.72, roughness: 0.28 })
+      );
+      frame.position.set(isSide ? faceSign * (faceOffset - 0.12) : 0, y, screenZ - faceSign * 0.26);
+      if (isSide) frame.rotation.y = face === 'right' ? Math.PI / 2 : -Math.PI / 2;
+      building.add(frame);
+
+      const canvas = makeCanvas(1024, 512);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Could not create a CivicWatch billboard canvas.');
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const screen = new THREE.Mesh(
+        new THREE.PlaneGeometry(screenWidth, screenHeight),
+        new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, side: THREE.DoubleSide })
+      );
+      screen.position.set(x, y, screenZ);
+      if (face === 'rear') screen.rotation.y = Math.PI;
+      if (face === 'right') screen.rotation.y = Math.PI / 2;
+      if (face === 'left') screen.rotation.y = -Math.PI / 2;
+      building.add(screen);
+
+      if (kind === 'logo') {
+        context.fillStyle = '#06111d';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.strokeStyle = '#24d8f3';
+        context.lineWidth = 8;
+        context.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
+        const logo = new Image();
+        logo.onload = () => {
+          if (sceneDisposed) return;
+          const scale = Math.min(380 / logo.width, 350 / logo.height);
+          context.drawImage(logo, (canvas.width - logo.width * scale) / 2, 28, logo.width * scale, logo.height * scale);
+          context.fillStyle = '#e8faff';
+          context.font = 'bold 36px sans-serif';
+          context.textAlign = 'center';
+          context.fillText('CIVICVERSE  /  NEW DISTRICT', canvas.width / 2, 470);
+          texture.needsUpdate = true;
+        };
+        logo.onerror = () => console.error('[GodotFoyer] Could not load the Civicverse logo for the tower billboard.');
+        logo.src = '/Civicverselogo.png';
+        texture.needsUpdate = true;
+        return;
+      }
+
+      const board: CivicWatchBillboard = { canvas, context, texture, version: 0, mesh: screen, building };
+      mediaBillboards.push(board);
+      drawCivicWatchBillboard(board);
+    };
+
     const createCyberBuilding = (x: number, z: number, w: number, h: number, d: number, title: string, neonColor: number) => {
       const bGroup = new THREE.Group();
       bGroup.position.set(x, 0, z);
 
-      const buildingTex = generatePBR('building', '#0f1424');
       const bMesh = new THREE.Mesh(
         new THREE.BoxGeometry(w, h, d),
-        new THREE.MeshStandardMaterial({ map: buildingTex.albedo, normalMap: buildingTex.normal, roughnessMap: buildingTex.roughness, metalness: 0.6 })
+        new THREE.MeshStandardMaterial({
+          color: 0x18243a,
+          metalness: 0.72,
+          roughness: 0.3,
+          envMapIntensity: 0.8
+        })
       );
       bMesh.position.y = h / 2;
       bMesh.castShadow = true;
       bGroup.add(bMesh);
 
-      // Glowing Window Grid
-      const winMat = new THREE.MeshStandardMaterial({ 
-        color: 0x000000, 
-        emissive: neonColor, 
-        emissiveIntensity: 1.2, 
-        transparent: true, 
-        opacity: 0.85 
-      });
-      const windows = new THREE.Mesh(new THREE.PlaneGeometry(w - 3, h - 15), winMat);
-      windows.position.set(0, h / 2, d / 2 + 0.1);
-      bGroup.add(windows);
-
-      // Billboard Canvas Screen
-      const boardCanvas = document.createElement('canvas');
-      boardCanvas.width = 512;
-      boardCanvas.height = 256;
-      const ctx = boardCanvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#090d18';
-        ctx.fillRect(0, 0, 512, 256);
-        ctx.strokeStyle = neonColor === 0x00f3ff ? '#00f3ff' : '#ff00aa';
-        ctx.lineWidth = 14;
-        ctx.strokeRect(10, 10, 492, 236);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 90px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('CV', 256, 115);
-        ctx.font = '900 38px Inter, sans-serif';
-        ctx.fillText(title, 256, 180);
+      if (title === 'CIVIC CENTRE') {
+        for (const face of ['front', 'rear', 'left', 'right'] as const) {
+          const faceOffset = (face === 'left' || face === 'right' ? w : d) / 2 + 0.5;
+          addBillboard(bGroup, 18, 9, h - 5, faceOffset, 'logo', face);
+        }
+      }
+      if (title === 'CIVICVERSE') {
+        addBillboard(bGroup, 20, 9, h - 5, d / 2 + 0.5, 'logo', 'front');
+      }
+      if (title === 'NEW DISTRICT' || title === 'CITY SERVICES') {
+        for (const face of ['front', 'rear', 'left', 'right'] as const) {
+          const faceOffset = (face === 'left' || face === 'right' ? w : d) / 2 + 0.5;
+          addBillboard(bGroup, 18, 9, h - 5, faceOffset, 'community', face);
+        }
       }
 
-      const boardTex = new THREE.CanvasTexture(boardCanvas);
-      const billboard = new THREE.Mesh(
-        new THREE.PlaneGeometry(w * 0.88, w * 0.44),
-        new THREE.MeshBasicMaterial({ map: boardTex })
+      const windowWidth = Math.max(1.5, Math.min(2.2, w / 14));
+      const windowHeight = 2.7;
+      const columns = Math.max(3, Math.floor((w - 5) / 3.2));
+      const sideColumns = Math.max(3, Math.floor((d - 5) / 3.2));
+      const rows = Math.max(5, Math.floor((h - 18) / 5));
+      const windowGeo = new THREE.BoxGeometry(windowWidth, windowHeight, 0.04);
+      const windowMat = new THREE.MeshStandardMaterial({
+        color: 0xd8f3ff,
+        emissive: neonColor,
+        emissiveIntensity: 0.58,
+        roughness: 0.35,
+        metalness: 0.1
+      });
+      const warmWindow = new THREE.Color(0xffd69a);
+      const coolWindow = new THREE.Color(0x9bc7ec);
+      const windowFallback = new THREE.Group();
+      const addWindowFace = (horizontalCount: number, alongDepth: boolean, sign: number) => {
+        const windows = new THREE.InstancedMesh(windowGeo, windowMat, horizontalCount * rows);
+        const instance = new THREE.Object3D();
+        let index = 0;
+        for (let row = 0; row < rows; row += 1) {
+          for (let column = 0; column < horizontalCount; column += 1) {
+            const offset = (column - (horizontalCount - 1) / 2) *
+              ((alongDepth ? d : w) - 5) / horizontalCount;
+            instance.position.set(
+              alongDepth ? sign * (w / 2 + 0.08) : offset,
+              7 + row * 4.2,
+              alongDepth ? offset : sign * (d / 2 + 0.08)
+            );
+            instance.rotation.y = alongDepth ? Math.PI / 2 : 0;
+            instance.updateMatrix();
+            windows.setMatrixAt(index, instance.matrix);
+            windows.setColorAt(index, Math.random() > 0.55 ? warmWindow : coolWindow);
+            index += 1;
+          }
+        }
+        windows.instanceMatrix.needsUpdate = true;
+        windowFallback.add(windows);
+      };
+      addWindowFace(columns, false, 1);
+      addWindowFace(columns, false, -1);
+      addWindowFace(sideColumns, true, 1);
+      addWindowFace(sideColumns, true, -1);
+      bGroup.add(windowFallback);
+      const facadeTrim = new THREE.Mesh(
+        new THREE.BoxGeometry(w + 0.5, 0.55, d + 0.5),
+        new THREE.MeshStandardMaterial({
+          color: 0x1d263b,
+          emissive: neonColor,
+          emissiveIntensity: 0.38,
+          metalness: 0.52,
+          roughness: 0.38
+        })
       );
-      billboard.position.set(0, h * 0.72, d / 2 + 0.3);
-      bGroup.add(billboard);
+      facadeTrim.position.y = h - 1;
+      bGroup.add(facadeTrim);
+      const verticalNeon = new THREE.MeshStandardMaterial({
+        color: neonColor,
+        emissive: neonColor,
+        emissiveIntensity: 0.72,
+        metalness: 0.28,
+        roughness: 0.35
+      });
+      for (const sign of [-1, 1]) {
+        const towerEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(0.16, h - 2, 0.12),
+          verticalNeon
+        );
+        towerEdge.position.set(sign * (w / 2 - 0.4), h / 2, d / 2 + 0.12);
+        bGroup.add(towerEdge);
+      }
 
-      // Point light from Billboard
-      const pLight = new THREE.PointLight(neonColor, 6, 80);
-      pLight.position.set(0, h * 0.72, d / 2 + 8);
-      bGroup.add(pLight);
+      bGroup.name = title;
 
       return bGroup;
     };
 
-    scene.add(createCyberBuilding(-55, -70, 36, 120, 36, 'CIVICVERSE', 0x00f3ff));
-    scene.add(createCyberBuilding(55, -70, 36, 120, 36, 'NEW DISTRICT', 0xff00aa));
-    scene.add(createCyberBuilding(-75, 15, 36, 130, 36, 'CVC EXCHANGE', 0x38bdf8));
-    scene.add(createCyberBuilding(75, 15, 36, 130, 36, 'CIVIC CENTRE', 0xa855f7));
+    scene.add(createCyberBuilding(-65, -80, 31, 92, 30, 'CIVIC CENTRE', 0x5ca7ed));
+    scene.add(createCyberBuilding(65, -85, 32, 108, 30, 'NEW DISTRICT', 0xd989bd));
+    scene.add(createCyberBuilding(-72, 4, 30, 78, 28, 'CVC EXCHANGE', 0xe9a957));
+    scene.add(createCyberBuilding(72, 5, 32, 88, 30, 'CITY SERVICES', 0x71b9dd));
+    scene.add(createCyberBuilding(0, -158, 46, 118, 34, 'CIVICVERSE', 0x5ebcff));
+
+    const skyline = [
+      [-128, -172, 28, 102, 27], [-96, -205, 24, 136, 24], [-53, -205, 30, 114, 28],
+      [52, -208, 26, 132, 25], [96, -196, 34, 96, 29], [132, -175, 30, 122, 28],
+      [-138, -80, 28, 108, 26], [136, -78, 26, 116, 24], [-114, 35, 29, 86, 28],
+      [112, 38, 34, 92, 30], [-104, 162, 34, 98, 30], [-66, 194, 28, 124, 26],
+      [-24, 174, 36, 112, 32], [26, 208, 34, 138, 30], [72, 177, 32, 96, 28],
+      [112, 150, 30, 118, 26]
+    ] as const;
+    skyline.forEach(([x, z, width, height, depth], index) => {
+      scene.add(createCyberBuilding(x, z, width, height, depth, index % 2 ? 'CIVIC' : 'DISTRICT', index % 2 ? 0x77a9df : 0xe9b86c));
+    });
+
+    if (mediaBillboards.length) {
+      const fetchJson = async (url: string) => {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 8000);
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          if (!response.ok) throw new Error(`Feed request returned HTTP ${response.status}.`);
+          return await response.json();
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      };
+      const isHttpUrl = (value: unknown): value is string => {
+        if (typeof value !== 'string') return false;
+        try {
+          return ['http:', 'https:'].includes(new URL(value).protocol);
+        } catch {
+          return false;
+        }
+      };
+      const paintAllBillboards = () => {
+        mediaBillboards.forEach((board, index) => {
+          const buildingOffset = Math.floor(index / 4);
+          const story = billboardStories.length
+            ? billboardStories[(buildingOffset + billboardStoryIndex) % billboardStories.length]
+            : undefined;
+          drawCivicWatchBillboard(board, story);
+        });
+      };
+      const refreshBillboardStories = async () => {
+        const [socialResult, civicWatchResult, newsResult] = await Promise.allSettled([
+          fetchJson('/api/social/explore?limit=30'),
+          fetchJson('/api/civicwatch/media?limit=2'),
+          fetchJson('/api/billboard/news')
+        ]);
+        if (sceneDisposed) return;
+
+        const stories: BillboardStory[] = [];
+        if (socialResult.status === 'fulfilled' && Array.isArray(socialResult.value.posts)) {
+          for (const post of socialResult.value.posts) {
+            if (typeof post?.id !== 'string' || typeof post.authorId !== 'string') continue;
+            const profileUrl = `/profile/${encodeURIComponent(post.authorId)}`;
+            const postText = typeof post.content === 'string' ? post.content.trim() : '';
+            const linkedSource = postText.match(/https?:\/\/[^\s<>"']+/)?.[0];
+            const mediaUrl = typeof post.media?.url === 'string' &&
+              typeof post.media.mimeType === 'string' &&
+              post.media.mimeType.startsWith('image/') &&
+              /^\/api\/social\/media\/[0-9a-f-]{36}$/i.test(post.media.url)
+              ? post.media.url
+              : undefined;
+            if (!postText && !mediaUrl) continue;
+            stories.push({
+              id: `post-${post.id}`,
+              title: postText || post.media?.name || 'Community media',
+              author: typeof post.authorName === 'string' ? post.authorName : 'Civicverse member',
+              category: 'COMMUNITY',
+              imageUrl: mediaUrl,
+              sourceUrl: linkedSource && isHttpUrl(linkedSource) ? linkedSource : profileUrl,
+              profileUrl,
+              authorId: post.authorId
+            });
+          }
+        } else if (socialResult.status === 'rejected') {
+          console.info('[GodotFoyer] Community explore feed is unavailable.', socialResult.reason);
+        }
+
+        if (civicWatchResult.status === 'fulfilled' && Array.isArray(civicWatchResult.value.items)) {
+          for (const item of civicWatchResult.value.items) {
+            if (typeof item?.id !== 'string' || typeof item.title !== 'string') continue;
+            const profileUrl = typeof item.authorId === 'string'
+              ? `/profile/${encodeURIComponent(item.authorId)}`
+              : undefined;
+            const imageUrl = typeof item.image === 'string' &&
+              /^data:image\/(?:jpeg|png|webp);base64,/.test(item.image)
+              ? item.image
+              : undefined;
+            stories.push({
+              id: `civicwatch-${item.id}`,
+              title: item.title,
+              author: typeof item.authorName === 'string' ? item.authorName : 'CivicWatch contributor',
+              category: 'CIVICWATCH',
+              imageUrl,
+              sourceUrl: '/civicwatch',
+              profileUrl,
+              ...(typeof item.authorId === 'string' ? { authorId: item.authorId } : {})
+            });
+          }
+        } else if (civicWatchResult.status === 'rejected') {
+          console.info('[GodotFoyer] CivicWatch billboard feed is unavailable.', civicWatchResult.reason);
+        }
+
+        if (newsResult.status === 'fulfilled' && Array.isArray(newsResult.value.items)) {
+          for (const item of newsResult.value.items) {
+            if (typeof item?.id !== 'string' || typeof item.title !== 'string' || !isHttpUrl(item.sourceUrl)) continue;
+            stories.push({
+              id: item.id,
+              title: item.title,
+              author: typeof item.author === 'string' ? item.author : 'Open news',
+              category: typeof item.category === 'string' ? item.category : 'LIVE NEWS',
+              sourceUrl: item.sourceUrl
+            });
+          }
+        } else if (newsResult.status === 'rejected') {
+          console.info('[GodotFoyer] Open news feed is unavailable.', newsResult.reason);
+        }
+
+        for (let index = stories.length - 1; index > 0; index -= 1) {
+          const swapIndex = Math.floor(Math.random() * (index + 1));
+          [stories[index], stories[swapIndex]] = [stories[swapIndex], stories[index]];
+        }
+        billboardStories = stories;
+        billboardStoryIndex = 0;
+        paintAllBillboards();
+      };
+      void refreshBillboardStories();
+      civicWatchMediaTimer = window.setInterval(() => void refreshBillboardStories(), 60000);
+      billboardRotationTimer = window.setInterval(() => {
+        if (!billboardStories.length || sceneDisposed) return;
+        billboardStoryIndex = (billboardStoryIndex + 1) % billboardStories.length;
+        paintAllBillboards();
+      }, 12000);
+    }
+
+    const fallbackStreetLights: THREE.Group[] = [];
+    const boulevardLampMaterial = new THREE.MeshStandardMaterial({ color: 0x252a34, metalness: 0.72, roughness: 0.35 });
+    const lampGlowMaterial = new THREE.MeshStandardMaterial({ color: 0xffd69a, emissive: 0xffbc69, emissiveIntensity: 1.4 });
+    for (const side of [-1, 1]) {
+      for (let index = 0; index < 4; index += 1) {
+        const lamp = new THREE.Group();
+        lamp.position.set(side * 28, 0, -104 + index * 29);
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.19, 8, 10), boulevardLampMaterial);
+        post.position.y = 4;
+        lamp.add(post);
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.14, 0.18), boulevardLampMaterial);
+        arm.position.set(-side * 0.72, 7.7, 0);
+        lamp.add(arm);
+        const lampHead = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.18, 0.42), lampGlowMaterial);
+        lampHead.position.set(-side * 1.35, 7.55, 0);
+        lamp.add(lampHead);
+        fallbackStreetLights.push(lamp);
+        scene.add(lamp);
+      }
+    }
 
     // ========================================================
     // HIGH-FIDELITY DETAILED HUMAN CHARACTER & 3D WEAPON
@@ -777,6 +1567,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       group: THREE.Group;
       mesh: THREE.Group;
       nametag: THREE.Sprite;
+      bubble?: THREE.Sprite;
+      bubbleMessageId?: string;
       characterJson: string;
       username: string;
       targetPos: THREE.Vector3;
@@ -784,6 +1576,67 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       isMoving: boolean;
       animTime: number;
     }>();
+    const localChatBubble: ChatBubble = { sprite: new THREE.Sprite(), messageId: '' };
+    const remoteChatBubbles = new Map<string, ChatBubble>();
+
+    const createChatBubble = (text: string) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 192;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.fillStyle = 'rgba(9, 13, 22, 0.94)';
+        context.strokeStyle = '#22d3ee';
+        context.lineWidth = 6;
+        context.fillRect(10, 10, 492, 150);
+        context.strokeRect(10, 10, 492, 150);
+        context.fillStyle = '#ffffff';
+        context.font = 'bold 34px sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        const content = text.length > 72 ? `${text.slice(0, 69)}…` : text;
+        const words = content.split(/\s+/);
+        const lines: string[] = [];
+        let line = '';
+        for (const word of words) {
+          const nextLine = line ? `${line} ${word}` : word;
+          if (context.measureText(nextLine).width > 452 && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = nextLine;
+          }
+        }
+        if (line) lines.push(line);
+        lines.slice(0, 3).forEach((value, index) => {
+          context.fillText(value, 256, 48 + index * 42, 452);
+        });
+        context.fillStyle = 'rgba(9, 13, 22, 0.94)';
+        context.beginPath();
+        context.moveTo(224, 158);
+        context.lineTo(256, 188);
+        context.lineTo(288, 158);
+        context.closePath();
+        context.fill();
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false
+      }));
+      sprite.scale.set(3.2, 1.2, 1);
+      sprite.position.set(0, 3.35, 0);
+      return sprite;
+    };
+
+    const disposeChatBubble = (bubble: ChatBubble | undefined) => {
+      if (!bubble) return;
+      bubble.sprite.parent?.remove(bubble.sprite);
+      bubble.sprite.material.map?.dispose();
+      bubble.sprite.material.dispose();
+    };
 
     // 3. DETAILED 3D WEAPON RIFLE MODEL
     const weaponGroup = new THREE.Group();
@@ -791,14 +1644,14 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // Rifle Stock & Body
     const rifleBody = new THREE.Mesh(
       new THREE.BoxGeometry(0.14, 0.28, 1.2),
-      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.95, roughness: 0.1 })
+      new THREE.MeshStandardMaterial({ color: 0x252a30, metalness: 0.42, roughness: 0.62 })
     );
     weaponGroup.add(rifleBody);
 
     // Glowing Plasma Magazine Core
     const magCore = new THREE.Mesh(
       new THREE.BoxGeometry(0.16, 0.35, 0.25),
-      new THREE.MeshStandardMaterial({ color: 0x00f3ff, emissive: 0x00f3ff, emissiveIntensity: 3 })
+      new THREE.MeshStandardMaterial({ color: 0x343b40, roughness: 0.72, metalness: 0.18 })
     );
     magCore.position.set(0, -0.2, 0.1);
     weaponGroup.add(magCore);
@@ -806,7 +1659,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // Scope Sight
     const scopeLens = new THREE.Mesh(
       new THREE.CylinderGeometry(0.07, 0.07, 0.35),
-      new THREE.MeshStandardMaterial({ color: 0xff00aa, emissive: 0xff00aa, emissiveIntensity: 2 })
+      new THREE.MeshStandardMaterial({ color: 0x202a33, metalness: 0.32, roughness: 0.28 })
     );
     scopeLens.rotation.x = Math.PI / 2;
     scopeLens.position.set(0, 0.2, -0.1);
@@ -873,6 +1726,16 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         setTimeout(() => {
           chatInputRef.current?.focus();
         }, 50);
+        return;
+      }
+
+      if (e.code === 'KeyE') {
+        e.preventDefault();
+        const billboardStory = findBillboardStory(new THREE.Vector2(0, 0));
+        if (billboardStory) {
+          if (document.pointerLockElement) document.exitPointerLock();
+          setSelectedBillboardStory(billboardStory);
+        }
         return;
       }
 
@@ -994,8 +1857,55 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     const canvasElement = renderer.domElement;
     canvasElement.id = 'cv-3d-engine-canvas';
 
+    const playerRaycaster = new THREE.Raycaster();
+    const findBillboardStory = (pointer: THREE.Vector2) => {
+      playerRaycaster.setFromCamera(pointer, camera);
+      const interactableHits = playerRaycaster.intersectObjects(
+        scene.children.filter(object => object !== playerGroup),
+        true
+      );
+      for (const hit of interactableHits) {
+        let target: THREE.Object3D | null = hit.object;
+        while (target) {
+          const story = target.userData.billboardStory as BillboardStory | undefined;
+          if (story) return story;
+          target = target.parent;
+        }
+      }
+      return undefined;
+    };
     const onCanvasMouseDown = (e: MouseEvent) => {
       if (isChatFocusedRef.current) return;
+
+      if (e.button === 0) {
+        const bounds = canvasElement.getBoundingClientRect();
+        const pointer = document.pointerLockElement === canvasElement
+          ? new THREE.Vector2(0, 0)
+          : new THREE.Vector2(
+            ((e.clientX - bounds.left) / bounds.width) * 2 - 1,
+            -((e.clientY - bounds.top) / bounds.height) * 2 + 1
+          );
+        const billboardStory = findBillboardStory(pointer);
+        if (billboardStory) {
+          if (document.pointerLockElement) document.exitPointerLock();
+          setSelectedBillboardStory(billboardStory);
+          return;
+        }
+        const hit = playerRaycaster.intersectObjects(
+          Array.from(remoteMeshes.values(), remote => remote.group),
+          true
+        )[0];
+        let target: THREE.Object3D | null = hit?.object || null;
+        while (target && !target.userData.playerId) target = target.parent;
+        const player = target?.userData.playerId
+          ? useMultiplayerStore.getState().players.get(String(target.userData.playerId))
+          : undefined;
+        if (player?.civicId) {
+          if (document.pointerLockElement) document.exitPointerLock();
+          navigate(`/profile/${encodeURIComponent(player.civicId)}`);
+          return;
+        }
+      }
 
       // Only engage pointer lock if clicking directly on the 3D WebGL Canvas
       if (document.pointerLockElement !== canvasElement) {
@@ -1082,19 +1992,46 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     const clock = new THREE.Clock();
     let frameId: number;
     let lastMoveBroadcast = 0;
+    let nextLightningAt = 7 + Math.random() * 12;
+    let lightningOffAt = 0;
 
     const animate = () => {
       frameId = requestAnimationFrame(animate);
       try {
         const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
-
+        nebulaMaterial.uniforms.time.value = elapsed;
+        rain.position.set(playerGroup.position.x, playerGroup.position.y, playerGroup.position.z);
+        const rainAttribute = rainGeometry.getAttribute('position') as THREE.BufferAttribute;
+        const rainData = rainAttribute.array as Float32Array;
+        const rainStep = Math.min(delta, 0.05) * 62;
+        for (let index = 0; index < rainCount; index += 1) {
+          const offset = index * 6;
+          rainData[offset + 1] -= rainStep;
+          rainData[offset] += rainStep * 0.12;
+          rainData[offset + 2] += rainStep * 0.04;
+          if (rainData[offset + 1] < 0) {
+            rainData[offset] = (Math.random() - 0.5) * 120;
+            rainData[offset + 1] = 45 + Math.random() * 20;
+            rainData[offset + 2] = (Math.random() - 0.5) * 120;
+          }
+          rainData[offset + 3] = rainData[offset] + 0.2;
+          rainData[offset + 4] = rainData[offset + 1] - 1.8;
+          rainData[offset + 5] = rainData[offset + 2] + 0.08;
+        }
+        rainAttribute.needsUpdate = true;
+        if (elapsed >= nextLightningAt) {
+          lightning.intensity = 2.8;
+          lightningOffAt = elapsed + 0.12;
+          nextLightningAt = elapsed + 12 + Math.random() * 18;
+        }
+        if (lightning.intensity > 0 && elapsed >= lightningOffAt) lightning.intensity = 0;
         // 2. Player Movement: WASD / Arrow Keys + Right Click Walk
         const moveDir = new THREE.Vector3();
-        if (keys['KeyW'] || keys['ArrowUp'] || isRightMouseDown) moveDir.z += 1;
-        if (keys['KeyS'] || keys['ArrowDown']) moveDir.z -= 1;
-        if (keys['KeyA'] || keys['ArrowLeft']) moveDir.x += 1;
-        if (keys['KeyD'] || keys['ArrowRight']) moveDir.x -= 1;
+        if (keys['KeyW'] || keys['ArrowUp'] || isRightMouseDown) moveDir.z -= 1;
+        if (keys['KeyS'] || keys['ArrowDown']) moveDir.z += 1;
+        if (keys['KeyA'] || keys['ArrowLeft']) moveDir.x -= 1;
+        if (keys['KeyD'] || keys['ArrowRight']) moveDir.x += 1;
 
         const isRunning = keys['ShiftLeft'] || keys['ShiftRight'];
         const targetSpeed = isRunning ? 14 : 8; // units/sec smooth walking/sprinting speed
@@ -1147,6 +2084,30 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
         // Synchronize remote multiplayer players in 3D scene
         const remotePlayers = useMultiplayerStore.getState().players;
+        const chatMessages = useMultiplayerStore.getState().chatHistory;
+        const latestNearbyMessages = new Map<string, typeof chatMessages[number]>();
+        const now = Date.now();
+        chatMessages.forEach(message => {
+          if (!message.proximity || !message.sentAt || now - message.sentAt > 4500 || now < message.sentAt) return;
+          const previous = latestNearbyMessages.get(message.playerId);
+          if (!previous || (previous.sentAt || 0) < message.sentAt) {
+            latestNearbyMessages.set(message.playerId, message);
+          }
+        });
+        const localPlayerId = useMultiplayerStore.getState().localPlayerId;
+        const localMessage = latestNearbyMessages.get(localPlayerId);
+        if (localMessage) {
+          if (localChatBubble.messageId !== localMessage.id) {
+            disposeChatBubble(localChatBubble);
+            localChatBubble.sprite = createChatBubble(localMessage.text);
+            localChatBubble.messageId = localMessage.id;
+            playerGroup.add(localChatBubble.sprite);
+          }
+          localChatBubble.sprite.visible = cameraModeRef.current !== '1ST';
+        } else if (localChatBubble.messageId) {
+          disposeChatBubble(localChatBubble);
+          localChatBubble.messageId = '';
+        }
         const activeRemoteIds = new Set<string>();
 
         remotePlayers.forEach((p, pId) => {
@@ -1156,6 +2117,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
           if (!remoteObj) {
             const grp = new THREE.Group();
+            grp.userData.playerId = pId;
             const m = createCharacterMesh(p.character || defaultCharacter);
             m.rotation.y = Math.PI;
             grp.add(m);
@@ -1213,11 +2175,37 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           }
         });
 
+        latestNearbyMessages.forEach((message, playerId) => {
+          if (playerId === localPlayerId) return;
+          const remoteObj = remoteMeshes.get(playerId);
+          if (!remoteObj) return;
+          if (remoteObj.bubbleMessageId !== message.id) {
+            disposeChatBubble(remoteObj.bubble ? { sprite: remoteObj.bubble, messageId: remoteObj.bubbleMessageId || '' } : undefined);
+            remoteObj.bubble = createChatBubble(message.text);
+            remoteObj.bubbleMessageId = message.id;
+            remoteObj.group.add(remoteObj.bubble);
+            remoteChatBubbles.set(playerId, { sprite: remoteObj.bubble, messageId: message.id });
+          }
+        });
+
         // Clean up disconnected players
         remoteMeshes.forEach((remoteObj, pId) => {
           if (!activeRemoteIds.has(pId)) {
+            disposeChatBubble(remoteChatBubbles.get(pId));
+            remoteChatBubbles.delete(pId);
             scene.remove(remoteObj.group);
             remoteMeshes.delete(pId);
+          }
+        });
+        remoteChatBubbles.forEach((bubble, playerId) => {
+          if (!latestNearbyMessages.has(playerId)) {
+            disposeChatBubble(bubble);
+            remoteChatBubbles.delete(playerId);
+            const remoteObj = remoteMeshes.get(playerId);
+            if (remoteObj) {
+              remoteObj.bubble = undefined;
+              remoteObj.bubbleMessageId = undefined;
+            }
           }
         });
 
@@ -1225,13 +2213,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         weaponGroup.position.z = THREE.MathUtils.lerp(weaponGroup.position.z, -0.4, 0.08);
         weaponGroup.rotation.x = THREE.MathUtils.lerp(weaponGroup.rotation.x, 0, 0.08);
 
-        // Rotate Player Yaw (character orientation) - add PI so model faces forward instead of toward camera
-        const desiredYaw = yaw + Math.PI;
+        // The character model faces local -Z; keep it aligned with camera-forward movement.
+        const desiredYaw = yaw;
         playerGroup.rotation.y = THREE.MathUtils.lerp(playerGroup.rotation.y, desiredYaw, 0.14);
-
-        // Rotate sky slowly for dynamic backdrop
-        try { skyDome.rotation.y += 0.02 * delta; } catch (e) {}
-        try { cvSculpture.rotation.y += 0.6 * delta; } catch (e) {}
 
         // 3. CAMERA MODES & 360° PITCH/YAW POSITIONING
         if (cameraModeRef.current === '1ST') {
@@ -1249,17 +2233,20 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           weaponGroup.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
         } else {
           // Third Person Mode: 360° Orbit Camera around player at distance r=7.0
-          const camDistance = 7.0;
-          const camX = playerGroup.position.x - Math.sin(yaw) * Math.cos(pitch) * camDistance;
-          const camY = playerGroup.position.y + 2.5 + Math.sin(pitch) * camDistance;
-          const camZ = playerGroup.position.z - Math.cos(yaw) * Math.cos(pitch) * camDistance;
+          const camDistance = 4.8;
+          const camX = playerGroup.position.x + Math.sin(yaw) * Math.cos(pitch) * camDistance;
+          const camY = playerGroup.position.y + 2.15 + Math.sin(pitch) * camDistance;
+          const camZ = playerGroup.position.z + Math.cos(yaw) * Math.cos(pitch) * camDistance;
 
           camera.position.set(camX, Math.max(0.5, camY), camZ);
-          camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1.8, playerGroup.position.z);
+          camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1.35, playerGroup.position.z);
 
           // Position weapon in player hands in 3RD person view
           weaponGroup.position.set(0.4, 1.3, -0.4);
         }
+
+        starMat.uniforms.time.value = elapsed;
+        nebulaMaterial.uniforms.time.value = elapsed;
 
         // Use composer if available for postprocessing
         try {
@@ -1301,6 +2288,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      sceneDisposed = true;
+      if (civicWatchMediaTimer !== undefined) window.clearInterval(civicWatchMediaTimer);
+      if (billboardRotationTimer !== undefined) window.clearInterval(billboardRotationTimer);
       cancelAnimationFrame(frameId);
       canvasElement.removeEventListener('mousedown', onCanvasMouseDown);
       canvasElement.removeEventListener('contextmenu', onCanvasContextMenu);
@@ -1319,6 +2309,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       try {
         renderer.domElement.removeEventListener('webglcontextlost', onContextLost as EventListener)
       } catch {}
+      disposeChatBubble(localChatBubble);
+      remoteChatBubbles.forEach(disposeChatBubble);
+      remoteChatBubbles.clear();
       try { renderer.dispose(); } catch (e) {}
     };
 
@@ -1368,14 +2361,82 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         <span className="bg-cyan-500/20 text-cyan-400 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded">PRESS 'V'</span>
       </button>
 
+      {selectedBillboardStory && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/65 p-4 pointer-events-auto"
+          onMouseDown={event => {
+            if (event.target === event.currentTarget) setSelectedBillboardStory(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="billboard-story-title"
+            className="w-full max-w-lg rounded-2xl border border-cyan-400/40 bg-[#08111e] p-5 text-white shadow-[0_0_40px_rgba(6,182,212,0.2)]"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-cyan-300">{selectedBillboardStory.category}</p>
+                <h2 id="billboard-story-title" className="mt-1 text-lg font-bold leading-snug">{selectedBillboardStory.title}</h2>
+                <p className="mt-1 text-xs text-gray-400">Shared by {selectedBillboardStory.author}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedBillboardStory(null)}
+                className="rounded-lg p-2 text-gray-300 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                aria-label="Close billboard story"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {selectedBillboardStory.imageUrl && (
+              <img src={selectedBillboardStory.imageUrl} alt="" className="mb-4 max-h-56 w-full rounded-lg bg-black/30 object-contain" />
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={openBillboardSource}
+                className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-white"
+              >
+                {selectedBillboardStory.sourceUrl === selectedBillboardStory.profileUrl
+                  ? 'Open contributor profile'
+                  : 'Open source'}
+              </button>
+              {selectedBillboardStory.profileUrl && selectedBillboardStory.sourceUrl !== selectedBillboardStory.profileUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const profileUrl = selectedBillboardStory.profileUrl;
+                    if (!profileUrl) return;
+                    navigate(profileUrl);
+                    setSelectedBillboardStory(null);
+                  }}
+                  className="rounded-lg border border-cyan-400/40 px-4 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-400/10 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                >
+                  View contributor profile
+                </button>
+              )}
+              {selectedBillboardStory.authorId && selectedBillboardStory.authorId === user?.civicId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/vault');
+                    setSelectedBillboardStory(null);
+                  }}
+                  className="rounded-lg border border-fuchsia-400/40 px-4 py-2 text-sm font-bold text-fuchsia-100 hover:bg-fuchsia-400/10 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
+                >
+                  Open my Vault
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+
       {/* Controls HUD Badge */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-stainless-steel-dark/95 border border-cyan-500/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-mono text-gray-200 shadow-[0_0_15px_rgba(0,0,0,0.6)] pointer-events-none">
-        <span className="text-cyan-400 font-bold">CONTROLS:</span>
-        <span className="text-white font-bold">🖱️ Right-Click Walk</span>
-        <span className="text-gray-500">|</span>
-        <span className="text-white font-bold">🖱️ Left-Click Shoot</span>
-        <span className="text-gray-500">|</span>
-        <span className="text-white font-bold">⚙️ Scroll Wheel Swap</span>
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 max-w-[min(760px,85vw)] rounded-xl border border-cyan-500/40 bg-[#090d16]/90 px-4 py-2 text-center font-mono text-[10px] leading-relaxed text-gray-200 shadow-[0_0_15px_rgba(0,0,0,0.6)] pointer-events-none">
+        <div><span className="font-bold text-cyan-300">HOW TO USE</span><span className="text-white"> · Right-click walks · Click a billboard/building or aim + E for links · V camera · Scroll hotbar · Left-click elsewhere shoots</span></div>
+        <div className="text-gray-300">Chat below: type or tap an emoji to send · Nearby chat reaches citizens within 30 m; switch to Lobby for everyone</div>
       </div>
 
       {/* Quality Controls */}
@@ -1601,6 +2662,25 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         </div>
       </div>
 
+      {/* Lobby players are linked to public profiles by Civic ID. */}
+      <div className="absolute top-4 left-4 z-20 w-64 max-w-[48vw] rounded-xl border border-fuchsia-500/30 bg-[#090d16]/90 p-3 shadow-2xl backdrop-blur-md pointer-events-auto">
+        <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-fuchsia-200">
+          <span>Lobby citizens</span><span>{visiblePlayers.length}</span>
+        </div>
+        <input value={playerSearch} onChange={event => setPlayerSearch(event.target.value)} placeholder="Search username or Civic ID"
+          className="mb-2 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-white placeholder:text-gray-500" />
+        <div className="max-h-36 space-y-1 overflow-y-auto">
+          {visiblePlayers.map(player => (
+            <button key={player.id} disabled={!player.civicId} onClick={() => player.civicId && navigate(`/profile/${encodeURIComponent(player.civicId)}`)}
+              className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/5 px-2 py-1.5 text-left text-[10px] hover:bg-fuchsia-500/15 disabled:cursor-default disabled:opacity-70">
+              <span className="truncate font-bold text-white">{player.username}</span>
+              <span className="shrink-0 text-cyan-300">{player.civicId ? 'PROFILE' : 'GUEST'}</span>
+            </button>
+          ))}
+          {!visiblePlayers.length && <p className="py-2 text-center text-[10px] text-gray-500">No other citizens in this lobby</p>}
+        </div>
+      </div>
+
       {/* 2. TOP-RIGHT OVERLAY: CIRCULAR MINIMAP */}
       <div className="absolute top-4 right-4 z-20 flex flex-col items-center pointer-events-auto">
         <div className="relative w-36 h-36 rounded-full bg-[#080d16]/90 border-2 border-cyan-500/40 backdrop-blur-md shadow-[0_0_20px_rgba(6,182,212,0.3)] overflow-hidden flex items-center justify-center">
@@ -1624,17 +2704,20 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         <div className="flex items-center justify-between gap-1.5 mb-2 text-[10px] font-bold text-gray-300 border-b border-gray-800/60 pb-1.5">
           <div className="flex items-center gap-1.5 text-cyan-400">
             <MessageSquare className="w-3.5 h-3.5" />
-            <span className="font-extrabold uppercase tracking-wider"># New District Lobby</span>
+            <span className="font-extrabold uppercase tracking-wider"># {nearbyChat ? 'Nearby Chat' : 'Lobby Chat'}</span>
           </div>
-          <span className="text-[9px] text-gray-500 font-mono">Press 'T' or Enter to chat</span>
+          <button type="button" onClick={() => setNearbyChat(value => !value)} className="rounded border border-cyan-400/30 px-2 py-1 text-[9px] font-bold text-cyan-200 hover:bg-cyan-400/10">
+            {nearbyChat ? 'NEARBY · 30M' : 'LOBBY-WIDE'}
+          </button>
         </div>
 
         {/* Live chat message feed */}
         <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 mb-2.5 text-[11px] scrollbar-thin">
-          {chatHistory.slice(-6).map((msg) => (
+          {chatHistory.filter(msg => !msg.isSystem && !msg.channelId).slice(-6).map((msg) => (
             <div key={msg.id} className="leading-tight break-words">
               <span className={`font-bold mr-1.5 ${msg.color || 'text-cyan-400'}`}>{msg.username}:</span>
               <span className="text-gray-200">{msg.text}</span>
+              {msg.proximity && <span className="ml-1 text-[8px] uppercase text-fuchsia-300">Nearby</span>}
             </div>
           ))}
         </div>
@@ -1660,6 +2743,21 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             <Send className="w-3.5 h-3.5" />
           </button>
         </form>
+        <div className="mt-1.5 flex items-center gap-1" aria-label="Quick-send emojis">
+          {['👋', '😀', '❤️', '👍', '🎉', '😂'].map(emoji => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => useMultiplayerStore.getState().sendMessage(emoji, 'text-cyan-400', nearbyChat)}
+              className="rounded px-1.5 py-0.5 text-sm hover:bg-cyan-400/15 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+              aria-label={`Send ${emoji} to ${nearbyChat ? 'nearby chat' : 'lobby chat'}`}
+              title={`Send ${emoji}`}
+            >
+              {emoji}
+            </button>
+          ))}
+          <span className="ml-auto text-[9px] text-gray-500">{nearbyChat ? '30 m range' : 'lobby-wide'}</span>
+        </div>
       </div>
 
       {/* 4. BOTTOM-CENTER OVERLAY: ACTION BAR & STATUS HUD */}

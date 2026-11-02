@@ -126,6 +126,17 @@ export function CharacterCreatorPage() {
                             ))}
                         </div>
                     </div>
+                    <div>
+                        <label className="block text-gray-400 text-sm mb-3">Presentation</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {(['masculine', 'feminine'] as const).map((presentation) => (
+                                <button key={presentation} type="button" onClick={() => setConfig({...config, presentation})}
+                                    className={`p-3 rounded-lg border text-sm font-medium capitalize transition-all ${config.presentation === presentation ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan' : 'border-gray-700 bg-dark-800 text-gray-400'}`}>
+                                    {presentation === 'feminine' ? 'Female avatar' : 'Male avatar'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -134,7 +145,7 @@ export function CharacterCreatorPage() {
                     <div>
                         <label className="block text-gray-400 text-sm mb-3">Hair Style</label>
                         <div className="grid grid-cols-2 gap-3">
-                            {['short', 'long', 'mohawk', 'bald'].map((style) => (
+                            {(['short', 'long', 'mohawk', 'bald', 'ponytail', 'curly', 'braids'] as const).map((style) => (
                                 <button
                                     key={style}
                                     onClick={() => setConfig({...config, hairStyle: style as any})}
@@ -181,6 +192,17 @@ export function CharacterCreatorPage() {
 
             {activeTab === 'outfit' && (
                 <div className="space-y-6 animate-slide-up">
+                    <div>
+                        <label className="block text-gray-400 text-sm mb-3">Wardrobe Style</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {(['casual', 'streetwear', 'formal', 'armor', 'cyberpunk', 'explorer', 'ceremonial'] as const).map((outfit) => (
+                                <button key={outfit} type="button" onClick={() => setConfig({...config, outfit})}
+                                    className={`p-3 rounded-lg border text-sm font-medium capitalize transition-all ${config.outfit === outfit ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan' : 'border-gray-700 bg-dark-800 text-gray-400'}`}>
+                                    {outfit}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <div>
                         <label className="block text-gray-400 text-sm mb-3 flex items-center gap-2">
                             <Shirt className="w-4 h-4" /> Shirt Color
