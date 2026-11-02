@@ -21,28 +21,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
       
-      - name: Install Frontend Dependencies
-        run: |
-          cd frontend
-          npm install
-          echo "✓ Frontend dependencies installed"
+      - name: Install Monorepo Dependencies
+        run: npm ci
       
       - name: Build Frontend Application
-        run: |
-          cd frontend
-          npm run build
-          echo "✓ Frontend build complete"
+        run: npm run build --workspace=frontend
         env:
           NODE_ENV: production
 
       - name: Verify Static Distribution Bundle
         run: |
           if [ ! -f frontend/dist/index.html ]; then
-            echo "ERROR: Frontend build failed - index.html not found"
+            echo "::error::Frontend build failed - frontend/dist/index.html was not found"
             exit 1
           fi
-          echo "✓ Frontend static bundle verified successfully"
           du -sh frontend/dist
 
       - name: Upload Frontend Dist Artifact
@@ -63,18 +58,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install Backend Dependencies
-        run: |
-          cd backend
-          npm install
-          echo "✓ Backend dependencies installed"
-      
       - name: Verify Backend Syntax
         run: |
           echo "Validating backend entry points..."
-          node -c backend/index.js || exit 1
-          node -c backend/start.js || exit 1
-          node -c backend/multiplayer-server.js || exit 1
+          node --check backend/index.js
+          node --check backend/start.js
+          node --check backend/multiplayer-server.js
           echo "✓ Backend syntax validated successfully"
 
   verify-structure:

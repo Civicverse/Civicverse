@@ -3,21 +3,22 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package descriptors
-COPY package*.json ./
-RUN npm ci --include=dev || npm install --include=dev
+COPY package.json package-lock.json ./
+COPY backend ./backend
+COPY frontend ./frontend
+COPY packages ./packages
+COPY scripts ./scripts
+ENV CI=true
+RUN npm ci
 
-# Copy source code
-COPY . .
-
-# Build production distribution bundle
-RUN npm run build
+RUN npm run build --workspace=frontend \
+    && test -f frontend/dist/index.html
 
 # Production web server (Nginx)
 FROM nginx:stable-alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

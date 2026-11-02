@@ -19,20 +19,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Check Frontend Dependencies
-        run: |
-          cd frontend
-          npm audit --audit-level=high || true
-          echo "✓ Frontend dependency check completed"
-        continue-on-error: true
+      - name: Install Monorepo Dependencies
+        run: npm ci
 
-      - name: Check Backend Dependencies
-        run: |
-          cd backend
-          npm audit --audit-level=high || true
-          echo "✓ Backend dependency check completed"
-        continue-on-error: true
+      - name: Audit Monorepo Dependencies
+        run: npm audit --audit-level=low
 
   secretscan:
     runs-on: ubuntu-latest
@@ -48,7 +42,6 @@ jobs:
           base: ${{ github.event.repository.default_branch || 'main' }}
           head: HEAD
           extra_args: --only-verified --json
-        continue-on-error: true
 
   codeql:
     name: CodeQL Analysis
@@ -64,8 +57,28 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: 'javascript-typescript'
-        continue-on-error: true
       
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-        continue-on-error: true
+        with:
+          post-processed-sarif-path: codeql-processed-results
+
+      - name: Fail when CodeQL reports findings
+        shell: bash
+        run: |
+          mapfile -d '' sarif_files < <(find codeql-processed-results -type f -name '*.sarif' -print0)
+          if [ "${#sarif_files[@]}" -eq 0 ]; then
+            echo "::error::CodeQL analysis did not produce a SARIF results file"
+            exit 1
+          fi
+
+          finding_count=0
+          for sarif_file in "${sarif_files[@]}"; do
+            count=$(jq '[.runs[].results[]?] | length' "$sarif_file")
+            finding_count=$((finding_count + count))
+          done
+
+          if [ "$finding_count" -gt 0 ]; then
+            echo "::error::CodeQL reported $finding_count finding(s)"
+            exit 1
+          fi

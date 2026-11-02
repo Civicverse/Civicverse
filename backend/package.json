@@ -7,22 +7,22 @@
     "api": "node index.js",
     "game": "node multiplayer-server.js",
     "build": "echo 'Build complete! No transpilation needed for backend JS.'",
-    "postinstall": "node setup-xmrig.js"
+    "postinstall": "node -e \"if (!process.env.CI && !process.env.GITHUB_ACTIONS) require('./setup-xmrig.js')\""
   },
   "dependencies": {
-    "@civicverse/civic-identity": "file:../packages/civic-identity",
-    "@civicverse/civic-watch": "file:../packages/civic-watch",
-    "@civicverse/civic-governance": "file:../packages/civic-governance",
-    "@civicverse/civic-mining": "file:../packages/civic-mining",
-    "@civicverse/civic-marketplace": "file:../packages/civic-marketplace",
     "@civicverse/civic-foyer": "file:../packages/civic-foyer",
-    "axios": "^1.13.6",
+    "@civicverse/civic-governance": "file:../packages/civic-governance",
+    "@civicverse/civic-identity": "file:../packages/civic-identity",
+    "@civicverse/civic-marketplace": "file:../packages/civic-marketplace",
+    "@civicverse/civic-mining": "file:../packages/civic-mining",
+    "@civicverse/civic-watch": "file:../packages/civic-watch",
+    "axios": "^1.21.0",
     "body-parser": "^1.20.2",
     "cors": "^2.8.6",
     "express": "^4.18.2",
-    "express-rate-limit": "^8.3.1",
+    "express-rate-limit": "^8.7.2",
     "helmet": "^8.1.0",
-    "systeminformation": "^5.31.4",
-    "ws": "^8.19.0"
+    "systeminformation": "^5.33.19",
+    "ws": "^8.22.1"
   }
 }
