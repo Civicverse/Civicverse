@@ -4,6 +4,7 @@ import TOSPage from './pages/TOSPage'
 import WelcomePage from './pages/WelcomePage'
 import SignupPage from './pages/SignupPage'
 import CivicVaultPage from './pages/CivicVaultPage'
+import TreasuryPage from './pages/TreasuryPage'
 import FoyerPage from './pages/FoyerPage'
 import SignInPage from './pages/SignInPage'
 import { CharacterCreatorPage } from './pages/CharacterCreatorPage'
@@ -44,6 +45,17 @@ export default function App() {
             <CivicVaultPage />
           </MainLayout>
         } />
+        <Route path="/treasury" element={
+          <MainLayout>
+            <TreasuryPage />
+          </MainLayout>
+        } />
+        <Route path="/community-treasury" element={<Navigate to="/treasury" replace />} />
+        <Route path="/mining-pool" element={
+          <MainLayout>
+            <MiningPoolPage />
+          </MainLayout>
+        } />
         <Route path="/wardrobe" element={
           <MainLayout>
             <CharacterCreatorPage />
@@ -63,6 +75,8 @@ export default function App() {
     <MainLayout>
       <Routes>
         <Route path="/vault" element={<CivicVaultPage />} />
+        <Route path="/treasury" element={<TreasuryPage />} />
+        <Route path="/community-treasury" element={<Navigate to="/treasury" replace />} />
         <Route path="/wardrobe" element={<CharacterCreatorPage />} />
         <Route path="/missions" element={<MissionsPage />} />
         <Route path="/civicwatch" element={<CivicWatchPage />} />

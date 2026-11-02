@@ -14,7 +14,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="NEON REIGN - The Foyer"
+config/name="The Foyer"
 run/main_scene="res://scenes/main_launcher.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/branding/icon.svg"
