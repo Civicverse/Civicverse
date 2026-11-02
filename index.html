@@ -3,27 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CivicVerse - The Real-World Game</title>
-    <meta name="description" content="CivicVerse: A decentralized 3D social hub, identity dashboard, and local metaverse node" />
-    <meta name="theme-color" content="#07090e" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <link rel="icon" type="image/png" href="./Civicverselogo.png" />
-    <link rel="icon" type="image/x-icon" href="./app.ico" />
-    <script type="module" crossorigin src="./assets/index-BzeNrLDz.js?t=1793631958996"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DEmdVi09.css?t=1793631958996">
+    <title>CivicVerse</title>
+    <script>
+      window.location.replace(`./frontend/dist/index.html${window.location.hash}`);
+    </script>
+    <noscript>
+      <meta http-equiv="refresh" content="0; url=./frontend/dist/index.html" />
+    </noscript>
   </head>
-  <body class="bg-stainless-steel-dark text-white antialiased overflow-x-hidden selection:bg-cyan-500 selection:text-black">
-    <div id="root">
-      <div style="min-height: 100vh; background-color: #12161f; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #fff;">
-        <img src="./Civicverselogo.png" alt="Civicverse" style="width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 0 25px rgba(255,107,0,0.6); margin-bottom: 16px;" />
-        <h2 style="font-size: 1.25rem; font-weight: 800; letter-spacing: 0.1em; color: #fff; margin: 0 0 8px 0;">CIVICVERSE</h2>
-        <p style="font-size: 0.85rem; color: #94a3b8; font-family: monospace; margin: 0;">INITIALIZING_METAVERSE_NODE...</p>
-      </div>
-      <style>
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      </style>
-    </div>
+  <body>
+    <p>Opening CivicVerse… <a href="./frontend/dist/index.html">Continue to CivicVerse</a></p>
   </body>
 </html>
