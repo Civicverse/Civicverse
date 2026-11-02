@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CivicVerse</title>
     <script>
-      window.location.replace(`./frontend/dist/index.html${window.location.hash}`);
+      const query = new URLSearchParams(window.location.search);
+      query.set("v", Date.now().toString());
+      window.location.replace(`./frontend/dist/index.html?${query}${window.location.hash}`);
     </script>
     <noscript>
       <meta http-equiv="refresh" content="0; url=./frontend/dist/index.html" />
