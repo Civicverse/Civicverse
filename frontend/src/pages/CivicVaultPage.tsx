@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
-import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
+import { AnimatedButton, AnimatedCard, NeonText } from '../components'
 import { CharacterViewer } from '../components/3d/CharacterViewer'
-import { Shield, Check, QrCode, UserPlus, AlertCircle, Receipt, Package, ExternalLink, ArrowUpRight } from 'lucide-react'
-import { AnimatePresence } from 'framer-motion'
+import { Shield, Check, QrCode, UserPlus, AlertCircle, ExternalLink, ArrowUpRight } from 'lucide-react'
 
 export default function CivicVaultPage() {
   const nav = useNavigate()
@@ -32,24 +31,13 @@ export default function CivicVaultPage() {
     }
   };
 
-  const wallet = rawWallet || {
-    address: multiChainAddresses?.ETH || (user.civicId ? user.civicId.replace('did:civic:', '0x').slice(0, 42) : '0x...'),
-    balance: 100.0,
-    pendingBalance: 0,
-    currency: 'CIVIC'
-  };
-
-  const [avatarViewMode, setAvatarViewMode] = useState<'3d' | '2d'>('3d');
   const [showSeed, setShowSeed] = useState(false)
-  const [aiStatus, setAiStatus] = useState({ status: 'online', model: 'v1.4' })
+  const [aiStatus] = useState({ status: 'online', model: 'v1.4' })
   const [verifying, setVerifying] = useState(false)
   const [verifStep, setVerifStep] = useState(1) // 1: Generate/Display, 2: Peer Entry, 3: Success
   const [verifCode, setVerifCode] = useState('')
   const [peerPassInput, setPeerPassInput] = useState('')
   const [verifError, setVerifError] = useState('')
-  const [showSendModal, setShowSendModal] = useState(false)
-  const [sendData, setSendData] = useState({ address: '', amount: '' })
-  const [microTxMessage, setMicroTxMessage] = useState('')
 
   // Mock Receipts / Asset Proofs
   const [receipts] = useState([
@@ -58,13 +46,11 @@ export default function CivicVaultPage() {
   ])
 
   const startVerification = () => {
-    // Step 1: Generate local password tied to wallet/identity
     const code = Math.floor(100000 + Math.random() * 900000).toString()
     setVerifCode(code)
     setVerifying(true)
     setVerifStep(1)
     
-    // Auto-grant first mark if at 0
     if (user.attestationCount === 0) {
        updateUser({ attestationCount: 1 })
     }
@@ -74,7 +60,6 @@ export default function CivicVaultPage() {
     if (verifStep === 1) {
       setVerifStep(2)
     } else if (verifStep === 2) {
-      // Logic: If they enter a 6-digit code (simulating peer handshake)
       if (peerPassInput.length === 6) {
         setVerifError('')
         const nextCount = (user.attestationCount || 0) + 1
@@ -84,7 +69,6 @@ export default function CivicVaultPage() {
           setVerifStep(3)
         } else {
           updateUser({ attestationCount: nextCount })
-          // Generate new code for the next peer
           const newCode = Math.floor(100000 + Math.random() * 900000).toString()
           setVerifCode(newCode)
           setPeerPassInput('')
@@ -125,13 +109,7 @@ export default function CivicVaultPage() {
     }
   }
 
-  const handleSendXMR = () => {
-    alert('Simulated XMR Broadcast successful.');
-    setShowSendModal(false);
-  }
-
   const stats = [
-    { label: 'Monero Balance', value: `${multiChainAddresses?.MONERO_BALANCE || '0.00'} XMR`, color: 'text-neon-pink' },
     { label: 'Civic Reputation', value: `${user.trustScore}/100`, color: 'text-neon-cyan' },
     { label: 'Citizen Level', value: `LVL ${user.level}`, color: 'text-neon-purple' },
     { label: 'Badges Earned', value: String(receipts.length), color: 'text-neon-green' },
@@ -139,9 +117,10 @@ export default function CivicVaultPage() {
 
   const portals = [
     { title: 'Gathering Grounds', desc: 'Main Hub', icon: '🌐', path: '/foyer', color: 'border-neon-cyan' },
+    { title: 'Wardrobe', desc: 'Avatar Customizer', icon: '👕', path: '/wardrobe', color: 'border-neon-cyan' },
     { title: 'CivicWatch', desc: 'Missions', icon: '📋', path: '/civicwatch', color: 'border-neon-pink' },
     { title: 'Governance', desc: 'Voting', icon: '🏛️', path: '/governance', color: 'border-neon-purple' },
-    { title: 'Community Treasury', desc: 'Monero Funds', icon: '🏛️', path: '/treasury', color: 'border-neon-orange' },
+    { title: 'Community Treasury', desc: 'Monero Reserve', icon: '🏛️', path: '/treasury', color: 'border-neon-orange' },
     { title: 'Mining Pool', desc: 'Compute Hash', icon: '⛏️', path: '/mining-pool', color: 'border-neon-orange' },
   ]
 
@@ -201,9 +180,9 @@ export default function CivicVaultPage() {
                         : 'bg-black/40 border-white/10 text-gray-700'
                       }`}>
                          {i === 3 ? (
-                           <Check className={`w-4 h-4 ${user.attestationCount >= i ? 'opacity-100' : 'opacity-20'}`} />
+                            <Check className={`w-4 h-4 ${user.attestationCount >= i ? 'opacity-100' : 'opacity-20'}`} />
                          ) : (
-                           <span className={`text-[10px] font-black ${user.attestationCount >= i ? 'opacity-100' : 'opacity-20'}`}>X</span>
+                            <span className={`text-[10px] font-black ${user.attestationCount >= i ? 'opacity-100' : 'opacity-20'}`}>X</span>
                          )}
                       </div>
                     ))}
@@ -227,17 +206,22 @@ export default function CivicVaultPage() {
         </div>
 
         {/* Header Avatar & Identity Section (Top Center) */}
-        <div className="flex flex-col items-center mb-12 animate-slide-up">
+        <div className="flex flex-col items-center mb-8 animate-slide-up">
           <div className="w-72 h-88 relative rounded-3xl overflow-hidden border border-neon-cyan/40 bg-gradient-to-b from-[#0e1626] to-black shadow-[0_0_35px_rgba(0,217,255,0.2)] mb-4 group">
-            {avatarViewMode === '3d' && user.character ? (
-              <CharacterViewer
-                config={user.character}
-                className="w-full h-full"
-                animate={true}
-              />
-            ) : (
-              <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
-            )}
+            <CharacterViewer
+              config={user.character || {
+                skinColor: '#e0ac69',
+                hairColor: '#4a3b2a',
+                shirtColor: '#00d9ff',
+                pantsColor: '#1a1a2e',
+                shoesColor: '#333333',
+                hairStyle: 'short',
+                accessory: 'none',
+                bodyType: 'athletic'
+              }}
+              className="w-full h-full"
+              animate={true}
+            />
 
             {/* Overlay Badges */}
             <div className="absolute top-3 left-3 bg-black/70 border border-neon-cyan/50 backdrop-blur-md px-2.5 py-1 rounded-full text-[8px] font-black uppercase text-neon-cyan flex items-center gap-1.5 shadow-[0_0_10px_rgba(0,217,255,0.3)]">
@@ -263,56 +247,8 @@ export default function CivicVaultPage() {
             </code>
           </div>
 
-          {/* Quick Action CTA Bar: Bring Avatar to Foyer */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
-            <button
-              onClick={() => nav('/foyer')}
-              className="flex items-center gap-2 bg-gradient-to-r from-neon-cyan via-cyan-400 to-blue-500 hover:opacity-95 text-black font-black text-xs px-6 py-3 rounded-full uppercase tracking-wider shadow-[0_0_25px_rgba(0,217,255,0.45)] transform active:scale-95 transition-all"
-            >
-              <span className="text-sm">🚀</span>
-              <span>Enter Gathering Grounds Foyer</span>
-            </button>
-
-            <button
-              onClick={() => nav('/wardrobe')}
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs px-5 py-3 rounded-full uppercase tracking-wider transition-all"
-            >
-              <span>👕</span>
-              <span>Wardrobe Studio</span>
-            </button>
-
-            <button
-              onClick={() => setAvatarViewMode(avatarViewMode === '3d' ? '2d' : '3d')}
-              className="text-[10px] text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 px-3 py-2 rounded-full uppercase tracking-widest transition-all"
-            >
-              {avatarViewMode === '3d' ? '2D View' : '3D View'}
-            </button>
-
-            <button
-              onClick={async () => {
-                try {
-                  const result = await useGameStore.getState().processMicrotransaction?.(5, 'Community Treasury', 'Civic UBI Contribution');
-                  setMicroTxMessage(`✓ Contributed 5.0 CIVIC! 0.05 CIVIC routed to Sovereign UBI Pool.`);
-                  setTimeout(() => setMicroTxMessage(''), 5000);
-                } catch (e: any) {
-                  alert(e.message || 'Microtransaction failed');
-                }
-              }}
-              className="flex items-center gap-1.5 bg-neon-pink/20 hover:bg-neon-pink/30 border border-neon-pink/50 text-neon-pink font-bold text-xs px-4 py-3 rounded-full uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(255,0,128,0.25)]"
-            >
-              <span>💸</span>
-              <span>1% UBI Micro-Contribution</span>
-            </button>
-          </div>
-
-          {microTxMessage && (
-            <div className="mt-3 px-4 py-1.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-emerald-400 font-mono text-[11px] font-bold animate-bounce">
-              {microTxMessage}
-            </div>
-          )}
-
-          {/* Portal Row */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-8 w-full max-w-5xl">
+          {/* Portal Row (Main Tabs) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-8 w-full max-w-6xl">
             {portals.map((portal, i) => (
               <button 
                 key={i} 
@@ -331,7 +267,7 @@ export default function CivicVaultPage() {
         <div className="space-y-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
           
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {stats.map((stat, i) => (
               <div key={i} className="bg-white/5 border border-white/10 backdrop-blur-sm p-4 rounded-2xl text-center">
                 <p className="text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-1">{stat.label}</p>
@@ -405,65 +341,6 @@ export default function CivicVaultPage() {
           </div>
         </div>
       </div>
-
-      {/* Send Modal Overlay */}
-      <AnimatePresence>
-        {showSendModal && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-             <AnimatedCard className="max-w-md w-full border-neon-pink p-8">
-                <div className="flex justify-between items-center mb-8">
-                   <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Broadcast XMR Transfer</h3>
-                   <button onClick={() => setShowSendModal(false)} className="text-gray-500 hover:text-white transition">✕</button>
-                </div>
-
-                <div className="space-y-6">
-                   <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Recipient Monero Address</label>
-                      <input 
-                        type="text" 
-                        className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white font-mono text-xs outline-none focus:border-neon-pink transition"
-                        placeholder="4... (Standard Monero Address)"
-                        value={sendData.address}
-                        onChange={e => setSendData({...sendData, address: e.target.value})}
-                      />
-                   </div>
-                   <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Amount (XMR)</label>
-                      <input 
-                        type="number" 
-                        className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white font-black outline-none focus:border-neon-pink transition"
-                        placeholder="0.00"
-                        value={sendData.amount}
-                        onChange={e => setSendData({...sendData, amount: e.target.value})}
-                      />
-                   </div>
-
-                   <div className="bg-neon-pink/10 border border-neon-pink/30 p-4 rounded-xl">
-                      <div className="flex justify-between text-[10px] font-bold uppercase mb-1 text-gray-400">
-                         <span>Subtotal:</span>
-                         <span>{sendData.amount || '0'} XMR</span>
-                      </div>
-                      <div className="flex justify-between text-[10px] font-bold uppercase mb-2 text-neon-pink">
-                         <span>1% Treasury Cut:</span>
-                         <span>{(Number(sendData.amount || 0) * 0.01).toFixed(4)} XMR</span>
-                      </div>
-                      <div className="border-t border-white/10 pt-2 flex justify-between text-xs font-black uppercase text-white">
-                         <span>Total On-Chain Cost:</span>
-                         <span>{(Number(sendData.amount || 0) * 1.01).toFixed(4)} XMR</span>
-                      </div>
-                   </div>
-
-                   <button 
-                    onClick={handleSendXMR}
-                    className="w-full bg-neon-pink hover:bg-white text-black font-black py-5 rounded-2xl shadow-xl shadow-neon-pink/20 transform active:scale-95 transition uppercase italic tracking-tight"
-                   >
-                     Confirm & Broadcast
-                   </button>
-                </div>
-             </AnimatedCard>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Verification Modal Overlay */}
       {verifying && (
