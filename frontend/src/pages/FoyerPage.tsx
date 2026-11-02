@@ -131,11 +131,13 @@ export default function FoyerPage() {
         {/* ------------------------------------------------------ */}
         {/* LEFT COLUMN: CIVICWATCH HUB & MEDIA PLAYER             */}
         {/* ------------------------------------------------------ */}
-        <aside className="w-80 sharp-panel border-r border-stainless-steel bg-stainless-steel-dark flex flex-col shrink-0 overflow-hidden z-10 shadow-[5px_0_25px_rgba(0,0,0,0.5)]">
-          <CivicWatchDistrictPanel />
+        <aside className="w-80 sharp-panel border-r border-stainless-steel bg-stainless-steel-dark flex flex-col shrink-0 min-h-0 overflow-y-auto z-10 shadow-[5px_0_25px_rgba(0,0,0,0.5)]">
+          <div className="flex-1 min-h-[270px] flex flex-col">
+            <CivicWatchDistrictPanel />
+          </div>
 
           {/* SECTION B: FOYER FM BOOMBOX MEDIA PLAYER */}
-          <div className="h-[120px] flex flex-col bg-stainless-steel-panel overflow-hidden shrink-0 border-t border-stainless-steel">
+          <div className="h-[280px] min-h-[280px] flex flex-col bg-stainless-steel-panel overflow-hidden shrink-0 border-t border-stainless-steel">
             <CivicMediaPlayer />
           </div>
         </aside>
