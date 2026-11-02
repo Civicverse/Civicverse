@@ -31,6 +31,28 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
 
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Build Frontend Workspace
+        run: npm run build --workspace=frontend
+        env:
+          NODE_ENV: production
+
+      - name: Verify Frontend Distribution
+        run: |
+          if [ ! -f frontend/dist/index.html ]; then
+            echo "::error::Frontend build failed - frontend/dist/index.html was not found"
+            exit 1
+          fi
+
       - name: Lowercase Repository Name
         id: repo_name
         run: |
@@ -63,7 +85,7 @@ jobs:
       - name: Build and Push Frontend Image
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
+          context: .
           file: ./frontend/Dockerfile
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
@@ -103,12 +125,30 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
       
+      - name: Validate Deployment Configuration
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?Missing required Actions variable DEPLOY_HOST}"
+          : "${DEPLOY_USER:?Missing required Actions secret DEPLOY_USER}"
+          : "${DEPLOY_KEY:?Missing required Actions secret DEPLOY_KEY}"
+
+          port="${DEPLOY_PORT:-22}"
+          if ! [[ "$port" =~ ^[0-9]{1,5}$ ]] || ((10#$port < 1 || 10#$port > 65535)); then
+            echo "::error::DEPLOY_PORT must be an integer between 1 and 65535"
+            exit 1
+          fi
+
       - name: SSH Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
         env:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-        if: ${{ vars.DEPLOY_HOST != '' && env.DEPLOY_USER != '' && env.DEPLOY_KEY != '' }}
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}

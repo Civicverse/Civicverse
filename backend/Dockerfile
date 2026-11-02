@@ -1,15 +1,15 @@
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /app
-# Copy root files needed for workspaces/local dependencies
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/package.json
+COPY frontend/package.json ./frontend/package.json
 COPY packages/ ./packages/
-# Copy backend specific files
+COPY scripts/setup-desktop.js ./scripts/setup-desktop.js
+ENV CI=true
+RUN npm ci --omit=dev --workspace=backend
+
+COPY backend/ ./backend/
 WORKDIR /app/backend
-COPY backend/package.json backend/package-lock.json* ./
-# Install only production dependencies
-RUN npm install --production --no-audit --no-fund
-# Copy the rest of the backend code
-COPY backend/ ./
 
 # Install XMRig for mining dependency
 RUN mkdir -p /app/data/miner && \
