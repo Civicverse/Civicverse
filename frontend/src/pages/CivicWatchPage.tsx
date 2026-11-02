@@ -40,6 +40,7 @@ const CivicWatchPage: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [verificationFile, setVerificationFile] = useState<string | null>(null);
+  const [shareVerificationMedia, setShareVerificationMedia] = useState(false);
   const [proofDescription, setProofDescription] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -208,11 +209,13 @@ const CivicWatchPage: React.FC = () => {
         did, 
         proofDescription || 'No text proof provided',
         verificationFile || null,
-        currentGps || undefined
+        currentGps || undefined,
+        shareVerificationMedia
       );
       
       if (res.status === 'verified') {
-        setAiAnalysis(`✓ Craig AI: ${res.aiReasoning || "Proof Verified. Impact recorded in Global Ledger."}`);
+        const sharedMessage = res.sharedMediaId ? ' Photo shared to CivicWatch district billboards.' : '';
+        setAiAnalysis(`✓ Craig AI: ${res.aiReasoning || "Proof Verified. Impact recorded in Global Ledger."}${sharedMessage}`);
         
         setTimeout(() => {
           if (res.payoutDetails) {
@@ -248,13 +251,40 @@ const CivicWatchPage: React.FC = () => {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setVerificationFile(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Upload a JPG, PNG, or WebP image.');
+      e.target.value = '';
+      return;
     }
+    if (file.size > 20 * 1024 * 1024) {
+      alert('Choose an image smaller than 20 MB.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => alert('The selected image could not be read.');
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => alert('The selected image could not be decoded.');
+      image.onload = () => {
+        const scale = Math.min(1, 1280 / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          alert('Image processing is unavailable in this browser.');
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        setVerificationFile(canvas.toDataURL('image/jpeg', 0.8));
+        setShareVerificationMedia(false);
+      };
+      image.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const categories = ['all', 'environmental', 'civic', 'social', 'logistics', 'educational'];
@@ -663,6 +693,7 @@ const CivicWatchPage: React.FC = () => {
                           type="file" 
                           id="proof-upload"
                           className="hidden" 
+                          accept="image/jpeg,image/png,image/webp"
                           onChange={handleFileUpload}
                         />
                         <label 
@@ -681,6 +712,20 @@ const CivicWatchPage: React.FC = () => {
                           )}
                         </label>
                       </div>
+
+                      <label className="mb-6 flex items-start gap-3 rounded-xl border border-cyan-900/60 bg-cyan-950/20 p-4 text-sm text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={shareVerificationMedia}
+                          disabled={!verificationFile}
+                          onChange={event => setShareVerificationMedia(event.target.checked)}
+                          className="mt-1 accent-cyan-400"
+                        />
+                        <span>
+                          Share this photo on the public CivicWatch district billboards only if verification succeeds.
+                          <span className="mt-1 block text-xs text-gray-500">Sharing is optional and off by default.</span>
+                        </span>
+                      </label>
 
                       <button 
                         onClick={handleVerify}
@@ -732,7 +777,7 @@ const CivicWatchPage: React.FC = () => {
                           </div>
                           
                           <button 
-                            onClick={() => { setStatus('browsing'); setActiveJob(null); setVerificationFile(null); setAiAnalysis(null); setDispatchStep('briefing'); setPpeConfirmed(false); setTrainingWatched(false); }}
+                            onClick={() => { setStatus('browsing'); setActiveJob(null); setVerificationFile(null); setShareVerificationMedia(false); setAiAnalysis(null); setDispatchStep('briefing'); setPpeConfirmed(false); setTrainingWatched(false); }}
                             className="w-full bg-gray-100 hover:bg-white text-gray-900 font-black py-4 rounded-xl transition uppercase italic tracking-tight"
                           >
                             Return to Dispatch Board

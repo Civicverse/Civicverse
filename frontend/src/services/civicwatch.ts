@@ -22,6 +22,13 @@ export interface Job {
   createdAt: number;
 }
 
+export interface VerificationResult {
+  status: 'verified' | 'rejected';
+  aiReasoning?: string;
+  payoutDetails?: { payout: number };
+  sharedMediaId?: string;
+}
+
 const DEFAULT_JOBS: Job[] = [
   {
     id: 'job-1',
@@ -177,20 +184,28 @@ export const civicWatchApi = {
     }
   },
 
-  verifyJob: async (jobId: string, workerId: string, proofText: string, proofImage?: string | null, gpsData?: { lat: number; lng: number }): Promise<{ success: boolean; reward: number }> => {
+  verifyJob: async (
+    jobId: string,
+    workerId: string,
+    proofText: string,
+    proofImage?: string | null,
+    gpsData?: { lat: number; lng: number },
+    shareMedia = false
+  ): Promise<VerificationResult> => {
     try {
-      const response = await axios.post(`${API_URL}/jobs/verify`, { jobId, workerId, proofText, proofImage, gpsData }, { timeout: 1200 });
-      return response.data;
-    } catch (e) {
-      const current = getLocalJobs();
-      const target = current.find(j => j.id === jobId);
-      let reward = 25;
-      if (target) {
-        target.status = 'completed';
-        reward = target.reward;
-        saveLocalJobs(current);
+      const response = await axios.post(
+        `${API_URL}/jobs/verify`,
+        { jobId, workerId, proofText, proofImage, gpsData, shareMedia },
+        { timeout: 1200 }
+      );
+      return response.data.result ?? response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.error;
+        if (error.response) throw new Error(message || 'CivicWatch could not verify this submission.');
+        throw new Error('CivicWatch verification is unavailable; the proof was not verified or shared.');
       }
-      return { success: true, reward };
+      throw error;
     }
   }
 };

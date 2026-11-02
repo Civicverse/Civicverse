@@ -10,11 +10,16 @@ export interface ChatMessage {
   timestamp: string;
   color?: string;
   isSystem?: boolean;
+  proximity?: boolean;
+  position?: { x: number; y: number; z: number };
+  sentAt?: number;
+  channelId?: string;
 }
 
 export interface RemotePlayer {
   id: string;
   username: string;
+  civicId?: string;
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
   isMoving?: boolean;
@@ -59,11 +64,11 @@ export interface MultiplayerState {
   ubiStatus: UbiStatus | null;
 
   // Methods
-  initialize: (username: string, character?: CharacterConfig) => () => void;
+  initialize: (username: string, character?: CharacterConfig, civicId?: string) => () => void;
   disconnect: () => void;
-  sendMessage: (text: string, color?: string) => void;
+  sendMessage: (text: string, color?: string, proximity?: boolean, channelId?: string) => void;
   updatePosition: (position: { x: number; y: number; z: number }, rotation: { x: number; y: number; z: number }, isMoving?: boolean) => void;
-  setIdentity: (username: string, character?: CharacterConfig) => void;
+  setIdentity: (username: string, character?: CharacterConfig, civicId?: string) => void;
   switchLobby: (lobbyId: string) => void;
   sendMicrotransaction: (amount: number, memo?: string) => void;
 }
@@ -84,6 +89,8 @@ let wsClient: WebSocket | null = null;
 
 let localUsername = 'Citizen';
 let localCharacter: CharacterConfig | undefined;
+let localCivicId = '';
+let localPosition = { x: 0, y: 0, z: 20 };
 let activeLobbyId = 'district-lobby-1';
 
 // Deduplication cache for recently seen messages
@@ -105,27 +112,6 @@ const DEFAULT_LOBBIES: LobbyInfo[] = [
   { id: 'district-lobby-3', name: 'New District — Plaza Gamma', playerCount: 0, maxPlayers: 20, isFull: false },
 ];
 
-const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
-  {
-    id: 'sys_1',
-    playerId: 'system',
-    username: '🏛️ CIVICVERSE CORE',
-    text: 'Welcome to Gathering Grounds! Decentralized non-custodial avatars online (20 citizens / lobby instance).',
-    color: 'text-amber-400',
-    timestamp: new Date(Date.now() - 180000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    isSystem: true
-  },
-  {
-    id: 'sys_2',
-    playerId: 'system',
-    username: '💡 PROTOCOL TIP',
-    text: 'Right-Click to walk, Scroll Wheel to swap weapons, Left-Click to shoot, Space to jump, V for 1st/3rd person. Microtransactions generate 1% passive UBI contribution!',
-    color: 'text-cyan-400',
-    timestamp: new Date(Date.now() - 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    isSystem: true
-  }
-];
-
 export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
   isConnected: false,
   connectionMode: 'offline',
@@ -136,12 +122,13 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
   maxLobbySize: 20,
   availableLobbies: DEFAULT_LOBBIES,
   players: new Map(),
-  chatHistory: INITIAL_CHAT_MESSAGES,
+  chatHistory: [],
   ubiStatus: null,
 
-  initialize: (username: string, character?: CharacterConfig) => {
+  initialize: (username: string, character?: CharacterConfig, civicId?: string) => {
     localUsername = username || 'Citizen';
     localCharacter = character;
+    localCivicId = civicId || '';
     (window as any)._cv_username = localUsername;
     (window as any)._cv_character = character;
 
@@ -161,6 +148,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
         playerId: LOCAL_ID,
         lobbyId: activeLobbyId,
         username: localUsername,
+        civicId: localCivicId,
         character: localCharacter,
         position: { x: 0, y: 0, z: 20 },
         rotation: { x: 0, y: Math.PI, z: 0 },
@@ -195,6 +183,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
         playerId: LOCAL_ID,
         lobbyId: activeLobbyId,
         username: localUsername,
+        civicId: localCivicId,
         character: localCharacter,
         timestamp: now
       });
@@ -231,7 +220,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     set({ isConnected: false, connectionMode: 'offline', players: new Map(), peerCount: 0 });
   },
 
-  sendMessage: (text: string, color = 'text-cyan-400') => {
+  sendMessage: (text: string, color = 'text-cyan-400', proximity = false, channelId?: string) => {
     if (!text.trim()) return;
 
     const trimmed = text.trim();
@@ -249,6 +238,10 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       playerId: LOCAL_ID,
       username: localUsername,
       text: trimmed,
+      proximity,
+      position: localPosition,
+      sentAt: Date.now(),
+      channelId,
       color,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -292,12 +285,14 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
   },
 
   updatePosition: (position, rotation, isMoving = false) => {
+    localPosition = position;
     broadcastPacket({
       type: 'player_move',
       playerId: LOCAL_ID,
       lobbyId: activeLobbyId,
       username: localUsername,
       character: localCharacter,
+      civicId: localCivicId,
       position,
       rotation,
       isMoving,
@@ -305,9 +300,10 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     });
   },
 
-  setIdentity: (username: string, character?: CharacterConfig) => {
+  setIdentity: (username: string, character?: CharacterConfig, civicId?: string) => {
     localUsername = username || 'Citizen';
     localCharacter = character;
+    localCivicId = civicId || '';
     (window as any)._cv_username = localUsername;
     (window as any)._cv_character = character;
 
@@ -316,6 +312,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       playerId: LOCAL_ID,
       lobbyId: activeLobbyId,
       username: localUsername,
+      civicId: localCivicId,
       character: localCharacter,
       timestamp: Date.now()
     });
@@ -360,6 +357,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
         playerId: LOCAL_ID,
         lobbyId,
         username: localUsername,
+        civicId: localCivicId,
         character: localCharacter,
         position: { x: 0, y: 0, z: 20 },
         rotation: { x: 0, y: Math.PI, z: 0 },
@@ -448,6 +446,7 @@ function handleIncomingNetworkMessage(data: any, source: string) {
       const updated: RemotePlayer = {
         id: data.playerId,
         username: data.username || existing?.username || `Citizen_${data.playerId.slice(0, 6)}`,
+        civicId: data.civicId || existing?.civicId,
         position: data.position || existing?.position || { x: 0, y: 0, z: 20 },
         rotation: data.rotation || existing?.rotation || { x: 0, y: Math.PI, z: 0 },
         isMoving: data.isMoving !== undefined ? data.isMoving : (existing?.isMoving || false),
@@ -468,6 +467,7 @@ function handleIncomingNetworkMessage(data: any, source: string) {
           playerId: LOCAL_ID,
           username: localUsername,
           character: localCharacter,
+          civicId: localCivicId,
           timestamp: Date.now()
         });
       }
@@ -492,6 +492,7 @@ function handleIncomingNetworkMessage(data: any, source: string) {
         currentPlayers.set(data.playerId, {
           id: data.playerId,
           username: data.username || `Citizen_${data.playerId.slice(0, 6)}`,
+          civicId: data.civicId,
           position: data.position || { x: 0, y: 0, z: 20 },
           rotation: data.rotation || { x: 0, y: Math.PI, z: 0 },
           isMoving: data.isMoving || false,
@@ -515,14 +516,23 @@ function handleIncomingNetworkMessage(data: any, source: string) {
     }
 
     case 'chat_message': {
+      if (data.proximity && data.position) {
+        const dx = data.position.x - localPosition.x;
+        const dz = data.position.z - localPosition.z;
+        if (dx * dx + dz * dz > 30 * 30) return;
+      }
       const chatMsg: ChatMessage = {
         id: data.id || `chat_${Date.now()}_${Math.random()}`,
-        playerId: data.playerId || 'unknown',
+        playerId: String(data.playerId || 'unknown'),
         username: data.username || 'Citizen',
         text: data.text,
         color: data.color || 'text-cyan-400',
         timestamp: data.timestamp ? (data.timestamp.length > 8 ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : data.timestamp) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isSystem: !!data.isSystem
+        isSystem: !!data.isSystem,
+        proximity: !!data.proximity,
+        position: data.position,
+        sentAt: typeof data.sentAt === 'number' ? data.sentAt : Date.now(),
+        channelId: typeof data.channelId === 'string' ? data.channelId : undefined
       };
 
       useMultiplayerStore.setState((state) => ({
@@ -544,7 +554,13 @@ function handleIncomingNetworkMessage(data: any, source: string) {
     case 'chat_history': {
       if (Array.isArray(data.history) && data.history.length > 0) {
         useMultiplayerStore.setState((state) => ({
-          chatHistory: [...state.chatHistory, ...data.history].slice(-100)
+          chatHistory: [
+            ...state.chatHistory,
+            ...data.history.map((message: ChatMessage) => ({
+              ...message,
+              playerId: String(message.playerId || 'unknown')
+            }))
+          ].slice(-100)
         }));
       }
       break;
@@ -561,6 +577,7 @@ function handleIncomingNetworkMessage(data: any, source: string) {
           currentPlayers.set(pid, {
             id: pid,
             username: p.username || existing?.username || `Citizen_${pid}`,
+            civicId: p.civicId || existing?.civicId,
             position: p.position || existing?.position || { x: 0, y: 0, z: 20 },
             rotation: p.rotation || existing?.rotation || { x: 0, y: 0, z: 0 },
             isMoving: p.isMoving,

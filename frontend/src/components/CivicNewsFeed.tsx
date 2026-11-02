@@ -37,6 +37,7 @@ import {
   toggleLikeArticle,
   toggleRetweetArticle
 } from '../services/newsService';
+import LiveFriendsFeed from './LiveFriendsFeed';
 
 export const CivicNewsFeed: React.FC = () => {
   // Navigation tab: 'Following' | 'Trending' | 'Civic News'
@@ -447,6 +448,7 @@ export const CivicNewsFeed: React.FC = () => {
         onTouchMove={handleUserWheel}
         className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin select-text"
       >
+        {activeTab === 'Following' && <LiveFriendsFeed />}
         {isLoading ? (
           <div className="py-20 text-center text-cyan-400 flex flex-col items-center justify-center gap-2">
             <RefreshCw className="w-5 h-5 animate-spin" />
@@ -462,10 +464,10 @@ export const CivicNewsFeed: React.FC = () => {
               <Users className="w-6 h-6" />
             </div>
             <h4 className="text-xs font-black text-white uppercase tracking-wider mb-1">
-              YOUR FOLLOWING FEED IS EMPTY
+              NO CIVIC SOURCES FOLLOWED
             </h4>
             <p className="text-[11px] text-gray-400 leading-relaxed max-w-[240px] mb-4">
-              You aren't following any citizens, agencies, or civic topics yet. In Civicverse, your Following feed is 100% curated by you.
+              Follow citizens, agencies, or civic topics to add their news here. Your live social updates appear above.
             </p>
 
             <div className="w-full bg-[#0d1424] border border-gray-800 rounded-xl p-3 mb-4 text-left">

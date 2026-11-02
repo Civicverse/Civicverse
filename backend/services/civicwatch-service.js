@@ -73,6 +73,7 @@ class CivicWatchService {
     ];
     this.verifications = new Map();
     this.imageHashes = new Set();
+    this.sharedMedia = [];
   }
 
   getJobs() {
@@ -142,13 +143,20 @@ class CivicWatchService {
     return Math.sqrt(dLat * dLat + dLng * dLng);
   }
 
-  async submitVerification(jobId, workerId, proofText, proofImage, gpsData) {
+  getSharedMedia(limit = 4) {
+    return this.sharedMedia.slice(-limit).reverse();
+  }
+
+  async submitVerification(jobId, workerId, proofText, proofImage, gpsData, shareMedia = false) {
     const job = this.getJob(jobId);
     if (!job) throw new Error('Job not found');
     if (job.assignee !== workerId) throw new Error('Not assigned to this job');
     if (job.status !== 'in_progress') throw new Error('Job not in progress');
 
     if (!proofText && !proofImage) throw new Error('No proof provided (text or image required)');
+    if (shareMedia && (!proofImage || !/^data:image\/(?:jpeg|png|webp);base64,/.test(proofImage) || proofImage.length > 8_000_000)) {
+        throw new Error('Sharing requires a supported image under 6 MB.');
+    }
 
     // Image Hash Verification (Prevent Replay Attacks)
     let currentImageHash = null;
@@ -193,10 +201,25 @@ class CivicWatchService {
         }
 
         const payoutDetails = this.finalizeJob(jobId);
+        let sharedMediaId;
+        if (shareMedia && proofImage) {
+            sharedMediaId = `${jobId}-${Date.now()}`;
+            this.sharedMedia.push({
+                id: sharedMediaId,
+                title: job.title,
+                image: proofImage,
+                authorId: workerId,
+                authorName: workerId,
+                sourceUrl: '/civicwatch',
+                createdAt: Date.now()
+            });
+            this.sharedMedia = this.sharedMedia.slice(-12);
+        }
         return { 
             status: 'verified', 
             job, 
             payoutDetails, 
+            sharedMediaId,
             aiConfidence: aiResult.confidence,
             aiReasoning: aiResult.reasoning 
         };

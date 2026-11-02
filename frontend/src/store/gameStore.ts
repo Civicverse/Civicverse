@@ -10,9 +10,11 @@ export interface CharacterConfig {
   shirtColor: string;
   pantsColor: string;
   shoesColor: string;
-  hairStyle: 'short' | 'long' | 'mohawk' | 'bald';
+  hairStyle: 'short' | 'long' | 'mohawk' | 'bald' | 'ponytail' | 'curly' | 'braids';
   accessory: 'none' | 'glasses' | 'headband' | 'mask';
   bodyType: 'slim' | 'athletic' | 'heavy';
+  presentation?: 'masculine' | 'feminine';
+  outfit?: 'streetwear' | 'armor' | 'formal' | 'casual' | 'cyberpunk' | 'explorer' | 'ceremonial';
 }
 
 export interface CivicUser {
@@ -152,7 +154,7 @@ export interface GameState {
   completeJob?: (jobId: string) => Promise<void>;
 }
 
-export const useGameStore = create<GameState>((set) => ({
+export const useGameStore = create<GameState>((set, get) => ({
   isAuthenticated: false,
   hasIdentity: false,
   user: null,
@@ -616,7 +618,7 @@ export const useGameStore = create<GameState>((set) => ({
       const { useMultiplayerStore } = await import('../services/multiplayer');
       const currentUser = get().user;
       if (currentUser) {
-        useMultiplayerStore.getState().setIdentity(currentUser.username, config);
+        useMultiplayerStore.getState().setIdentity(currentUser.username, config, currentUser.civicId);
       }
     } catch (e) {}
 
@@ -1006,4 +1008,3 @@ export const useGameStore = create<GameState>((set) => ({
     }
   },
 }));
-

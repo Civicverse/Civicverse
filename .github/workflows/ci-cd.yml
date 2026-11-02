@@ -57,6 +57,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
 
       - name: Verify Backend Syntax
         run: |
@@ -64,7 +69,11 @@ jobs:
           node --check backend/index.js
           node --check backend/start.js
           node --check backend/multiplayer-server.js
+          node --check backend/services/social-service.js
           echo "✓ Backend syntax validated successfully"
+
+      - name: Test Social API
+        run: node --test backend/__tests__/social.test.js
 
   verify-structure:
     runs-on: ubuntu-latest

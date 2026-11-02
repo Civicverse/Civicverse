@@ -14,6 +14,7 @@ import { GovernancePage } from './pages/GovernancePage'
 import MiningPoolPage from './pages/MiningPoolPage'
 import { MainLayout } from './layouts/MainLayout'
 import { useGameStore } from './store/gameStore'
+import PublicProfilePage from './pages/PublicProfilePage'
 
 export default function App() {
   const isInitialized = useGameStore(state => state.isInitialized);
@@ -40,6 +41,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/foyer" element={<FoyerPage />} />
+        <Route path="/profile/:civicId" element={<MainLayout><PublicProfilePage /></MainLayout>} />
         <Route path="/vault" element={
           <MainLayout>
             <CivicVaultPage />
@@ -83,6 +85,7 @@ export default function App() {
         <Route path="/governance" element={<GovernancePage />} />
         <Route path="/mining-pool" element={<MiningPoolPage />} />
         <Route path="/foyer" element={<FoyerPage />} />
+        <Route path="/profile/:civicId" element={<PublicProfilePage />} />
         <Route path="/" element={<CivicVaultPage />} />
         <Route path="*" element={<Navigate to="/vault" replace />} />
       </Routes>

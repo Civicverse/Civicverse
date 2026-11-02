@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore'
 import { AnimatedButton, AnimatedCard, NeonText } from '../components'
 import { CharacterViewer } from '../components/3d/CharacterViewer'
 import { Shield, Check, QrCode, UserPlus, AlertCircle, ExternalLink, ArrowUpRight } from 'lucide-react'
+import SocialHub from '../components/SocialHub'
 
 export default function CivicVaultPage() {
   const nav = useNavigate()
@@ -443,6 +444,7 @@ export default function CivicVaultPage() {
            </AnimatedCard>
         </div>
       )}
+      <SocialHub />
     </div>
   )
 }

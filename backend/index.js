@@ -5,6 +5,7 @@ const path = require('path')
 const helmet = require('helmet')
 const cors = require('cors')
 const rateLimit = require('express-rate-limit')
+const axios = require('axios')
 const app = express()
 const port = process.env.PORT || 3003
 
@@ -16,6 +17,7 @@ try { fs.mkdirSync(WALLETS_DIR, { recursive: true }) } catch(e) {}
 
 const ubiEngine = require('./services/UBI-engine/ubi-service');
 const civicWatch = require('./services/civicwatch-service');
+const socialService = require('./services/social-service');
 
 // Security Middleware
 app.use((req, res, next) => {
@@ -45,6 +47,7 @@ app.use('/api/', (req, res, next) => {
 });
 
 app.use(bodyParser.json({ limit: '10mb' })) // Increased limit for image proofs
+app.use('/api/social', socialService)
 
 app.get('/api/status', (req, res) => {
   res.json({ status: 'rebuild-backend', time: new Date().toISOString() })
@@ -111,10 +114,86 @@ app.post('/api/jobs/stream', (req, res) => {
     }
 });
 
+app.get('/api/civicwatch/media', (req, res) => {
+  res.json({ items: civicWatch.getSharedMedia(2) });
+});
+
+app.get('/api/billboard/news', async (req, res, next) => {
+  try {
+    const [hackerNewsResult, federalRegisterResult] = await Promise.allSettled([
+      axios.get('https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=20', { timeout: 8000 }),
+      axios.get('https://www.federalregister.gov/api/v1/documents.json?per_page=20&order=newest', {
+        timeout: 8000,
+        headers: { 'User-Agent': 'CivicverseBillboards/1.0' }
+      })
+    ])
+    const items = []
+    const hackerNewsData = hackerNewsResult.status === 'fulfilled' ? hackerNewsResult.value.data : null
+    const federalRegisterData = federalRegisterResult.status === 'fulfilled' ? federalRegisterResult.value.data : null
+    if (hackerNewsData && Array.isArray(hackerNewsData.hits)) {
+      for (const article of hackerNewsData.hits) {
+        if (!article || typeof article !== 'object') continue
+        const title = typeof article.title === 'string' ? article.title.trim() : ''
+        if (!title) continue
+        const articleId = String(article.objectID || title)
+        const sourceUrl = typeof article.url === 'string' && /^https?:\/\//i.test(article.url)
+          ? article.url
+          : `https://news.ycombinator.com/item?id=${encodeURIComponent(articleId)}`
+        items.push({
+          id: `hn-${articleId}`,
+          title,
+          author: typeof article.author === 'string' ? article.author : 'Hacker News',
+          category: /github|open.source|linux|free software|decentralized/i.test(title) ? 'OPEN SOURCE' : 'LIVE NEWS',
+          sourceUrl
+        })
+      }
+    }
+    if (federalRegisterData && Array.isArray(federalRegisterData.results)) {
+      for (const article of federalRegisterData.results) {
+        if (!article || typeof article !== 'object') continue
+        const title = typeof article.title === 'string' ? article.title.trim() : ''
+        if (!title) continue
+        const documentNumber = String(article.document_number || title)
+        const sourceUrl = typeof article.html_url === 'string' &&
+          /^https:\/\/(?:www\.)?federalregister\.gov\//i.test(article.html_url)
+          ? article.html_url
+          : `https://www.federalregister.gov/d/${encodeURIComponent(documentNumber)}`
+        items.push({
+          id: `federal-${documentNumber}`,
+          title,
+          author: Array.isArray(article.agency_names) && typeof article.agency_names[0] === 'string'
+            ? article.agency_names[0]
+            : 'Federal Register',
+          category: 'CIVIC NEWS',
+          sourceUrl
+        })
+      }
+    }
+    if (!items.length) {
+      return res.status(502).json({
+        error: 'billboard_news_unavailable',
+        sources: {
+          hackerNews: hackerNewsResult.status,
+          federalRegister: federalRegisterResult.status
+        }
+      })
+    }
+    res.json({
+      items,
+      sources: {
+        hackerNews: hackerNewsResult.status,
+        federalRegister: federalRegisterResult.status
+      }
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
 app.post('/api/jobs/verify', async (req, res) => {
   try {
-    const { jobId, workerId, proofText, proofImage, gpsData } = req.body;
-    const result = await civicWatch.submitVerification(jobId, workerId, proofText, proofImage, gpsData);
+    const { jobId, workerId, proofText, proofImage, gpsData, shareMedia } = req.body;
+    const result = await civicWatch.submitVerification(jobId, workerId, proofText, proofImage, gpsData, shareMedia === true);
     
     // Result now includes payoutDetails if verified
     res.json({ success: true, result, payoutDetails: result.payoutDetails });
