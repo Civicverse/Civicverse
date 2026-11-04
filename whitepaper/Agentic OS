@@ -30,7 +30,7 @@ from UEFI, maps physical RAM layout, disables interrupts, configures CPU long-mo
 Module 2: Direct PCI Auto-Discovery Pipeline: Dynamically scans PCIe bus configuration space (Buses 0–255) to map
 the physical addresses of the Samsung NVMe controller, Tesla P40, and GTX 1060.
 Module 3: Dual-GPU Memory & Task Pipeline Split: Assigns heavy context vector operations and tensor weight
-execution strictly to the headless Tesla P40 while assigning display framebuffers to the GTX 1060.
+execution strictly to the headless Tesla v100 while assigning display framebuffers to the GTX 1060.
 Module 4: Zero-Idle Homeostatic Operational Loop: Continuous loop monitoring Intel Model Specific Registers (MSRs)
 for thermal throttles, streaming telemetry, and processing model inference without entering CPU halt or sleep states.
 
@@ -106,7 +106,7 @@ cycles.\n");
 }
 }
 }
-/// Dynamic PCI Bus Discovery: Enumerates Tesla P40, GTX 1060, & Samsung 970 EVO Plus
+/// Dynamic PCI Bus Discovery: Enumerates Tesla v100, GTX 1060, & Samsung 970 EVO Plus
 fn discover
 _pci
 _
@@ -130,7 +130,7 @@ SCAN] Mapped Device: Samsung 970 EVO Plus NVMe -> DMA Ready\n");
 _
 write("[HW
 _
-SCAN] Mapped Device: Tesla P40 (24GB) -> Tensor Execution
+SCAN] Mapped Device: Tesla v100 (32GB) -> Tensor Execution
 Engine\n");
 Driver\n");
 }
