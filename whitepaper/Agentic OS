@@ -12,8 +12,8 @@ Display & HUD GPU Intel Core i7-9700K (8 Cores / 8
 Threads)
 Samsung 970 EVO Plus M.2
 PCIe NVMe
-NVIDIA Tesla P40 (24GB
-GDDR5 VRAM)
+NVIDIA Tesla v100 (32GB
+GDDR VRAM)
 NVIDIA GTX 1060 (3GB VRAM) Ring 0 direct execution, long-mode page tables, MSR
 thermal/voltage sensing.
 Direct PCIe DMA streaming for LLM weight retrieval; bypasses
