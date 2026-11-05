@@ -177,6 +177,8 @@ Contributions are welcome!
 
 NOTE: Please do not donate crypto instead point your miner, server, spare pc or gaming rig directly to the Civicverse Monero Gui Wallet and contribute hash as it supports the Monero network and provides proof of concept for the project which is more powerful and meaningful than a few dollar crypto donation.
 
+Name your miner and watch it start hashing away in real time in the miner tab then share it to your social media pages and brag to the people who you will never meet in real life about how your joining forces with the community around you to takeover capitalism for the people legally and there isnt a bitch ass thing anyone can do about it.
+
 To contribute:
 
 1. Fork or branch from `main`:
