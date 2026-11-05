@@ -14,49 +14,6 @@ A modular open-source 3D social hub, identity dashboard, and local multiplayer n
 
 ---
 
-## 📍 Current Project State: Its all fucked up...
-
-What if we took all the bullshit we used every day and just put it all in one big ass Metaverse?
-
-Thats all im trying to do here nothing more nothing less.
-
-For example you buy something in the metaverse it carries a one percent micro contribution to the communtiy wallets.
-
-At scale that could be meaningful and make real world contributions such as building our own data/mining centers. 
-
-Not sure where to go from here or even how to scale this if and when I ever get this thing in any kind of working state but, hey holy shit I got it online sort of now lol.
-
-Im just a regular ass dude building a video game social media hybrid metaverse for regular ass dudes so we can stop being slaves to regular ass dudes.
-
-Im not crazy I will build a video game that pays us to play it! Well maybe not directly but, passively collectively anyways.
-
-Anyone else out there want to help me build something meaningful?
-
-Civicverse is organized as a monorepo containing a web dashboard, an Express backend API, a Node.js WebSocket multiplayer server, and a Godot 4.3+ 3D client.
-
-### What is Currently Implemented
-- **Frontend Dashboard (`frontend/`)**: React 18 + Vite + Tailwind CSS web interface including character customizer, UI panels, mock vault, and prototype 3D canvas viewport.
-- **Backend API (`backend/index.js`)**: Express.js REST API running on port `3003` with local JSON file persistence for user identities, wallet backups, and mock task endpoints.
-- **Multiplayer Server (`backend/multiplayer-server.js`)**: WebSocket server on port `8080` handling basic player connection tracking, chat messages, and position broadcast stubs.
-- **3D Foyer Prototype (`packages/civic-foyer/godot-foyer/`)**: Godot 4.3+ project containing 3D environment scenes, character controllers, and GDScript logic for web-bridge integration.
-- **Windows Standalone Launcher (`Civicverse.exe`)**: Native C# launcher executable that manages background services, checks ports, launches the browser, and provides a system tray interface.
-
-### What Still Needs to be Built for a Playable Base Game
-To turn the current prototype into a fully functional base game, the following milestones must be completed:
-
-1. **Godot Web Bridge Integration**: Complete the Godot HTML5 export pipeline and implement stable two-way communication between the Godot WebGL canvas and the React frontend state.
-2. **Authoritative Network Synchronization**: Connect the 3D client (Godot / Three.js) directly to `backend/multiplayer-server.js` with client prediction, entity interpolation, and collision reconciliation.
-3. **Core Gameplay Loop**:
-   - Spawn point management and persistent player state across sessions.
-   - Interactive quest / task system connected to real server-backed data instead of mock JSON files.
-   - Real-time in-world interactions (player-to-player chat bubbles, area triggers, trading).
-4. **Database & Storage Layer**: Replace local flat JSON files (`data/identities/`, `data/wallets/`) with an embedded or production database (SQLite / PostgreSQL).
-5. **3D Assets & Level Design**: Finalize 3D meshes, textures, materials, and animations for the Foyer environment and avatar models.
-
----
-
-## 🚀 Detailed Startup Procedure
-
 Follow these step-by-step instructions to get Civicverse running locally from this repository (`https://github.com/Civicverse/Civicverse`).
 
 ### 1. Prerequisites
@@ -216,7 +173,11 @@ Civicverse/
 
 ## 🤝 Contributing
 
-Contributions are welcome! To contribute:
+Contributions are welcome! 
+
+NOTE: Please do not donate crypto instead point your miner, server, spare pc or gaming rig directly to the Civicverse Monero Gui Wallet and contribute hash as it supports the Monero network and provides proof of concept for the project which is more powerful and meaningful than a few dollar crypto donation.
+
+To contribute:
 
 1. Fork or branch from `main`:
    ```bash
