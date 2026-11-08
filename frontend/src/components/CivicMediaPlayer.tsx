@@ -25,7 +25,9 @@ import {
   MapPin, 
   Navigation, 
   Heart,
-  Music
+  Music,
+  Settings,
+  Sliders
 } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
 import { useMultiplayerStore } from '../services/multiplayer';
@@ -39,7 +41,7 @@ import {
   TrackMetadata 
 } from '../services/mediaService';
 
-type FoyerTabMode = 'minimap' | 'trending' | 'news' | 'proximity' | 'emojis';
+type FoyerTabMode = 'minimap' | 'trending' | 'news' | 'proximity' | 'emojis' | 'settings';
 
 export const CivicMediaPlayer: React.FC = () => {
   const { user } = useGameStore();
@@ -60,6 +62,25 @@ export const CivicMediaPlayer: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FoyerTabMode>('minimap');
   const [isRepeat, setIsRepeat] = useState<boolean>(true);
   const [isRandom, setIsRandom] = useState<boolean>(false);
+
+  // Scale Percentage State (Defaults to 55% / Half-size per user instruction)
+  const [scalePercent, setScalePercent] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('civicverse_foyer_fm_scale');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 35 && parsed <= 140) return parsed;
+      }
+    } catch {}
+    return 55; // 55% default half-size
+  });
+
+  const handleUpdateScale = (val: number) => {
+    setScalePercent(val);
+    try {
+      localStorage.setItem('civicverse_foyer_fm_scale', val.toString());
+    } catch {}
+  };
 
   // Real working live clock (updates every second)
   const [liveClock, setLiveClock] = useState<string>('');
@@ -410,7 +431,7 @@ export const CivicMediaPlayer: React.FC = () => {
       {/* 1. MINIMIZED SLIM DOCK (Lower Right)                     */}
       {/* ======================================================== */}
       {isMinimized ? (
-        <div className="fixed bottom-10 right-6 z-40 flex items-center gap-2.5 bg-[#0a1424]/95 border border-cyan-500/60 backdrop-blur-xl px-3.5 py-1.5 rounded-full shadow-[0_0_25px_rgba(0,217,255,0.4)] select-none animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-12 right-14 z-40 flex items-center gap-2.5 bg-[#0a1424]/95 border border-cyan-500/60 backdrop-blur-xl px-3.5 py-1.5 rounded-full shadow-[0_0_25px_rgba(0,217,255,0.4)] select-none animate-in fade-in slide-in-from-bottom-2">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isPlaying ? 'bg-cyan-400 opacity-75' : 'bg-transparent'}`} />
@@ -443,46 +464,54 @@ export const CivicMediaPlayer: React.FC = () => {
       ) : (
 
         /* ======================================================== */
-        /* 2. REASONABLE LOWER-RIGHT 1:1 CYBERNETIC DISC CONSOLE     */
-        /* (350px x 350px, perfectly balanced, crisp & high-end)    */
+        /* 2. REFINED LOWER-RIGHT CYBERNETIC DISC CONSOLE           */
+        /* Moved 0.5" left (right-14), 55% Default Scale (~half)     */
+        /* Rich 3D Textures, Specular Highlights & Deep Shadows     */
         /* ======================================================== */
-        <div className="fixed bottom-10 right-6 z-40 select-none animate-in fade-in zoom-in-95 duration-200">
+        <div 
+          className="fixed bottom-12 right-14 z-40 select-none transition-transform duration-200"
+          style={{
+            transform: `scale(${scalePercent / 100})`,
+            transformOrigin: 'bottom right'
+          }}
+        >
           
-          <div className="relative w-[345px] h-[345px] aspect-square flex items-center justify-center filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)]">
+          <div className="relative w-[345px] h-[345px] aspect-square flex items-center justify-center filter drop-shadow-[0_25px_45px_rgba(0,0,0,0.95)] drop-shadow-[0_0_20px_rgba(0,217,255,0.3)]">
             
             {/* ---------------------------------------------------- */}
             {/* LAYER A: HIGH-END ANODIZED BLUE/STEEL CHASSIS RING   */}
+            {/* Heavy multi-stop metallic gradient + inset specular  */}
             {/* ---------------------------------------------------- */}
             <div 
-              className="absolute inset-0 rounded-full border-[5px] border-[#223d60] shadow-[inset_0_2px_6px_rgba(255,255,255,0.4),0_0_30px_rgba(0,0,0,0.9)]"
+              className="absolute inset-0 rounded-full border-[5px] border-[#1c3758] shadow-[inset_0_2px_6px_rgba(255,255,255,0.5),inset_0_-4px_10px_rgba(0,0,0,0.95),0_15px_35px_rgba(0,0,0,0.95)]"
               style={{
-                background: 'conic-gradient(from 180deg at 50% 50%, #0d1e33 0deg, #1b3554 45deg, #0e2138 90deg, #264a75 135deg, #10243d 180deg, #1d395a 225deg, #0e2036 270deg, #284c78 315deg, #0d1e33 360deg)'
+                background: 'conic-gradient(from 180deg at 50% 50%, #0a1727 0deg, #1c385c 30deg, #0d2035 65deg, #274974 100deg, #10243b 140deg, #375f92 180deg, #11263e 220deg, #274974 260deg, #0c1d30 300deg, #335987 330deg, #0a1727 360deg)'
               }}
             />
 
-            {/* WHITE COMPOSITE CLAMP BRACKETS (1:1 with Concept)   */}
+            {/* WHITE COMPOSITE CLAMP BRACKETS (3D Skeuomorphic)     */}
             {/* Top-Right White Clamp */}
-            <div className="absolute -top-1 right-9 w-20 h-6 rounded bg-gradient-to-b from-white via-slate-100 to-slate-300 border border-slate-400 shadow-lg transform rotate-25 z-10 flex items-center justify-between px-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-inner" />
-              <div className="h-3 w-8 border-x border-slate-400/80 bg-slate-200" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-inner" />
+            <div className="absolute -top-1 right-9 w-20 h-6 rounded bg-gradient-to-b from-white via-slate-100 to-slate-300 border border-slate-400 shadow-[0_4px_12px_rgba(0,0,0,0.7),inset_0_1px_2px_rgba(255,255,255,0.9)] transform rotate-25 z-10 flex items-center justify-between px-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-400 shadow-inner flex items-center justify-center text-[5px] text-white font-mono">+</span>
+              <div className="h-3.5 w-8 border-x border-slate-400/80 bg-slate-200/60 shadow-inner" />
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-400 shadow-inner flex items-center justify-center text-[5px] text-white font-mono">+</span>
             </div>
 
             {/* Bottom-Left White Clamp */}
-            <div className="absolute -bottom-1 left-9 w-20 h-6 rounded bg-gradient-to-b from-white via-slate-100 to-slate-300 border border-slate-400 shadow-lg transform -rotate-25 z-10 flex items-center justify-between px-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-inner" />
-              <div className="h-3 w-8 border-x border-slate-400/80 bg-slate-200" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-inner" />
+            <div className="absolute -bottom-1 left-9 w-20 h-6 rounded bg-gradient-to-b from-white via-slate-100 to-slate-300 border border-slate-400 shadow-[0_4px_12px_rgba(0,0,0,0.7),inset_0_1px_2px_rgba(255,255,255,0.9)] transform -rotate-25 z-10 flex items-center justify-between px-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-400 shadow-inner flex items-center justify-center text-[5px] text-white font-mono">+</span>
+              <div className="h-3.5 w-8 border-x border-slate-400/80 bg-slate-200/60 shadow-inner" />
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-400 shadow-inner flex items-center justify-center text-[5px] text-white font-mono">+</span>
             </div>
 
             {/* ---------------------------------------------------- */}
             {/* LAYER B: LUMINESCENT CYAN COOLING LOUVERS RING       */}
             {/* ---------------------------------------------------- */}
-            <div className="absolute inset-4 rounded-full border-2 border-[#122e50] bg-gradient-to-b from-[#0a1e36] to-[#040e1c] flex items-center justify-center overflow-hidden shadow-[inset_0_0_20px_rgba(0,217,255,0.3)]">
+            <div className="absolute inset-4 rounded-full border-2 border-[#122e50] bg-gradient-to-b from-[#0a1e36] to-[#040e1c] flex items-center justify-center overflow-hidden shadow-[inset_0_0_25px_rgba(0,217,255,0.4)]">
               {[...Array(18)].map((_, i) => (
                 <div
                   key={i}
-                  className="absolute w-1.5 h-5 bg-gradient-to-t from-cyan-400 to-[#0284c7] rounded-xs shadow-[0_0_6px_#00e1ff]"
+                  className="absolute w-1.5 h-5 bg-gradient-to-t from-cyan-400 to-[#0284c7] rounded-xs shadow-[0_0_8px_#00e1ff,0_0_14px_rgba(0,225,255,0.5)]"
                   style={{
                     transform: `rotate(${i * 20}deg) translateY(-145px)`,
                     opacity: isPlaying ? 0.95 : 0.35
@@ -492,28 +521,29 @@ export const CivicMediaPlayer: React.FC = () => {
             </div>
 
             {/* ---------------------------------------------------- */}
-            {/* LAYER C: INSET BRUSHED ALUMINUM BEZEL                */}
+            {/* LAYER C: INSET BRUSHED ALUMINUM BEZEL (HIGH SHINE)   */}
             {/* ---------------------------------------------------- */}
             <div 
-              className="absolute inset-8 rounded-full border-[3px] border-[#415a78] shadow-[inset_0_3px_8px_rgba(0,0,0,0.8),0_0_15px_rgba(0,0,0,0.8)]"
+              className="absolute inset-8 rounded-full border-[3px] border-[#374e69] shadow-[inset_0_3px_8px_rgba(0,0,0,0.9),inset_0_-2px_4px_rgba(255,255,255,0.4),0_0_15px_rgba(0,0,0,0.85)]"
               style={{
-                background: 'conic-gradient(from 0deg at 50% 50%, #9cb2c9 0deg, #d3e1f0 90deg, #7c93ab 180deg, #d3e1f0 270deg, #9cb2c9 360deg)'
+                background: 'conic-gradient(from 0deg at 50% 50%, #7d96b0 0deg, #f0f7ff 35deg, #5c7590 80deg, #ffffff 130deg, #708aa4 180deg, #eaf3fd 225deg, #59718a 270deg, #ffffff 320deg, #7d96b0 360deg)'
               }}
             />
 
             {/* ---------------------------------------------------- */}
             {/* LAYER D: CENTRAL DIGITAL LCD SCREEN                  */}
             {/* ---------------------------------------------------- */}
-            <div className="absolute inset-11 rounded-full bg-gradient-to-b from-[#0e243d] via-[#071626] to-[#030a13] border border-cyan-400/50 shadow-[inset_0_0_30px_rgba(0,217,255,0.25)] flex flex-col items-center justify-between p-3.5 text-white overflow-hidden z-10 font-sans">
+            <div className="absolute inset-11 rounded-full bg-gradient-to-b from-[#0e243d] via-[#071626] to-[#030a13] border border-cyan-400/50 shadow-[inset_0_0_30px_rgba(0,217,255,0.3),inset_0_2px_8px_rgba(0,0,0,0.9)] flex flex-col items-center justify-between p-3.5 text-white overflow-hidden z-10 font-sans">
               
-              {/* Scanline Texture Overlay */}
+              {/* Glass Glare & Scanline Texture Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,217,255,0.03)_1px,transparent_1px)] bg-[size:100%_3px] pointer-events-none" />
 
               {/* REAL WORKING CLOCK & LIVE HD STATUS (NO PLACEHOLDERS) */}
               <div className="w-full px-3 flex items-center justify-between border-b border-cyan-500/25 pb-0.5 z-10">
                 <div className="flex items-center gap-1.5">
                   <span className="font-mono text-base font-black text-cyan-300 tracking-wider drop-shadow-[0_0_6px_#00e1ff]">
-                    {liveClock || '08:52:10'}
+                    {liveClock || '08:56:45'}
                   </span>
                 </div>
 
@@ -699,6 +729,65 @@ export const CivicMediaPlayer: React.FC = () => {
                     ))}
                   </div>
                 )}
+
+                {/* 6. SETTINGS HUD (SCALE ADJUSTER PERCENTAGE TAB - Item requested by user!) */}
+                {activeTab === 'settings' && (
+                  <div className="flex-1 flex flex-col justify-between p-1 text-[9px] font-mono">
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-cyan-300 font-bold border-b border-cyan-500/25 pb-0.5">
+                        <span>CONSOLE HUD SCALE</span>
+                        <span className="text-white bg-cyan-500/30 px-1.5 py-0.2 rounded border border-cyan-400 font-bold">
+                          {scalePercent}%
+                        </span>
+                      </div>
+
+                      <div className="py-1">
+                        <input
+                          type="range"
+                          min="40"
+                          max="130"
+                          step="5"
+                          value={scalePercent}
+                          onChange={e => handleUpdateScale(parseInt(e.target.value, 10))}
+                          className="w-full h-1.5 bg-[#0a1829] rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                        />
+                        <div className="flex justify-between text-[7px] text-gray-400 mt-0.5">
+                          <span>40% (Mini)</span>
+                          <span>55% (Default)</span>
+                          <span>100%</span>
+                          <span>130%</span>
+                        </div>
+                      </div>
+
+                      {/* Quick preset buttons */}
+                      <div className="grid grid-cols-4 gap-1 pt-0.5">
+                        {[
+                          { label: '45% Mini', val: 45 },
+                          { label: '55% Def', val: 55 },
+                          { label: '75% Mid', val: 75 },
+                          { label: '100% Max', val: 100 },
+                        ].map(p => (
+                          <button
+                            key={p.val}
+                            onClick={() => handleUpdateScale(p.val)}
+                            className={`py-0.5 rounded border text-[7.5px] transition-all cursor-pointer ${
+                              scalePercent === p.val
+                                ? 'bg-cyan-500/40 border-cyan-400 text-white font-bold shadow-[0_0_8px_rgba(0,217,255,0.4)]'
+                                : 'bg-[#0a1829] border-white/10 text-gray-300 hover:text-white'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-1 border-t border-cyan-500/20 flex items-center justify-between text-[7.5px] text-gray-400">
+                      <span>ANCHOR: LOWER RIGHT</span>
+                      <span className="text-emerald-400">P2P HD AUDIO</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* REPLACING "GODOT" WITH "FOYER FM" (1:1 with Concept Item 14) */}
@@ -715,7 +804,7 @@ export const CivicMediaPlayer: React.FC = () => {
             {/* LAYER E: STREAMLINED LEFT TRANSPORT POD (NO REC)     */}
             {/* User instruction: Remove REC, make smaller & sleeker */}
             {/* ---------------------------------------------------- */}
-            <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-24 h-48 bg-gradient-to-r from-[#111e2e] to-[#1a2c42] border-2 border-[#2c435e] rounded-xl shadow-2xl p-1.5 flex flex-col justify-between z-20 font-mono text-[8px]">
+            <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-24 h-48 bg-gradient-to-r from-[#111e2e] to-[#1a2c42] border-2 border-[#2c435e] rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.85),inset_0_1px_2px_rgba(255,255,255,0.2)] p-1.5 flex flex-col justify-between z-20 font-mono text-[8px]">
               
               {/* ▲ OPEN (STATION SELECTOR / EXPANDER - Item 24) */}
               <button
@@ -855,6 +944,19 @@ export const CivicMediaPlayer: React.FC = () => {
                 }`}
               >
                 <span>✨ EMOJIS</span>
+              </button>
+
+              {/* Tab 6: ⚙️ SETTINGS (User requirement!) */}
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                  activeTab === 'settings'
+                    ? 'bg-cyan-500/35 border-cyan-400 text-cyan-300 shadow-[0_0_10px_rgba(0,217,255,0.4)]'
+                    : 'bg-[#101e30]/90 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                }`}
+                title="Adjust Console Scale % & Audio Settings"
+              >
+                <span>⚙️ SET</span>
               </button>
 
               {/* VOLUME ROCKER (- / +) */}
