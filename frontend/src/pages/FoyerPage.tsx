@@ -36,6 +36,8 @@ import {
   ShoppingBag, 
   Map as MapIcon, 
   Compass, 
+  HelpCircle,
+  ChevronDown
 } from 'lucide-react';
 import { useMultiplayerStore } from '../services/multiplayer';
 
@@ -51,6 +53,7 @@ export default function FoyerPage() {
   };
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isControlsOpen, setIsControlsOpen] = useState(false);
   
   const peerCount = useMultiplayerStore(state => state.peerCount);
   const connectionMode = useMultiplayerStore(state => state.connectionMode);
@@ -60,24 +63,122 @@ export default function FoyerPage() {
     <div className="w-screen h-screen bg-stainless-steel-dark text-white flex flex-col overflow-hidden select-none font-sans">
       
       {/* ======================================================== */}
-      {/* 1. TOP BAR HEADER: OFFICIAL LOGO & CLEAN CIVICVERSE BRAND */}
+      {/* 1. TOP BAR HEADER: OFFICIAL BRAND, CITIZENS & CONTROLS    */}
       {/* ======================================================== */}
       <header className="h-12 bg-stainless-steel border-b border-stainless-steel px-4 flex items-center justify-between shrink-0 z-30 shadow-[0_12px_32px_rgba(0,0,0,0.6)]">
-        <button 
-          type="button"
-          onClick={handleReturnToVault}
-          className="flex items-center gap-3 cursor-pointer group bg-transparent border-none p-0 text-left outline-none"
-          title="Return to Civic Vault"
-        >
-          <img 
-            src="/Civicverselogo.png" 
-            alt="Civicverse Logo" 
-            className="w-8 h-8 rounded-full object-cover shadow-[0_0_15px_rgba(255,107,0,0.6)] border border-orange-500/50 group-hover:scale-105 transition-transform" 
-          />
-          <span className="font-black text-sm tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">CIVICVERSE</span>
-        </button>
+        <div className="flex items-center gap-4">
+          <button 
+            type="button"
+            onClick={handleReturnToVault}
+            className="flex items-center gap-3 cursor-pointer group bg-transparent border-none p-0 text-left outline-none"
+            title="Return to Civic Vault"
+          >
+            <img 
+              src="/Civicverselogo.png" 
+              alt="Civicverse Logo" 
+              className="w-8 h-8 rounded-full object-cover shadow-[0_0_15px_rgba(255,107,0,0.6)] border border-orange-500/50 group-hover:scale-105 transition-transform" 
+            />
+            <span className="font-black text-sm tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">CIVICVERSE</span>
+          </button>
+
+          {/* Elevated Citizens in Instance Pill (Top Bar, out of the way) */}
+          <div className="flex items-center gap-2 bg-[#141b27]/90 border border-cyan-500/40 rounded-full px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#10b981]" />
+            <span className="text-gray-300 text-xs font-semibold">Citizens in Instance:</span>
+            <span className="text-cyan-400 font-black text-xs">{1 + peerCount}</span>
+            <span className="text-gray-400 text-[10px] font-mono">/ 20</span>
+          </div>
+        </div>
 
         <div className="flex items-center gap-3">
+          {/* Clickable How to Play Header (Expands with controls) */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsControlsOpen(prev => !prev)}
+              aria-expanded={isControlsOpen}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer outline-none ${
+                isControlsOpen
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-[0_0_14px_rgba(6,182,212,0.4)]'
+                  : 'bg-[#141b27]/85 text-gray-300 border-[#323d4e] hover:border-cyan-500/50 hover:text-white'
+              }`}
+              title="Click to toggle controls guide"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+              <span>HOW TO PLAY</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isControlsOpen ? 'rotate-180 text-cyan-400' : 'text-gray-400'}`} />
+            </button>
+
+            {isControlsOpen && (
+              <div className="absolute right-0 top-full mt-2 w-96 bg-[#090d16]/95 border border-cyan-500/50 backdrop-blur-xl rounded-xl p-4 shadow-[0_12px_36px_rgba(0,0,0,0.9)] z-50 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-[#323d4e]">
+                  <div className="flex items-center gap-1.5 text-cyan-400 font-bold text-xs uppercase tracking-wider">
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>HOW TO PLAY / CONTROLS</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsControlsOpen(false)}
+                    className="text-gray-400 hover:text-white text-xs p-1 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
+                    <span className="text-gray-300 font-medium">Movement</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-cyan-400 font-mono font-bold bg-[#141b27] px-1.5 py-0.5 rounded border border-[#323d4e]">Right-Click</span>
+                      <span className="text-gray-500 text-[10px]">or</span>
+                      {['W', 'A', 'S', 'D'].map(k => (
+                        <kbd key={k} className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">
+                          {k}
+                        </kbd>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
+                    <span className="text-gray-300 font-medium">Interact / Link</span>
+                    <span className="text-gray-300">Click building or aim + <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">E</kbd></span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
+                    <span className="text-gray-300 font-medium">Nearby Chat Bubbles</span>
+                    <div className="flex items-center gap-1">
+                      <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">T</kbd>
+                      <span className="text-gray-500 text-[10px]">or</span>
+                      <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">Enter</kbd>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
+                    <span className="text-gray-300 font-medium">Camera Perspective</span>
+                    <div className="flex items-center gap-1">
+                      <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">V</kbd>
+                      <span className="text-gray-400 text-[10px]">1st / 3rd Person</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
+                    <span className="text-gray-300 font-medium">Hotbar / Items</span>
+                    <span className="text-cyan-400 font-mono font-bold bg-[#141b27] px-1.5 py-0.5 rounded border border-[#323d4e]">Scroll Wheel</span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
+                    <span className="text-gray-300 font-medium">Jump</span>
+                    <kbd className="px-2 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">Space</kbd>
+                  </div>
+
+                  <div className="pt-1.5 text-[11px] text-gray-400 border-t border-[#1f2937]/50 leading-relaxed">
+                    <strong className="text-cyan-400 font-semibold">CivicWatch Tabs:</strong> Community, static cams, drone, entertainment, news, education. Join video chat, use emojis & send tips!
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button 
             type="button"
             onClick={handleReturnToVault}
@@ -98,33 +199,7 @@ export default function FoyerPage() {
       </header>
 
       {/* ======================================================== */}
-      {/* 2. SUB-HEADER / DISTRICT LOCATION BAR                    */}
-      {/* ======================================================== */}
-      <div className="min-h-8 bg-stainless-steel-dark/95 border-b border-stainless-steel px-4 py-1 flex items-center justify-between gap-4 shrink-0 text-xs z-20">
-        
-        {/* Left: District Location & Live Population */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-cyan-400 font-bold">
-            <MapPin className="w-3.5 h-3.5 fill-current text-cyan-400" />
-            <span className="text-white font-bold">{currentLobbyName}</span>
-          </div>
-          <span className="text-gray-500">|</span>
-          <span className="text-gray-300 text-[11px]">Citizens in Instance: <strong className="text-cyan-400 font-extrabold">{1 + peerCount}/20</strong></span>
-          <span className="flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> • {connectionMode.toUpperCase()}
-          </span>
-        </div>
-
-        {/* Right: Quick Controls Hint */}
-        <div className="hidden sm:block max-w-[58%] text-right text-[10px] leading-relaxed font-mono text-gray-300">
-          <span className="font-bold text-cyan-400">HOW TO PLAY:</span>
-          <span> Right-click walks · Click a billboard/building or aim + E for links · T/Enter opens nearby chat with timed gamertag bubbles · V camera · Scroll hotbar</span>
-          <span className="block text-gray-400">CivicWatch tabs: community, static cams, drone, entertainment, news, education · play a video to join its CivicWatch chat · emojis and donations</span>
-        </div>
-      </div>
-
-      {/* ======================================================== */}
-      {/* 3. MAIN 3-COLUMN LAYOUT                                  */}
+      {/* 2. MAIN 3-COLUMN LAYOUT: MAXIMUM GAME & FEED VIEWPORT     */}
       {/* ======================================================== */}
       <div className="flex-1 flex overflow-hidden relative">
         
@@ -158,7 +233,7 @@ export default function FoyerPage() {
       </div>
 
       {/* ======================================================== */}
-      {/* 4. BOTTOM STATUS HUD (STAINLESS STEEL FINISH)            */}
+      {/* 3. BOTTOM STATUS HUD (STAINLESS STEEL FINISH)            */}
       {/* ======================================================== */}
       <footer className="h-8 bg-stainless-steel border-t border-stainless-steel px-4 flex items-center justify-between shrink-0 z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.4)]">
         
@@ -182,8 +257,6 @@ export default function FoyerPage() {
 
         {/* Center: Subtle District Status */}
         <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono text-gray-500">
-          <span>INSTANCE: {currentLobbyName.toUpperCase()}</span>
-          <span>•</span>
           <span className="text-cyan-500/70">HUD ACTIVE</span>
         </div>
 
