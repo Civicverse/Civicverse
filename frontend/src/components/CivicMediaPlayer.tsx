@@ -512,33 +512,30 @@ export const CivicMediaPlayer: React.FC = () => {
               }}
             />
 
-            {/* Futuristic Panel Seams / Hard-Surface Notches */}
-            <div className="absolute inset-0 rounded-full pointer-events-none">
+            {/* Futuristic Panel Seams / Hard-Surface Radial Grooves */}
+            <div className="absolute inset-0 rounded-full pointer-events-none overflow-hidden">
+              {/* Radial panel seam notches matching render */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-[#637d96] shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
+              <div className="absolute top-10 right-16 w-0.5 h-6 bg-[#637d96] transform rotate-35 shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
+              <div className="absolute top-24 right-5 w-0.5 h-6 bg-[#637d96] transform rotate-65 shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
+              <div className="absolute bottom-24 right-5 w-0.5 h-6 bg-[#637d96] transform -rotate-65 shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
+              <div className="absolute bottom-10 right-16 w-0.5 h-6 bg-[#637d96] transform -rotate-35 shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-[#637d96] shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
+
               {/* Top visor seam */}
               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-[#768c9f] to-transparent opacity-60" />
-              {/* Bottom intake vent seam */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-40 h-1.5 bg-gradient-to-r from-transparent via-[#5a7288] to-transparent opacity-80" />
+              {/* Bottom intake vent seam with horizontal notches */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-40 h-2 bg-gradient-to-r from-transparent via-[#5a7288] to-transparent opacity-80 flex items-center justify-center gap-1">
+                <span className="w-4 h-0.5 bg-slate-800/80 rounded" />
+                <span className="w-4 h-0.5 bg-slate-800/80 rounded" />
+                <span className="w-4 h-0.5 bg-slate-800/80 rounded" />
+              </div>
             </div>
 
-            {/* Segmented Armor Plates Overlays */}
-            {/* Top-Right White Armor Plate Arch */}
-            <div className="absolute -top-1.5 right-12 w-28 h-8 rounded-t-lg bg-gradient-to-b from-white via-slate-100 to-slate-300 border-t-2 border-x border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_3px_rgba(255,255,255,1)] transform rotate-18 z-10 flex items-center justify-around px-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-300 shadow-inner" />
-              <div className="h-3 w-10 border-x border-slate-400 bg-slate-200/80 shadow-inner" />
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-300 shadow-inner" />
-            </div>
-
-            {/* Bottom-Right White Armor Plate Arch */}
-            <div className="absolute -bottom-1.5 right-14 w-28 h-8 rounded-b-lg bg-gradient-to-t from-white via-slate-100 to-slate-300 border-b-2 border-x border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.6),inset_0_1px_3px_rgba(255,255,255,1)] transform -rotate-18 z-10 flex items-center justify-around px-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-300 shadow-inner" />
-              <div className="h-3 w-10 border-x border-slate-400 bg-slate-200/80 shadow-inner" />
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-300 shadow-inner" />
-            </div>
-
-            {/* Bottom-Left White Clamp */}
-            <div className="absolute -bottom-1 left-9 w-22 h-7 rounded bg-gradient-to-b from-white via-slate-100 to-slate-300 border border-slate-400 shadow-[0_4px_12px_rgba(0,0,0,0.7),inset_0_1px_2px_rgba(255,255,255,0.9)] transform -rotate-25 z-10 flex items-center justify-between px-2">
+            {/* Bottom-Left Pod Docking Clamp */}
+            <div className="absolute -bottom-1 left-9 w-20 h-6 rounded bg-gradient-to-b from-white via-slate-100 to-slate-300 border border-slate-400 shadow-[0_4px_12px_rgba(0,0,0,0.7),inset_0_1px_2px_rgba(255,255,255,0.9)] transform -rotate-25 z-10 flex items-center justify-between px-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-400 shadow-inner flex items-center justify-center text-[5px] text-white font-mono">+</span>
-              <div className="h-3.5 w-10 border-x border-slate-400/80 bg-slate-200/60 shadow-inner" />
+              <div className="h-3 w-8 border-x border-slate-400/80 bg-slate-200/60 shadow-inner" />
               <span className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-400 shadow-inner flex items-center justify-center text-[5px] text-white font-mono">+</span>
             </div>
 
