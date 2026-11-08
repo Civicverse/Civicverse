@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
-import { GodotFoyer, CivicMediaPlayer, CivicNewsFeed } from '../components';
-import CivicWatchDistrictPanel from '../components/CivicWatchDistrictPanel';
+import { GodotFoyer, CivicMediaPlayer } from '../components';
 import { 
   Shield, 
   Search, 
@@ -172,7 +171,7 @@ export default function FoyerPage() {
                   </div>
 
                   <div className="pt-1.5 text-[11px] text-gray-400 border-t border-[#1f2937]/50 leading-relaxed">
-                    <strong className="text-cyan-400 font-semibold">CivicWatch Tabs:</strong> Community, static cams, drone, entertainment, news, education. Join video chat, use emojis & send tips!
+                    <strong className="text-cyan-400 font-semibold">Foyer FM Console:</strong> Bottom media console manages music, trending, news, proximity chat and emojis all in one place!
                   </div>
                 </div>
               </div>
@@ -199,37 +198,14 @@ export default function FoyerPage() {
       </header>
 
       {/* ======================================================== */}
-      {/* 2. MAIN 3-COLUMN LAYOUT: MAXIMUM GAME & FEED VIEWPORT     */}
+      {/* 2. FULL-SCREEN 3D GAME VIEWPORT + CONSOLIDATED MEDIA HUB */}
       {/* ======================================================== */}
-      <div className="flex-1 flex overflow-hidden relative">
-        
-        {/* ------------------------------------------------------ */}
-        {/* LEFT COLUMN: CIVICWATCH HUB & MEDIA PLAYER             */}
-        {/* ------------------------------------------------------ */}
-        <aside className="w-80 sharp-panel border-r border-stainless-steel bg-stainless-steel-dark flex flex-col shrink-0 min-h-0 overflow-y-auto z-10 shadow-[5px_0_25px_rgba(0,0,0,0.5)]">
-          <div className="flex-1 min-h-[270px] flex flex-col">
-            <CivicWatchDistrictPanel />
-          </div>
+      <div className="flex-1 relative bg-stainless-steel-dark overflow-hidden w-full h-full">
+        {/* Full-Screen 3D Godot Three.js Metaverse Viewport */}
+        <GodotFoyer onExit={() => nav('/vault')} />
 
-          {/* SECTION B: FOYER FM BOOMBOX MEDIA PLAYER */}
-          <div className="h-[280px] min-h-[280px] flex flex-col bg-stainless-steel-panel overflow-hidden shrink-0 border-t border-stainless-steel">
-            <CivicMediaPlayer />
-          </div>
-        </aside>
-
-        {/* ------------------------------------------------------ */}
-        {/* CENTER COLUMN: 3D GAME ENGINE VIEWPORT & HUD          */}
-        {/* ------------------------------------------------------ */}
-        <main className="flex-1 relative bg-stainless-steel-dark overflow-hidden">
-          <GodotFoyer onExit={() => nav('/vault')} />
-        </main>
-
-        {/* ------------------------------------------------------ */}
-        {/* RIGHT COLUMN: REAL-TIME CIVIC & OPEN SOURCE NEWSFEED   */}
-        {/* ------------------------------------------------------ */}
-        <aside className="w-80 sharp-panel border-l border-stainless-steel bg-stainless-steel-dark flex flex-col shrink-0 overflow-hidden z-10 shadow-[-5px_0_25px_rgba(0,0,0,0.5)]">
-          <div className="min-h-0 flex-1 overflow-hidden"><CivicNewsFeed /></div>
-        </aside>
+        {/* 1:1 Godot Mixmaster Media Player (Foyer FM) Asset at Bottom */}
+        <CivicMediaPlayer />
       </div>
 
       {/* ======================================================== */}
