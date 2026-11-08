@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
@@ -32,7 +33,7 @@ export default function TOSPage() {
         {/* Header */}
         <div className="mb-8 text-center animate-slide-up flex flex-col items-center">
           <img 
-            src="/Civicverselogo.png" 
+            src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} 
             alt="Civicverse Logo" 
             className="w-20 h-20 rounded-full object-cover shadow-[0_0_25px_rgba(255,107,0,0.6)] border border-orange-500/50 mb-3 animate-pulse" 
           />
@@ -51,7 +52,7 @@ export default function TOSPage() {
           <div className="space-y-4 text-sm md:text-base leading-relaxed">
             <div>
               <h3 className="text-neon-pink font-bold mb-2 text-lg">
-                ⚡ Non-Custodial Decentralized Identity & Wallet
+                âš¡ Non-Custodial Decentralized Identity & Wallet
               </h3>
               <p className="text-gray-300">
                 You are about to create a local, encrypted identity and wallet that runs entirely on your device.
@@ -59,34 +60,34 @@ export default function TOSPage() {
             </div>
 
             <div>
-              <h3 className="text-neon-pink font-bold mb-3 text-lg">🚨 CRITICAL WARNINGS</h3>
+              <h3 className="text-neon-pink font-bold mb-3 text-lg">ðŸš¨ CRITICAL WARNINGS</h3>
               <ul className="space-y-2 text-gray-300 list-none">
                 <li className="flex gap-2">
-                  <span className="text-neon-cyan">→</span>
+                  <span className="text-neon-cyan">â†’</span>
                   <span>
                     <strong>Civicverse does NOT custody your keys, wallet, or data.</strong>
                   </span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-neon-cyan">→</span>
+                  <span className="text-neon-cyan">â†’</span>
                   <span>
                     <strong>You alone control your Civic ID and wallet private key.</strong>
                   </span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-neon-cyan">→</span>
+                  <span className="text-neon-cyan">â†’</span>
                   <span>
                     <strong>NO password reset.</strong> Losing password = losing access forever.
                   </span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-neon-cyan">→</span>
+                  <span className="text-neon-cyan">â†’</span>
                   <span>
                     <strong>NO key recovery.</strong> Losing Memetic Password = losing wallet forever.
                   </span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-neon-cyan">→</span>
+                  <span className="text-neon-cyan">â†’</span>
                   <span>
                     <strong>NO customer support</strong> for key management.
                   </span>
@@ -95,40 +96,40 @@ export default function TOSPage() {
             </div>
 
             <div>
-              <h3 className="text-neon-purple font-bold mb-2 text-lg">🔐 What This Means</h3>
+              <h3 className="text-neon-purple font-bold mb-2 text-lg">ðŸ” What This Means</h3>
               <ul className="space-y-1 text-gray-300 list-none">
                 <li className="flex gap-2">
-                  <span className="text-neon-purple">▸</span>
+                  <span className="text-neon-purple">â–¸</span>
                   <span>Your Civic ID is generated locally, never registered.</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-neon-purple">▸</span>
+                  <span className="text-neon-purple">â–¸</span>
                   <span>Wallet private key encrypted and stored locally only.</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-neon-purple">▸</span>
+                  <span className="text-neon-purple">â–¸</span>
                   <span>You must backup password and Memetic Wallet Password.</span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h3 className="text-neon-green font-bold mb-2 text-lg">🏗️ Protocol-Level Infrastructure</h3>
+              <h3 className="text-neon-green font-bold mb-2 text-lg">ðŸ—ï¸ Protocol-Level Infrastructure</h3>
               <p className="text-gray-300">
                 Civicverse is not a service. We do not hold keys, authenticate users, provide recovery, or maintain user accounts.
               </p>
             </div>
 
             <div>
-              <h3 className="text-neon-cyan font-bold mb-2 text-lg">⚙️ Technical Details</h3>
+              <h3 className="text-neon-cyan font-bold mb-2 text-lg">âš™ï¸ Technical Details</h3>
               <ul className="space-y-1 text-gray-400 text-xs md:text-sm list-none font-mono">
-                <li>• Encryption: AES-256-GCM + PBKDF2 (100k iterations)</li>
-                <li>• Key Derivation: PBKDF2-SHA256</li>
-                <li>• Password: Never leaves device</li>
-                <li>• Civic ID: Derived from entropy, not registered</li>
-                <li>• Memetic Password: BIP-39 standard (12 words)</li>
-                <li>• Storage: Local encrypted vault</li>
-                <li>• Network: Offline-first, full functionality without internet</li>
+                <li>â€¢ Encryption: AES-256-GCM + PBKDF2 (100k iterations)</li>
+                <li>â€¢ Key Derivation: PBKDF2-SHA256</li>
+                <li>â€¢ Password: Never leaves device</li>
+                <li>â€¢ Civic ID: Derived from entropy, not registered</li>
+                <li>â€¢ Memetic Password: BIP-39 standard (12 words)</li>
+                <li>â€¢ Storage: Local encrypted vault</li>
+                <li>â€¢ Network: Offline-first, full functionality without internet</li>
               </ul>
             </div>
           </div>
@@ -162,14 +163,14 @@ export default function TOSPage() {
               disabled={!agreed}
               onClick={handleAccept}
             >
-              ✓ I Accept & Continue
+              âœ“ I Accept & Continue
             </AnimatedButton>
             <AnimatedButton
               variant="secondary"
               size="lg"
               onClick={() => window.open('https://github.com/Civicverse/Civicverse-nightly-v0.0#blueprint', '_blank')}
             >
-              📜 Blueprint
+              ðŸ“œ Blueprint
             </AnimatedButton>
           </div>
 

@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatedButton, NeonText, GradientOrb } from '../components'
@@ -23,14 +24,14 @@ export default function MiningPoolPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6 animate-slide-up">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <img src="/Civicverselogo.png" alt="CV" className="w-5 h-5 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.5)] border border-orange-500/40" />
+              <img src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} alt="CV" className="w-5 h-5 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.5)] border border-orange-500/40" />
               <span className="text-[10px] uppercase tracking-[0.4em] text-neon-orange font-bold block">Network Infrastructure // Proof-of-Work Crowdfund</span>
             </div>
             <NeonText size="5xl" gradient={true} className="block tracking-tighter uppercase font-black">
               Community Mining Pool
             </NeonText>
             <p className="text-gray-300 mt-2 max-w-2xl leading-relaxed text-sm md:text-base">
-              We aren&apos;t mining for individual speculative profit—we are combining grassroots compute from all of our everyday machines. Whether it&apos;s an idle gaming PC, laptop, or home server, every hash is routed directly to the Civicverse Community Treasury to collectively fund real-world physical infrastructure.
+              We aren&apos;t mining for individual speculative profitâ€”we are combining grassroots compute from all of our everyday machines. Whether it&apos;s an idle gaming PC, laptop, or home server, every hash is routed directly to the Civicverse Community Treasury to collectively fund real-world physical infrastructure.
             </p>
           </div>
           
@@ -39,13 +40,13 @@ export default function MiningPoolPage() {
             size="md"
             onClick={() => navigate('/vault')}
           >
-            ← Back to Vault
+            â† Back to Vault
           </AnimatedButton>
         </div>
 
         {/* Radical Transparency & Economics Banner */}
         <div className="mb-8 p-5 rounded-3xl bg-orange-500/10 border border-orange-500/30 text-xs md:text-sm text-gray-300 flex items-start gap-4 backdrop-blur-md animate-slide-up">
-          <span className="text-2xl shrink-0">💡</span>
+          <span className="text-2xl shrink-0">ðŸ’¡</span>
           <div className="space-y-1">
             <p className="font-bold text-neon-orange uppercase tracking-wide">
               Radical Transparency on Mining Economics
@@ -64,7 +65,7 @@ export default function MiningPoolPage() {
         {/* Direct Treasury Address Badge */}
         <div className="mt-8 p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 animate-slide-up backdrop-blur-md">
           <div className="flex items-center gap-3 overflow-hidden w-full">
-            <span className="text-xl shrink-0">🔐</span>
+            <span className="text-xl shrink-0">ðŸ”</span>
             <div className="overflow-hidden">
               <div className="text-[10px] text-gray-400 uppercase tracking-widest font-mono font-bold">Civicverse Monero Treasury Address</div>
               <div className="text-xs text-neon-cyan font-mono truncate select-all">{TREASURY_WALLET}</div>
@@ -74,7 +75,7 @@ export default function MiningPoolPage() {
             onClick={copyTreasuryAddress}
             className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all active:scale-95"
           >
-            {copied ? '✓ Copied to Clipboard' : '📋 Copy Address'}
+            {copied ? 'âœ“ Copied to Clipboard' : 'ðŸ“‹ Copy Address'}
           </button>
         </div>
 
@@ -82,7 +83,7 @@ export default function MiningPoolPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
            <div className="bg-white/5 border border-white/10 p-8 rounded-3xl backdrop-blur-md flex flex-col justify-between">
               <div>
-                <h3 className="text-neon-orange font-black uppercase tracking-tight text-xl mb-4 italic">⛏️ Egalitarian Collective Strategy</h3>
+                <h3 className="text-neon-orange font-black uppercase tracking-tight text-xl mb-4 italic">â›ï¸ Egalitarian Collective Strategy</h3>
                 <p className="text-sm text-gray-300 leading-relaxed mb-6">
                   Monero&apos;s RandomX algorithm was specifically engineered to resist ASIC monopolies and prioritize general-purpose consumer CPUs. It is not about max hash power or expensive hardware; it is about combined community volume from whatever hardware you have.
                 </p>
@@ -109,26 +110,26 @@ export default function MiningPoolPage() {
 
            <div className="bg-white/5 border border-white/10 p-8 rounded-3xl backdrop-blur-md flex flex-col justify-between">
               <div>
-                <div className="text-4xl mb-3">🏛️</div>
+                <div className="text-4xl mb-3">ðŸ›ï¸</div>
                 <h3 className="text-white font-black uppercase tracking-tight text-xl mb-2">Treasury Impact & Proposals</h3>
                 <p className="text-sm text-gray-300 leading-relaxed mb-4">
                    100% of mined Monero accumulates in the collective treasury. When we reach meaningful milestones, community members submit proposals and vote on allocations as detailed in the <span className="text-neon-orange font-bold">Ground Zero White Paper</span>:
                 </p>
                 <ul className="text-xs text-gray-400 space-y-2 mb-6 text-left pl-1">
                    <li className="flex items-center gap-2">
-                      <span className="text-neon-orange">☀️</span>
+                      <span className="text-neon-orange">â˜€ï¸</span>
                       <span><strong className="text-white">Solar Mining Operations:</strong> Building off-grid renewable rigs so future compute is 100% free</span>
                    </li>
                    <li className="flex items-center gap-2">
-                      <span className="text-neon-cyan">🏢</span>
+                      <span className="text-neon-cyan">ðŸ¢</span>
                       <span><strong className="text-white">Community Data Centers:</strong> Sovereign edge computing and local mesh servers</span>
                    </li>
                    <li className="flex items-center gap-2">
-                      <span className="text-emerald-400">🏡</span>
+                      <span className="text-emerald-400">ðŸ¡</span>
                       <span><strong className="text-white">Homeless Shelters:</strong> Modular housing and real-world humanitarian mutual aid</span>
                    </li>
                    <li className="flex items-center gap-2">
-                      <span className="text-neon-pink">🏜️</span>
+                      <span className="text-neon-pink">ðŸœï¸</span>
                       <span><strong className="text-white">Ground Zero Settlements:</strong> Autonomous, resilient solarpunk desert cities</span>
                    </li>
                 </ul>
@@ -144,7 +145,7 @@ export default function MiningPoolPage() {
            <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl">
               <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
                  <div className="flex items-center gap-3">
-                    <span className="text-xl">📊</span>
+                    <span className="text-xl">ðŸ“Š</span>
                     <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-neon-orange">Network Node Statistics</h3>
                  </div>
                  <div className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">

@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
@@ -124,12 +125,12 @@ export default function SignupPage() {
         <div className="relative z-10 w-full max-w-lg">
           <div className="text-center mb-8 flex flex-col items-center">
             <img 
-              src="/Civicverselogo.png" 
+              src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} 
               alt="Civicverse Logo" 
               className="w-16 h-16 rounded-full object-cover shadow-[0_0_20px_rgba(255,107,0,0.6)] border border-orange-500/50 mb-3" 
             />
             <NeonText size="4xl" gradient={true} className="block mb-2 uppercase tracking-tighter">
-              {mode === 'create' ? '✨ Create CivicID' : '🔑 Restore CivicID'}
+              {mode === 'create' ? 'âœ¨ Create CivicID' : 'ðŸ”‘ Restore CivicID'}
             </NeonText>
             <p className="text-neon-cyan text-sm uppercase tracking-widest opacity-80 font-bold">
               Protocol Onboarding
@@ -139,7 +140,7 @@ export default function SignupPage() {
           <AnimatedCard>
             {error && (
               <div className="mb-6 p-3 bg-neon-pink/10 border border-neon-pink/40 rounded text-neon-pink text-xs font-bold animate-pulse">
-                ⚠ {error}
+                âš  {error}
               </div>
             )}
 
@@ -183,7 +184,7 @@ export default function SignupPage() {
               <div className="flex flex-col items-center gap-4 pt-4 border-t border-white/5">
                 {globalTosAccepted ? (
                   <div className="flex items-center gap-2 text-neon-cyan text-[10px] uppercase tracking-[0.2em] font-bold">
-                    <span>✓</span> Terms of Service Accepted
+                    <span>âœ“</span> Terms of Service Accepted
                   </div>
                 ) : (
                   <label className="flex items-center gap-3 cursor-pointer group">
@@ -211,7 +212,7 @@ export default function SignupPage() {
                   onClick={handleInitialSetup}
                   disabled={loading || (!tosAccepted && !globalTosAccepted)}
                 >
-                  {loading ? <LoadingSpinner size="sm" /> : (mode === 'create' ? 'Generate Identity & View Memetic Password →' : 'Restore Identity & Enter Vault →')}
+                  {loading ? <LoadingSpinner size="sm" /> : (mode === 'create' ? 'Generate Identity & View Memetic Password â†’' : 'Restore Identity & Enter Vault â†’')}
                 </AnimatedButton>
               </div>
 
@@ -244,10 +245,10 @@ export default function SignupPage() {
       <div className="relative z-10 w-full max-w-2xl">
         <div className="text-center mb-8">
           <NeonText size="4xl" gradient={true} className="block mb-2 uppercase tracking-tighter">
-            🧬 Memetic Password
+            ðŸ§¬ Memetic Password
           </NeonText>
           <div className="inline-block px-3 py-1 bg-neon-pink/20 border border-neon-pink/40 rounded text-neon-pink text-[10px] font-bold uppercase tracking-[0.2em]">
-            Physical Backup Required — Write Down Your 12 Words
+            Physical Backup Required â€” Write Down Your 12 Words
           </div>
           <p className="text-gray-400 text-xs mt-3 uppercase tracking-wider max-w-md mx-auto">
             This 12-word memetic password is the only master key to your decentralized identity and wallet.
@@ -267,7 +268,7 @@ export default function SignupPage() {
                 }}
                 className="text-[10px] text-neon-cyan hover:underline font-mono uppercase tracking-widest font-bold"
               >
-                {copied ? '✓ Copied!' : '📋 Copy Words'}
+                {copied ? 'âœ“ Copied!' : 'ðŸ“‹ Copy Words'}
               </button>
             </div>
             <div className="grid grid-cols-3 gap-2 font-mono text-[10px]">
@@ -308,7 +309,7 @@ export default function SignupPage() {
                 ))}
               </div>
 
-              {error && <p className="text-neon-pink text-[10px] mt-4 font-bold uppercase animate-pulse">⚠ {error}</p>}
+              {error && <p className="text-neon-pink text-[10px] mt-4 font-bold uppercase animate-pulse">âš  {error}</p>}
 
               <div className="mt-6 pt-6 border-t border-white/5">
                 <label className="flex items-start gap-3 cursor-pointer group">
@@ -331,7 +332,7 @@ export default function SignupPage() {
               className="w-full py-4 uppercase font-bold tracking-widest"
               onClick={handleVerifySeed}
             >
-              ✓ Confirm & Enter Civic Vault
+              âœ“ Confirm & Enter Civic Vault
             </AnimatedButton>
           </div>
         </div>
@@ -350,7 +351,7 @@ function TOSModal({ isOpen, onClose, onAccept }: { isOpen: boolean, onClose: () 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
       <AnimatedCard className="max-w-2xl w-full border-neon-cyan p-8 max-h-[80vh] overflow-y-auto relative">
-          <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition">✕</button>
+          <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition">âœ•</button>
           <h3 className="text-2xl font-black italic uppercase tracking-tighter text-neon-cyan mb-6">Terms of Service</h3>
           
           <div className="space-y-6 text-sm text-gray-300 leading-relaxed font-medium">

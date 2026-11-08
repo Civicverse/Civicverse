@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useEffect, useState } from 'react';
 import { civicWatchApi, Job } from '../services/civicwatch';
 import CivicIdentity from '../lib/civicIdentity';
@@ -215,7 +216,7 @@ const CivicWatchPage: React.FC = () => {
       
       if (res.status === 'verified') {
         const sharedMessage = res.sharedMediaId ? ' Photo shared to CivicWatch district billboards.' : '';
-        setAiAnalysis(`✓ Craig AI: ${res.aiReasoning || "Proof Verified. Impact recorded in Global Ledger."}${sharedMessage}`);
+        setAiAnalysis(`âœ“ Craig AI: ${res.aiReasoning || "Proof Verified. Impact recorded in Global Ledger."}${sharedMessage}`);
         
         setTimeout(() => {
           if (res.payoutDetails) {
@@ -237,7 +238,7 @@ const CivicWatchPage: React.FC = () => {
           fetchJobs();
         }, 2500);
       } else {
-        setAiAnalysis(`⚠ Craig AI Rejected: ${res.aiReasoning || "Inconsistent proof."}`);
+        setAiAnalysis(`âš  Craig AI Rejected: ${res.aiReasoning || "Inconsistent proof."}`);
         setTimeout(() => {
           setStatus('dispatching');
         }, 3000);
@@ -245,7 +246,7 @@ const CivicWatchPage: React.FC = () => {
 
     } catch (err) {
       setStatus('dispatching');
-      setAiAnalysis(`⚠ Node Error: ${err.response?.data?.error || err.message}`);
+      setAiAnalysis(`âš  Node Error: ${err.response?.data?.error || err.message}`);
     }
   };
 
@@ -296,7 +297,7 @@ const CivicWatchPage: React.FC = () => {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg shadow-orange-500/40 border border-orange-500/50 shrink-0">
-              <img src="/Civicverselogo.png" alt="Civicverse Logo" className="w-full h-full object-cover" />
+              <img src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} alt="Civicverse Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight italic">CivicWatch <span className="text-blue-500 text-xs font-mono ml-1">v1.3-SOVEREIGN</span></h1>
@@ -893,7 +894,7 @@ const CivicWatchPage: React.FC = () => {
              >
                 <div className="flex justify-between items-center mb-8">
                    <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Deploy Mission Contract</h2>
-                   <button onClick={() => setShowCreateJob(false)} className="text-gray-500 hover:text-white transition">✕</button>
+                   <button onClick={() => setShowCreateJob(false)} className="text-gray-500 hover:text-white transition">âœ•</button>
                 </div>
 
                 <form onSubmit={handleCreateJob} className="space-y-6">

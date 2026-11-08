@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { MapPin, Send, AlertCircle } from 'lucide-react';
@@ -33,17 +34,17 @@ export function MissionsPage() {
   };
 
   const categoryEmojis = {
-    civic: '⚔️',
-    environmental: '🌱',
-    social: '👥',
-    educational: '📚',
+    civic: 'âš”ï¸',
+    environmental: 'ðŸŒ±',
+    social: 'ðŸ‘¥',
+    educational: 'ðŸ“š',
   };
 
   return (
     <div className="min-h-screen bg-gradient-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center gap-3 mb-2">
-          <img src="/Civicverselogo.png" alt="Civicverse Logo" className="w-10 h-10 rounded-full object-cover shadow-[0_0_15px_rgba(255,107,0,0.5)] border border-orange-500/40" />
+          <img src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} alt="Civicverse Logo" className="w-10 h-10 rounded-full object-cover shadow-[0_0_15px_rgba(255,107,0,0.5)] border border-orange-500/40" />
           <h1 className="text-4xl font-bold text-white">CivicWatch Missions</h1>
         </div>
         <p className="text-dark-300 mb-12">Complete real-world civic missions and earn CIVIC rewards</p>
@@ -165,7 +166,7 @@ export function MissionsPage() {
                                   animate={{ opacity: 1, y: 0 }}
                                   className="mb-4 p-3 bg-green-500/10 border border-green-500/50 rounded-lg text-green-200 text-xs"
                                 >
-                                  ✓ Proof submitted successfully!
+                                  âœ“ Proof submitted successfully!
                                 </motion.div>
                               )}
                               {submitStatus === 'error' && (
@@ -204,7 +205,7 @@ export function MissionsPage() {
 
                           {m.status === 'completed' && (
                             <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-300 text-center font-semibold">
-                              ✓ Mission Complete!
+                              âœ“ Mission Complete!
                             </div>
                           )}
                         </>

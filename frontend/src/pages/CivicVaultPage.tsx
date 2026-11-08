@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
@@ -117,12 +118,12 @@ export default function CivicVaultPage() {
   ]
 
   const portals = [
-    { title: 'Gathering Grounds', desc: 'Main Hub', icon: '🌐', path: '/foyer', color: 'border-neon-cyan' },
-    { title: 'Wardrobe', desc: 'Avatar Customizer', icon: '👕', path: '/wardrobe', color: 'border-neon-cyan' },
-    { title: 'CivicWatch', desc: 'Missions', icon: '📋', path: '/civicwatch', color: 'border-neon-pink' },
-    { title: 'Governance', desc: 'Voting', icon: '🏛️', path: '/governance', color: 'border-neon-purple' },
-    { title: 'Community Treasury', desc: 'Monero Reserve', icon: '🏛️', path: '/treasury', color: 'border-neon-orange' },
-    { title: 'Mining Pool', desc: 'Compute Hash', icon: '⛏️', path: '/mining-pool', color: 'border-neon-orange' },
+    { title: 'Gathering Grounds', desc: 'Main Hub', icon: 'ðŸŒ', path: '/foyer', color: 'border-neon-cyan' },
+    { title: 'Wardrobe', desc: 'Avatar Customizer', icon: 'ðŸ‘•', path: '/wardrobe', color: 'border-neon-cyan' },
+    { title: 'CivicWatch', desc: 'Missions', icon: 'ðŸ“‹', path: '/civicwatch', color: 'border-neon-pink' },
+    { title: 'Governance', desc: 'Voting', icon: 'ðŸ›ï¸', path: '/governance', color: 'border-neon-purple' },
+    { title: 'Community Treasury', desc: 'Monero Reserve', icon: 'ðŸ›ï¸', path: '/treasury', color: 'border-neon-orange' },
+    { title: 'Mining Pool', desc: 'Compute Hash', icon: 'â›ï¸', path: '/mining-pool', color: 'border-neon-orange' },
   ]
 
   return (
@@ -148,7 +149,7 @@ export default function CivicVaultPage() {
         {isGuestMode && (
           <div className="mb-6 p-3.5 bg-gradient-to-r from-neon-cyan/20 via-purple-600/20 to-neon-pink/20 border border-neon-cyan/50 rounded-2xl flex flex-wrap items-center justify-between gap-3 backdrop-blur-md shadow-[0_0_25px_rgba(0,217,255,0.25)]">
             <div className="flex items-center gap-2">
-              <span className="text-xl">✨</span>
+              <span className="text-xl">âœ¨</span>
               <div>
                 <p className="text-xs font-black uppercase text-white tracking-wider">Preview Guest Session Active</p>
                 <p className="text-[10px] text-gray-300">Ready to save your sovereign avatar, password, and wallet foreal?</p>
@@ -167,7 +168,7 @@ export default function CivicVaultPage() {
         <div className="flex justify-center mb-8 animate-slide-up">
            <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-full px-6 py-3 flex items-center gap-5">
               <div className="flex items-center gap-2">
-                 <img src="/Civicverselogo.png" alt="CV" className="w-6 h-6 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.6)] border border-orange-500/50" />
+                 <img src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} alt="CV" className="w-6 h-6 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.6)] border border-orange-500/50" />
                  <span className="text-[11px] font-black text-white tracking-wider">CIVIC_VAULT</span>
               </div>
               <span className="text-gray-600">|</span>
@@ -331,12 +332,12 @@ export default function CivicVaultPage() {
 
              <div className="space-y-4">
                 <AnimatedButton variant="secondary" className="w-full py-5 justify-between" onClick={() => nav('/wardrobe')}>
-                   <span className="font-black uppercase text-xs">👕 WARDROBE_LAB</span>
+                   <span className="font-black uppercase text-xs">ðŸ‘• WARDROBE_LAB</span>
                    <ArrowUpRight className="w-4 h-4" />
                 </AnimatedButton>
                 <AnimatedButton variant="danger" className="w-full py-5 justify-between" onClick={() => { logout(); nav('/signin'); }}>
-                   <span className="font-black uppercase text-xs">🔒 LOCK_VAULT_SESSION</span>
-                   <span>✕</span>
+                   <span className="font-black uppercase text-xs">ðŸ”’ LOCK_VAULT_SESSION</span>
+                   <span>âœ•</span>
                 </AnimatedButton>
              </div>
           </div>
@@ -347,7 +348,7 @@ export default function CivicVaultPage() {
       {verifying && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
            <AnimatedCard className="max-w-md w-full border-neon-cyan p-8 text-center relative">
-              <button onClick={() => { setVerifying(false); setVerifStep(1); }} className="absolute top-4 right-4 text-gray-500 hover:text-white transition">✕</button>
+              <button onClick={() => { setVerifying(false); setVerifStep(1); }} className="absolute top-4 right-4 text-gray-500 hover:text-white transition">âœ•</button>
               
               {verifStep === 1 && (
                 <div className="animate-fade-in">

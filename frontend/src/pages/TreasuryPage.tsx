@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
@@ -62,10 +63,10 @@ export default function TreasuryPage() {
       const processMicrotransaction = useGameStore.getState().processMicrotransaction
       if (processMicrotransaction) {
         await processMicrotransaction(5, 'Community Treasury', 'Civic UBI Contribution')
-        setMicroTxMessage('✓ Contributed 5.0 CIVIC! 0.05 CIVIC routed to Sovereign UBI Pool.')
+        setMicroTxMessage('âœ“ Contributed 5.0 CIVIC! 0.05 CIVIC routed to Sovereign UBI Pool.')
         setTimeout(() => setMicroTxMessage(''), 5000)
       } else {
-        setMicroTxMessage('✓ Direct Contribution Recorded.')
+        setMicroTxMessage('âœ“ Direct Contribution Recorded.')
         setTimeout(() => setMicroTxMessage(''), 5000)
       }
     } catch (e: any) {
@@ -87,7 +88,7 @@ export default function TreasuryPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <img 
-                src="/Civicverselogo.png" 
+                src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} 
                 alt="CV" 
                 className="w-6 h-6 rounded-full object-cover shadow-[0_0_12px_rgba(255,107,0,0.6)] border border-orange-500/50" 
               />
@@ -137,7 +138,7 @@ export default function TreasuryPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(255,107,0,0.3)] shrink-0">
-                🏛️
+                ðŸ›ï¸
               </div>
               <div>
                 <h2 className="text-xl font-black uppercase tracking-tight text-white">Monero Reserve & Mining Accumulator</h2>
@@ -163,7 +164,7 @@ export default function TreasuryPage() {
                 onClick={handleMicroTx}
                 className="px-4 py-2 rounded-xl bg-neon-pink/20 hover:bg-neon-pink/30 border border-neon-pink/50 text-neon-pink text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(255,0,128,0.25)] flex items-center gap-1.5"
               >
-                <span>💸</span>
+                <span>ðŸ’¸</span>
                 <span>1% UBI Contribution</span>
               </button>
             </div>
@@ -217,7 +218,7 @@ export default function TreasuryPage() {
               <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Primary Allocation Target</p>
               <p className="text-lg font-black text-emerald-400 mt-1">Ground Zero Node 01</p>
               <p className="text-xs text-gray-300 mt-1 font-medium">Off-Grid Solar Mining & Shelters</p>
-              <p className="text-[10px] text-emerald-400/80 mt-2">● Active Milestone Phase</p>
+              <p className="text-[10px] text-emerald-400/80 mt-2">â— Active Milestone Phase</p>
             </div>
           </div>
 
@@ -256,7 +257,7 @@ export default function TreasuryPage() {
           {/* Monero GUI Wallet Sync Explanation */}
           <div className="p-5 rounded-2xl bg-purple-950/20 border border-purple-500/30 text-xs text-gray-300">
             <div className="flex items-start gap-3">
-              <span className="text-2xl shrink-0">ℹ️</span>
+              <span className="text-2xl shrink-0">â„¹ï¸</span>
               <div className="space-y-2">
                 <p className="font-bold text-neon-purple uppercase tracking-wider text-sm">
                   How Monero GUI Wallet Syncs With This Treasury
@@ -277,7 +278,7 @@ export default function TreasuryPage() {
                   <div className="bg-black/30 p-3.5 rounded-xl border border-white/5">
                     <p className="font-semibold text-white mb-1">3. Auditable View-Only Key</p>
                     <p className="text-[11px] text-gray-400 leading-relaxed">
-                      Because Monero keeps balances private, our community audits reserves using our wallet&apos;s read-only <span className="text-white font-semibold">Public View Key</span> (Settings → Keys in Monero GUI) without exposing the spend key.
+                      Because Monero keeps balances private, our community audits reserves using our wallet&apos;s read-only <span className="text-white font-semibold">Public View Key</span> (Settings â†’ Keys in Monero GUI) without exposing the spend key.
                     </p>
                   </div>
                 </div>
@@ -291,7 +292,7 @@ export default function TreasuryPage() {
           <div className="bg-white/5 border border-white/10 p-6 sm:p-8 rounded-3xl backdrop-blur-md flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🏗️</span>
+                <span className="text-2xl">ðŸ—ï¸</span>
                 <h3 className="text-white font-black uppercase tracking-tight text-xl">
                   Treasury Allocation Targets
                 </h3>
@@ -301,28 +302,28 @@ export default function TreasuryPage() {
               </p>
               <div className="space-y-3 mb-6">
                 <div className="flex items-start gap-3 bg-black/40 p-3 rounded-xl border border-white/5">
-                  <span className="text-neon-orange text-lg shrink-0">☀️</span>
+                  <span className="text-neon-orange text-lg shrink-0">â˜€ï¸</span>
                   <div>
                     <p className="text-xs font-bold text-white">Solar Mining Operations</p>
                     <p className="text-[11px] text-gray-400">Off-grid renewable arrays so future compute & hashing is 100% free.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 bg-black/40 p-3 rounded-xl border border-white/5">
-                  <span className="text-neon-cyan text-lg shrink-0">🏢</span>
+                  <span className="text-neon-cyan text-lg shrink-0">ðŸ¢</span>
                   <div>
                     <p className="text-xs font-bold text-white">Community Data Centers</p>
                     <p className="text-[11px] text-gray-400">Sovereign edge computing, local mesh nodes, and encrypted storage.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 bg-black/40 p-3 rounded-xl border border-white/5">
-                  <span className="text-emerald-400 text-lg shrink-0">🏡</span>
+                  <span className="text-emerald-400 text-lg shrink-0">ðŸ¡</span>
                   <div>
                     <p className="text-xs font-bold text-white">Modular Housing & Homeless Shelters</p>
                     <p className="text-[11px] text-gray-400">Direct physical construction and mutual aid for sovereign living.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 bg-black/40 p-3 rounded-xl border border-white/5">
-                  <span className="text-neon-pink text-lg shrink-0">🏜️</span>
+                  <span className="text-neon-pink text-lg shrink-0">ðŸœï¸</span>
                   <div>
                     <p className="text-xs font-bold text-white">Ground Zero Desert Settlements</p>
                     <p className="text-[11px] text-gray-400">Autonomous, self-sustaining solarpunk community settlements.</p>
@@ -345,7 +346,7 @@ export default function TreasuryPage() {
           <div className="bg-white/5 border border-white/10 p-6 sm:p-8 rounded-3xl backdrop-blur-md flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">⛏️</span>
+                <span className="text-2xl">â›ï¸</span>
                 <h3 className="text-neon-orange font-black uppercase tracking-tight text-xl">
                   Community Compute Inflow
                 </h3>
@@ -395,7 +396,7 @@ export default function TreasuryPage() {
           <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl">
             <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
               <div className="flex items-center gap-3">
-                <span className="text-xl">📊</span>
+                <span className="text-xl">ðŸ“Š</span>
                 <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-neon-orange">
                   Live Pool Ledger & Worker Telemetry
                 </h3>

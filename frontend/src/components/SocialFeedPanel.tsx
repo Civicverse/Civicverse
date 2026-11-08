@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Heart, MessageCircle, Repeat2, Share, Search, Home, Bell, Mail, User, Settings,
@@ -84,9 +85,9 @@ export default function SocialFeedPanel() {
         id: 1,
         author: 'SovereignCitizen',
         handle: '@sovereign',
-        avatar: '🏆',
+        avatar: 'ðŸ†',
         timestamp: '2m ago',
-        content: 'Just won a 32-player BR with 12 kills. The new double-jump vault mechanic is 🔥',
+        content: 'Just won a 32-player BR with 12 kills. The new double-jump vault mechanic is ðŸ”¥',
         likes: 2340,
         comments: 156,
         reposts: 420,
@@ -98,9 +99,9 @@ export default function SocialFeedPanel() {
         id: 2,
         author: 'NeonRegent',
         handle: '@neonregent',
-        avatar: '👑',
+        avatar: 'ðŸ‘‘',
         timestamp: '5m ago',
-        content: 'New holographic armor cosmetics dropping today. The neon cyan glow is INSANE. 🎮✨',
+        content: 'New holographic armor cosmetics dropping today. The neon cyan glow is INSANE. ðŸŽ®âœ¨',
         media: { type: 'image', url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect fill="%231a102f" width="400" height="300"/><text fill="%2300f0ff" font-family="sans-serif" font-size="18" font-weight="bold" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle">NEON HOLOGRAPHIC SUIT</text></svg>' },
         likes: 5600,
         comments: 892,
@@ -112,9 +113,9 @@ export default function SocialFeedPanel() {
         id: 3,
         author: 'CivicGamer',
         handle: '@civicgamer',
-        avatar: '⚔️',
+        avatar: 'âš”ï¸',
         timestamp: '8m ago',
-        content: 'LIVE NOW: 6-hour BR grind stream. 50+ viewer bounty active. Come challenge me! 🔴 LIVE',
+        content: 'LIVE NOW: 6-hour BR grind stream. 50+ viewer bounty active. Come challenge me! ðŸ”´ LIVE',
         likes: 892,
         comments: 445,
         reposts: 234,
@@ -125,9 +126,9 @@ export default function SocialFeedPanel() {
         id: 4,
         author: 'CivicWatch',
         handle: '@civicwatch',
-        avatar: '📹',
+        avatar: 'ðŸ“¹',
         timestamp: '12m ago',
-        content: 'Weekly BR tournament finals tomorrow at 8 PM UTC. Prize pool: 50,000 CIVIC. Register now! 🏅',
+        content: 'Weekly BR tournament finals tomorrow at 8 PM UTC. Prize pool: 50,000 CIVIC. Register now! ðŸ…',
         likes: 3200,
         comments: 567,
         reposts: 1890,
@@ -146,9 +147,9 @@ export default function SocialFeedPanel() {
     ];
 
     const sampleSuggested: SuggestedUser[] = [
-      { name: 'CivicDev', handle: '@civicdev', avatar: '👤', verified: true, followers: 12500, bio: 'Lead Developer' },
-      { name: 'GameMaster', handle: '@gamemaster', avatar: '👤', verified: false, followers: 8900, bio: 'Tournament Organizer' },
-      { name: 'StreamQueen', handle: '@streamqueen', avatar: '👤', verified: true, followers: 45600, bio: 'Top Streamer' },
+      { name: 'CivicDev', handle: '@civicdev', avatar: 'ðŸ‘¤', verified: true, followers: 12500, bio: 'Lead Developer' },
+      { name: 'GameMaster', handle: '@gamemaster', avatar: 'ðŸ‘¤', verified: false, followers: 8900, bio: 'Tournament Organizer' },
+      { name: 'StreamQueen', handle: '@streamqueen', avatar: 'ðŸ‘¤', verified: true, followers: 45600, bio: 'Top Streamer' },
     ];
 
     setPosts(samplePosts);
@@ -158,11 +159,11 @@ export default function SocialFeedPanel() {
 
   const initializeChat = () => {
     const sampleMessages: ChatMessage[] = [
-      { id: 1, user: 'System', avatar: '🤖', message: 'Welcome to CivicVerse Gaming Chat!', timestamp: '10:30 AM', type: 'system' },
-      { id: 2, user: 'ProGamer99', avatar: '🎮', message: 'Anyone up for a quick match?', timestamp: '10:31 AM' },
-      { id: 3, user: 'NeonNinja', avatar: '🥷', message: 'I\'m in! What game mode?', timestamp: '10:32 AM' },
-      { id: 4, user: 'CivicWatch', avatar: '📹', message: 'Tournament registration is now open! Check the sidebar.', timestamp: '10:33 AM', type: 'system' },
-      { id: 5, user: 'VaultHunter', avatar: '💎', message: 'Just unlocked the legendary skin! 🔥', timestamp: '10:34 AM' },
+      { id: 1, user: 'System', avatar: 'ðŸ¤–', message: 'Welcome to CivicVerse Gaming Chat!', timestamp: '10:30 AM', type: 'system' },
+      { id: 2, user: 'ProGamer99', avatar: 'ðŸŽ®', message: 'Anyone up for a quick match?', timestamp: '10:31 AM' },
+      { id: 3, user: 'NeonNinja', avatar: 'ðŸ¥·', message: 'I\'m in! What game mode?', timestamp: '10:32 AM' },
+      { id: 4, user: 'CivicWatch', avatar: 'ðŸ“¹', message: 'Tournament registration is now open! Check the sidebar.', timestamp: '10:33 AM', type: 'system' },
+      { id: 5, user: 'VaultHunter', avatar: 'ðŸ’Ž', message: 'Just unlocked the legendary skin! ðŸ”¥', timestamp: '10:34 AM' },
     ];
     setChatMessages(sampleMessages);
   };
@@ -193,7 +194,7 @@ export default function SocialFeedPanel() {
       const message: ChatMessage = {
         id: chatMessages.length + 1,
         user: 'You',
-        avatar: '👤',
+        avatar: 'ðŸ‘¤',
         message: newMessage,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -221,7 +222,7 @@ export default function SocialFeedPanel() {
             {/* Logo */}
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg shadow-orange-500/40 border border-orange-500/50 shrink-0">
-                <img src="/Civicverselogo.png" alt="Civicverse Logo" className="w-full h-full object-cover" />
+                <img src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} alt="Civicverse Logo" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                 CIVICVERSE SOCIAL
@@ -401,7 +402,7 @@ export default function SocialFeedPanel() {
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex gap-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                👤
+                ðŸ‘¤
               </div>
               <div className="flex-1">
                 <textarea
@@ -452,7 +453,7 @@ export default function SocialFeedPanel() {
                           </span>
                         )}
                         <span className="text-gray-500 text-sm">{post.handle}</span>
-                        <span className="text-gray-500 text-sm">·</span>
+                        <span className="text-gray-500 text-sm">Â·</span>
                         <span className="text-gray-500 text-sm">{post.timestamp}</span>
                       </div>
                     </div>

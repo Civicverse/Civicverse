@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { GodotFoyer, CivicMediaPlayer } from '../components';
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import { 
   Shield, 
   Search, 
@@ -73,9 +74,10 @@ export default function FoyerPage() {
             title="Return to Civic Vault"
           >
             <img 
-              src="/Civicverselogo.png" 
+              src={CIVICVERSE_LOGO} 
               alt="Civicverse Logo" 
               className="w-8 h-8 rounded-full object-cover shadow-[0_0_15px_rgba(255,107,0,0.6)] border border-orange-500/50 group-hover:scale-105 transition-transform" 
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = './Civicverselogo.png'; }}
             />
             <span className="font-black text-sm tracking-widest text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">CIVICVERSE</span>
           </button>
@@ -185,7 +187,7 @@ export default function FoyerPage() {
             title="Return to Civic Vault (Access Govern, Missions, CivicWatch)"
           >
             <img
-              src={user?.avatar || '/images/streamer_metamike.jpg'}
+              src={user?.avatar || './images/streamer_metamike.jpg'}
               alt="Avatar"
               className="w-6 h-6 rounded-full object-cover border border-cyan-400"
             />
@@ -221,7 +223,7 @@ export default function FoyerPage() {
             className="w-6 h-6 rounded-full overflow-hidden shadow-[0_0_10px_rgba(255,107,0,0.6)] border border-orange-500/50 hover:scale-105 transition-transform outline-none" 
             title="Return to Civic Vault"
           >
-            <img src="/Civicverselogo.png" alt="CV" className="w-full h-full object-cover" />
+            <img src={CIVICVERSE_LOGO} alt="CV" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = './Civicverselogo.png'; }} />
           </button>
           <span className="text-[11px] font-mono font-bold text-gray-300">CIVICVERSE OS v2.4</span>
           <span className="text-gray-500">|</span>

@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatedButton, AnimatedCard, NeonText, GradientOrb } from '../components'
@@ -19,7 +20,7 @@ export default function WelcomePage() {
         {/* Header */}
         <div className="text-center mb-12 animate-slide-up flex flex-col items-center">
           <img 
-            src="/Civicverselogo.png" 
+            src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} 
             alt="Civicverse Logo" 
             className="w-24 h-24 rounded-full object-cover shadow-[0_0_30px_rgba(255,107,0,0.6)] border border-orange-500/50 mb-4 animate-pulse" 
           />
@@ -30,7 +31,7 @@ export default function WelcomePage() {
             Sovereign Identity Protocol
           </p>
           <p className="text-sm text-gray-400">
-            Non-Custodial • Human-First • Decentralized
+            Non-Custodial â€¢ Human-First â€¢ Decentralized
           </p>
         </div>
 
@@ -45,15 +46,15 @@ export default function WelcomePage() {
           
           <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-neon-cyan/20">
             <div className="text-center">
-              <div className="text-2xl mb-1">🛡️</div>
+              <div className="text-2xl mb-1">ðŸ›¡ï¸</div>
               <p className="text-[10px] uppercase tracking-tighter text-gray-400 font-bold">Encrypted</p>
             </div>
             <div className="text-center">
-              <div className="text-2xl mb-1">🧬</div>
+              <div className="text-2xl mb-1">ðŸ§¬</div>
               <p className="text-[10px] uppercase tracking-tighter text-gray-400 font-bold">Portable</p>
             </div>
             <div className="text-center">
-              <div className="text-2xl mb-1">⚡</div>
+              <div className="text-2xl mb-1">âš¡</div>
               <p className="text-[10px] uppercase tracking-tighter text-gray-400 font-bold">Sovereign</p>
             </div>
           </div>
@@ -68,7 +69,7 @@ export default function WelcomePage() {
             onClick={() => nav('/signup')}
           >
             <div className="flex items-center gap-2">
-               <span className="text-2xl group-hover:scale-110 transition-transform">✨</span> 
+               <span className="text-2xl group-hover:scale-110 transition-transform">âœ¨</span> 
                <span className="text-xl font-bold uppercase tracking-wider">Create New CivicID</span>
             </div>
             <span className="text-[10px] text-white/60 font-mono tracking-widest">GENERATE_LOCAL_VAULT_ENCRYPTED</span>
@@ -78,7 +79,7 @@ export default function WelcomePage() {
             onClick={() => nav('/vault')}
             className="w-full py-3.5 bg-gradient-to-r from-neon-cyan/20 to-purple-600/20 hover:from-neon-cyan/30 hover:to-purple-600/30 border border-neon-cyan/40 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase text-neon-cyan tracking-wider shadow-[0_0_20px_rgba(0,217,255,0.2)] transition-all"
           >
-            <span>🚀</span>
+            <span>ðŸš€</span>
             <span>Instant Guest Pass (Enter Vault & Gathering Grounds)</span>
           </button>
           
@@ -89,7 +90,7 @@ export default function WelcomePage() {
                 className="w-full flex items-center justify-center gap-2 py-4"
                 onClick={() => nav('/signup', { state: { mode: 'restore' } })}
               >
-                <span className="text-lg">🔑</span> 
+                <span className="text-lg">ðŸ”‘</span> 
                 <span className="text-sm font-bold uppercase">Restore</span>
               </AnimatedButton>
 
@@ -99,7 +100,7 @@ export default function WelcomePage() {
                 className="w-full flex items-center justify-center gap-2 py-4"
                 onClick={() => nav('/signin')}
               >
-                <span className="text-lg">🔓</span> 
+                <span className="text-lg">ðŸ”“</span> 
                 <span className="text-sm font-bold uppercase">Unlock</span>
               </AnimatedButton>
           </div>
@@ -107,8 +108,8 @@ export default function WelcomePage() {
 
         {/* Footer info */}
         <div className="mt-12 text-center text-[10px] text-gray-500 space-y-2 uppercase tracking-[0.2em] opacity-60">
-          <p>Local-Only Storage • BIP-39 Standard • Ed25519</p>
-          <p>© 2026 Civicverse Protocol Foundation</p>
+          <p>Local-Only Storage â€¢ BIP-39 Standard â€¢ Ed25519</p>
+          <p>Â© 2026 Civicverse Protocol Foundation</p>
         </div>
       </div>
     </div>

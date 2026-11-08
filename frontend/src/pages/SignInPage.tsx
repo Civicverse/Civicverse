@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
@@ -99,12 +100,12 @@ export default function SignInPage() {
         {/* Header */}
         <div className="text-center mb-6 flex flex-col items-center">
           <img 
-            src="/Civicverselogo.png" 
+            src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} 
             alt="Civicverse Logo" 
             className="w-16 h-16 rounded-full object-cover shadow-[0_0_20px_rgba(255,107,0,0.6)] border border-orange-500/50 mb-3" 
           />
           <NeonText size="4xl" gradient={true} className="block mb-2 uppercase tracking-tighter">
-            🔓 Unlock Vault
+            ðŸ”“ Unlock Vault
           </NeonText>
           <p className="text-neon-cyan text-[10px] uppercase tracking-[0.3em] font-bold opacity-80">
             Secure Local Session & Metaverse Access
@@ -143,7 +144,7 @@ export default function SignInPage() {
         <AnimatedCard className="border-t-4 border-neon-cyan">
           {error && (
             <div className="mb-4 p-3 bg-neon-pink/10 border border-neon-pink/40 rounded text-neon-pink text-[10px] font-bold uppercase tracking-widest text-center animate-pulse">
-              ⚠ {error}
+              âš  {error}
             </div>
           )}
 
@@ -175,7 +176,7 @@ export default function SignInPage() {
               <AnimatedInput
                 label="Vault Password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 disabled={loading}
@@ -199,7 +200,7 @@ export default function SignInPage() {
                 onClick={handleUnlock}
                 disabled={loading}
               >
-                {loading ? <LoadingSpinner size="sm" /> : '🔓 Decrypt & Enter Vault'}
+                {loading ? <LoadingSpinner size="sm" /> : 'ðŸ”“ Decrypt & Enter Vault'}
               </AnimatedButton>
             </div>
           )}
@@ -235,7 +236,7 @@ export default function SignInPage() {
                 onClick={handleInstantGuest}
                 disabled={loading}
               >
-                {loading ? <LoadingSpinner size="sm" /> : '⚡ Enter Foyer As Guest'}
+                {loading ? <LoadingSpinner size="sm" /> : 'âš¡ Enter Foyer As Guest'}
               </AnimatedButton>
             </div>
           )}
@@ -269,7 +270,7 @@ export default function SignInPage() {
               <AnimatedInput
                 label="New Vault Password (8+ chars)"
                 type="password"
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 disabled={loading}
@@ -282,7 +283,7 @@ export default function SignInPage() {
                 onClick={handleRestore}
                 disabled={loading}
               >
-                {loading ? <LoadingSpinner size="sm" /> : '🔑 Decrypt from Seed'}
+                {loading ? <LoadingSpinner size="sm" /> : 'ðŸ”‘ Decrypt from Seed'}
               </AnimatedButton>
             </div>
           )}
@@ -295,10 +296,10 @@ export default function SignInPage() {
             >
               <span className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-cyan-400" />
-                <span>🌐 Enter Foyer Hub Directly</span>
+                <span>ðŸŒ Enter Foyer Hub Directly</span>
               </span>
               <span className="text-[10px] bg-cyan-950 border border-cyan-500/40 text-cyan-300 px-1.5 py-0.5 rounded uppercase font-mono">
-                NO LOGIN ➔
+                NO LOGIN âž”
               </span>
             </button>
 
@@ -313,7 +314,7 @@ export default function SignInPage() {
                 onClick={() => nav('/vault')}
                 className="hover:text-cyan-400 transition-colors uppercase font-bold"
               >
-                Civic Vault ➔
+                Civic Vault âž”
               </button>
             </div>
           </div>

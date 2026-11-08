@@ -1,3 +1,4 @@
+import { CIVICVERSE_LOGO } from '../assets/logo';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThumbsUp, ThumbsDown, Clock, Plus, X, Shield, Landmark, Settings, Zap, CheckCircle } from 'lucide-react';
@@ -134,7 +135,7 @@ export function GovernancePage() {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-2">
-               <img src="/Civicverselogo.png" alt="CV" className="w-6 h-6 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.5)] border border-orange-500/40" />
+               <img src={CIVICVERSE_LOGO} onError={(e) => { (e.currentTarget as HTMLImageElement).src = "./Civicverselogo.png"; }} alt="CV" className="w-6 h-6 rounded-full object-cover shadow-[0_0_10px_rgba(255,107,0,0.5)] border border-orange-500/40" />
                <span className="text-xs font-bold text-orange-400 uppercase tracking-widest">Decentralized Autonomous Organization</span>
             </div>
             <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase">Governance</h1>

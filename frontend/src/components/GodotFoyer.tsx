@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useMultiplayerStore } from '../services/multiplayer';
 import { createCharacterMesh, createPlayerNametag } from '../lib/characterFactory';
+import { CIVICVERSE_LOGO } from '../assets/logo';
 
 interface GodotFoyerProps {
   onExit?: () => void;
@@ -1251,7 +1252,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           texture.needsUpdate = true;
         };
         logo.onerror = () => console.error('[GodotFoyer] Could not load the Civicverse logo for the tower billboard.');
-        logo.src = '/Civicverselogo.png';
+        logo.src = CIVICVERSE_LOGO;
         texture.needsUpdate = true;
         return;
       }
@@ -2790,7 +2791,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           {/* Center Official Civicverse Logo Emblem */}
           <div className="relative mx-2 flex flex-col items-center">
             <div className="w-11 h-11 rounded-full overflow-hidden shadow-[0_0_15px_rgba(255,107,0,0.6)] border border-orange-500/50 hover:scale-105 transition-transform">
-              <img src="/Civicverselogo.png" alt="CV" className="w-full h-full object-cover" />
+              <img src={CIVICVERSE_LOGO} alt="CV" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = './Civicverselogo.png'; }} />
             </div>
             <div className="mt-1 text-[10px] font-extrabold text-orange-400 font-mono tracking-tighter">LVL 42</div>
           </div>
