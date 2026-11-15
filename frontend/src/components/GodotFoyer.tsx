@@ -8,7 +8,6 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { 
   Shield, 
   ChevronDown, 
@@ -16,7 +15,6 @@ import {
   MapPin, 
   Zap, 
   MessageSquare,
-  Camera,
   Crosshair,
   Volume2,
   Send,
@@ -25,21 +23,15 @@ import {
 } from 'lucide-react';
 import { useMultiplayerStore } from '../services/multiplayer';
 import { createCharacterMesh, createPlayerNametag } from '../lib/characterFactory';
-import { CIVICVERSE_LOGO } from '../assets/logo';
+import {
+  buildDetailedCity,
+  updateCityAnimation,
+  updateCityBillboardStories,
+  type BillboardStory
+} from './CivicCityModel';
 
 interface GodotFoyerProps {
   onExit?: () => void;
-}
-
-interface BillboardStory {
-  id: string;
-  title: string;
-  author: string;
-  category: string;
-  imageUrl?: string;
-  sourceUrl: string;
-  profileUrl?: string;
-  authorId?: string;
 }
 
 interface ChatBubble {
@@ -51,17 +43,19 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const { user } = useGameStore();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const composerRef = useRef<any>(null);
   const smaaRef = useRef<any>(null);
   
   // React HUD states
   const [cameraMode, setCameraMode] = useState<'3RD' | '1ST'>('3RD');
-  const [activeSlot, setActiveSlot] = useState(4);
-  const [ammo, setAmmo] = useState({ current: 30, max: 120 });
+  const [sceneErrorMessage, setSceneErrorMessage] = useState('');
   const [isPointerLocked, setIsPointerLocked] = useState(false);
   const [aaMode, setAaMode] = useState<'off' | 'smaa'>('smaa');
-  const [pixelCap, setPixelCap] = useState<number>(3);
+  const [pixelCap, setPixelCap] = useState<number>(1.25);
+  const pixelCapRef = useRef(pixelCap);
+  const renderScaleRef = useRef(1);
 
   // Multiplayer state (20 per Lobby Instance)
   const chatHistory = useMultiplayerStore(state => state.chatHistory);
@@ -130,13 +124,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     `${player.username} ${player.civicId || ''}`.toLowerCase().includes(playerSearch.trim().toLowerCase())
   );
 
-  const toggleCameraMode = () => {
-    const nextMode = cameraModeRef.current === '3RD' ? '1ST' : '3RD';
-    cameraModeRef.current = nextMode;
-    console.debug('[GodotFoyer] toggleCameraMode ->', nextMode)
-    setCameraMode(nextMode);
-  };
-
   const applyAAMode = (mode: 'off' | 'smaa') => {
     setAaMode(mode);
     try {
@@ -145,9 +132,11 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   };
 
   const applyPixelCap = (cap: number) => {
+    pixelCapRef.current = cap;
     setPixelCap(cap);
     try {
       const pr = Math.min(window.devicePixelRatio, cap);
+      renderScaleRef.current = pr;
       if (rendererRef.current) {
         rendererRef.current.setPixelRatio(pr);
         rendererRef.current.setSize(containerRef.current!.clientWidth, containerRef.current!.clientHeight);
@@ -171,12 +160,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     let billboardRotationTimer: number | undefined
 
     const showFallback = (msg: string) => {
-      if (!containerRef.current) return
-      while (containerRef.current.firstChild) containerRef.current.removeChild(containerRef.current.firstChild)
-      const fallback = document.createElement('div')
-      fallback.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0b0220,#000);color:#fff;'
-      fallback.innerText = msg
-      containerRef.current.appendChild(fallback)
+      setSceneErrorMessage(msg);
     }
 
     try {
@@ -186,116 +170,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // ========================================================
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x11182f);
-    scene.fog = new THREE.FogExp2(0x3b3250, 0.0009);
-
-    // -----------------------------
-    // Procedural PBR Texture Helpers
-    // -----------------------------
-    const makeCanvas = (w: number, h: number) => {
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      return c;
-    };
-
-    const canvasToTexture = (c: HTMLCanvasElement) => {
-      const t = new THREE.CanvasTexture(c);
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      t.repeat.set(4, 4);
-      t.needsUpdate = true;
-      return t;
-    };
-
-    const noise = (w: number, h: number, intensity = 0.12) => {
-      const c = makeCanvas(w, h);
-      const ctx = c.getContext('2d')!;
-      const img = ctx.createImageData(w, h);
-      for (let i = 0; i < w * h; i++) {
-        const v = Math.floor((Math.random() - 0.5) * 255 * intensity + 128);
-        img.data[i * 4 + 0] = v;
-        img.data[i * 4 + 1] = v;
-        img.data[i * 4 + 2] = v;
-        img.data[i * 4 + 3] = 255;
-      }
-      ctx.putImageData(img, 0, 0);
-      return c;
-    };
-
-    // Create a simple embossed normal map from a grayscale heightmap canvas
-    const normalFromHeight = (heightCanvas: HTMLCanvasElement) => {
-      const w = heightCanvas.width, h = heightCanvas.height;
-      const c = makeCanvas(w, h);
-      const ctxH = heightCanvas.getContext('2d')!;
-      const src = ctxH.getImageData(0, 0, w, h).data;
-      const ctx = c.getContext('2d')!;
-      const img = ctx.createImageData(w, h);
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const i = (y * w + x) * 4;
-          const l = src[i];
-          const lR = src[i + 4] || l;
-          const lD = src[i + w * 4] || l;
-          const dx = (lR - l) / 255;
-          const dy = (lD - l) / 255;
-          const nx = Math.floor((dx * 0.5 + 0.5) * 255);
-          const ny = Math.floor((dy * 0.5 + 0.5) * 255);
-          const nz = Math.floor(255 * 0.9);
-          img.data[i + 0] = nx;
-          img.data[i + 1] = ny;
-          img.data[i + 2] = nz;
-          img.data[i + 3] = 255;
-        }
-      }
-      ctx.putImageData(img, 0, 0);
-      return c;
-    };
-
-    const generatePBR = (name: string, baseColor = '#181c2e') => {
-      const size = 512;
-      // Albedo: base color with subtle noise and vignette
-      const alc = makeCanvas(size, size);
-      const actx = alc.getContext('2d')!;
-      actx.fillStyle = baseColor;
-      actx.fillRect(0, 0, size, size);
-      const n = noise(size, size, 0.08);
-      actx.globalAlpha = 0.35;
-      actx.drawImage(n, 0, 0, size, size);
-
-      // Roughness: inverted noise map (lighter = rougher)
-      const rough = noise(size, size, 0.6);
-
-      // Height -> normal
-      const norm = normalFromHeight(n);
-
-      return {
-        albedo: canvasToTexture(alc),
-        normal: canvasToTexture(norm),
-        roughness: canvasToTexture(rough),
-        metalness: 0.2
-      };
-    };
-
-    const generateStainlessSteelPBR = () => {
-      const size = 512;
-      const alc = makeCanvas(size, size);
-      const actx = alc.getContext('2d')!;
-      actx.fillStyle = '#2b3342';
-      actx.fillRect(0, 0, size, size);
-      for (let y = 0; y < size; y++) {
-        const shade = Math.floor(190 + Math.random() * 65);
-        const a = 0.04 + Math.random() * 0.12;
-        actx.fillStyle = `rgba(${shade}, ${shade}, ${shade + 12}, ${a})`;
-        actx.fillRect(0, y, size, 1);
-      }
-      const norm = normalFromHeight(alc);
-      const rough = noise(size, size, 0.35);
-      return {
-        albedo: canvasToTexture(alc),
-        normal: canvasToTexture(norm),
-        roughness: canvasToTexture(rough),
-        metalness: 0.92
-      };
-    };
+    scene.background = new THREE.Color(0x0b1024);
+    scene.fog = new THREE.FogExp2(0x252c43, 0.00065);
 
     const camera = new THREE.PerspectiveCamera(
       70, 
@@ -305,24 +181,24 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     );
 
     // Renderer setup with high tone mapping exposure for bright visuals
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const canvasElement = canvasRef.current;
+    if (!canvasElement) throw new Error('Foyer canvas was not mounted.');
+    canvasElement.id = 'cv-3d-engine-canvas';
+    const renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: false, powerPreference: 'high-performance' });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     // Set pixel ratio high enough for crisp visuals but capped for performance
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelCap));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     // Reduce exposure to avoid HDR clipping and shimmering
-    renderer.toneMappingExposure = 0.9;
+    renderer.toneMappingExposure = 1.35;
     // Use physically correct light intensity scaling to avoid extreme per-light values
     renderer.physicallyCorrectLights = true;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     rendererRef.current = renderer;
-    while (containerRef.current.firstChild) {
-      containerRef.current.removeChild(containerRef.current.firstChild);
-    }
-    containerRef.current.appendChild(renderer.domElement);
+    setSceneErrorMessage('');
 
     // Post-processing: composer + bloom + FXAA
     const composer = new EffectComposer(renderer);
@@ -377,1166 +253,139 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // initialize AA and pixel ratio according to state
     try {
       const pr = Math.min(window.devicePixelRatio, pixelCap);
+      renderScaleRef.current = pr;
       renderer.setPixelRatio(pr);
       composer.setPixelRatio(pr);
       smaaPass.setSize(containerRef.current.clientWidth * pr, containerRef.current.clientHeight * pr);
       smaaPass.enabled = aaMode === 'smaa';
     } catch (e) {}
 
-    // Atmospheric scattering is evaluated from view direction; no panorama is wrapped around the world.
-    // Stars and nebulae are world-space particles, not a panorama or enclosing dome.
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 1800;
-    const starPositions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i += 3) {
-      const azimuth = Math.random() * Math.PI * 2;
-      const elevation = 0.08 + Math.random() * 1.48;
-      const radius = 42000 + Math.random() * 5000;
-      starPositions[i] = Math.sin(azimuth) * Math.cos(elevation) * radius;
-      starPositions[i + 1] = Math.sin(elevation) * radius;
-      starPositions[i + 2] = Math.cos(azimuth) * Math.cos(elevation) * radius;
-    }
-    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starMat = new THREE.ShaderMaterial({
-      uniforms: { time: { value: 0 } },
-      vertexShader: `
-        uniform float time;
-        varying float vTwinkle;
-        void main() {
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_Position = projectionMatrix * mvPosition;
-          gl_PointSize = clamp(360.0 * (300.0 / max(1.0, -mvPosition.z)), 1.0, 3.2);
-          vTwinkle = 0.68 + 0.32 * sin(time * 1.5 + position.x * 0.007 + position.z * 0.004);
-        }
-      `,
-      fragmentShader: `
-        varying float vTwinkle;
-        void main() {
-          vec2 centered = gl_PointCoord - vec2(0.5);
-          float radius = dot(centered, centered);
-          if (radius > 0.25) discard;
-          float glow = smoothstep(0.25, 0.0, radius);
-          gl_FragColor = vec4(vec3(0.72, 0.82, 1.0), glow * vTwinkle);
-        }
-      `,
-      transparent: true,
-      depthWrite: false,
-      fog: false
-    });
-    const starField = new THREE.Points(starGeo, starMat);
-    scene.add(starField);
-
-    const nebulaCount = 240;
-    const nebulaPositions = new Float32Array(nebulaCount * 3);
-    const nebulaSizes = new Float32Array(nebulaCount);
-    const nebulaColors = new Float32Array(nebulaCount * 3);
-    const nebulaPalette = [0x7250e8, 0x3e9ee8, 0xc34da8, 0x8262d8].map(color => new THREE.Color(color));
-    for (let index = 0; index < nebulaCount; index += 1) {
-      const offset = index * 3;
-      const azimuth = Math.floor(index / (nebulaCount / 4)) * Math.PI / 2 + (Math.random() - 0.5) * 0.65;
-      const distance = 26000 + Math.random() * 9000;
-      const elevation = 0.18 + Math.random() * 0.42;
-      const spread = 1800 + Math.random() * 5000;
-      nebulaPositions[offset] = Math.sin(azimuth) * Math.cos(elevation) * distance + (Math.random() - 0.5) * spread;
-      nebulaPositions[offset + 1] = Math.sin(elevation) * distance + (Math.random() - 0.5) * spread;
-      nebulaPositions[offset + 2] = Math.cos(azimuth) * Math.cos(elevation) * distance + (Math.random() - 0.5) * spread;
-      nebulaSizes[index] = 5500 + Math.random() * 9000;
-      const color = nebulaPalette[index % nebulaPalette.length];
-      nebulaColors[offset] = color.r;
-      nebulaColors[offset + 1] = color.g;
-      nebulaColors[offset + 2] = color.b;
-    }
-    const nebulaGeometry = new THREE.BufferGeometry();
-    nebulaGeometry.setAttribute('position', new THREE.BufferAttribute(nebulaPositions, 3));
-    nebulaGeometry.setAttribute('size', new THREE.BufferAttribute(nebulaSizes, 1));
-    nebulaGeometry.setAttribute('nebulaColor', new THREE.BufferAttribute(nebulaColors, 3));
-    const nebulaMaterial = new THREE.ShaderMaterial({
-      uniforms: { time: { value: 0 } },
-      vertexShader: `
-        attribute float size;
-        attribute vec3 nebulaColor;
-        uniform float time;
-        varying vec3 vNebulaColor;
-        void main() {
-          vec3 drift = position;
-          drift.x += sin(time * 0.012 + position.z * 0.0002) * 180.0;
-          drift.z += cos(time * 0.01 + position.x * 0.0002) * 140.0;
-          vec4 mvPosition = modelViewMatrix * vec4(drift, 1.0);
-          gl_Position = projectionMatrix * mvPosition;
-          gl_PointSize = clamp(size * (300.0 / max(1.0, -mvPosition.z)), 1.0, 220.0);
-          vNebulaColor = nebulaColor;
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vNebulaColor;
-        void main() {
-          vec2 centered = gl_PointCoord - vec2(0.5);
-          float radius = dot(centered, centered) * 4.0;
-          float haze = exp(-radius * 3.2);
-          gl_FragColor = vec4(vNebulaColor * 2.2, haze * 0.16);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      fog: false
-    });
-    const nebula = new THREE.Points(nebulaGeometry, nebulaMaterial);
-    nebula.frustumCulled = false;
-    scene.add(nebula);
-
-    const rainCount = 1800;
-    const rainPositions = new Float32Array(rainCount * 6);
-    for (let index = 0; index < rainCount; index += 1) {
-      const offset = index * 6;
-      const x = (Math.random() - 0.5) * 120;
-      const y = Math.random() * 55 + 5;
-      const z = (Math.random() - 0.5) * 120;
-      rainPositions.set([x, y, z, x + 0.2, y - 1.8, z + 0.08], offset);
-    }
-    const rainGeometry = new THREE.BufferGeometry();
-    rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
-    rainGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 30, 0), 100);
-    const rain = new THREE.LineSegments(
-      rainGeometry,
-      new THREE.LineBasicMaterial({
-        color: 0xa8c6f4,
-        transparent: true,
-        opacity: 0.2,
-        depthWrite: false
-      })
-    );
-    scene.add(rain);
-
-    // Soft moonlight and a camera-facing fill keep the nighttime architecture readable.
-    const moonLight = new THREE.DirectionalLight(0xdce6f4, 1.3);
+    const moonLight = new THREE.DirectionalLight(0xdce6f4, 3.0);
     moonLight.position.set(-120, 240, 180);
     moonLight.castShadow = true;
     // Reduce shadow map size to reduce aliasing artifacts and improve stability
-    moonLight.shadow.mapSize.width = 1024;
-    moonLight.shadow.mapSize.height = 1024;
+    moonLight.shadow.mapSize.width = 2048;
+    moonLight.shadow.mapSize.height = 2048;
     // Small bias to reduce shadow acne and shimmering when moving
-    moonLight.shadow.bias = -0.0005;
+    moonLight.shadow.bias = -0.00015;
+    moonLight.shadow.normalBias = 0.04;
+    moonLight.shadow.camera.left = -230;
+    moonLight.shadow.camera.right = 230;
+    moonLight.shadow.camera.top = 230;
+    moonLight.shadow.camera.bottom = -230;
+    moonLight.shadow.camera.near = 0.5;
+    moonLight.shadow.camera.far = 900;
+    moonLight.shadow.camera.updateProjectionMatrix();
     scene.add(moonLight);
     const lightning = new THREE.DirectionalLight(0xa9c8ff, 0);
     lightning.position.set(-180, 260, 100);
     scene.add(lightning);
 
-    // Helper to try loading PBR textures from /textures/{name}_*.jpg in public
-    const cyanAmbient = new THREE.DirectionalLight(0xffdfb8, 0.78);
-    cyanAmbient.position.set(400, 300, 400);
+    const cyanAmbient = new THREE.DirectionalLight(0x8dbaff, 1.15);
+    cyanAmbient.position.set(180, 110, -120);
     scene.add(cyanAmbient);
-    scene.add(new THREE.HemisphereLight(0xc9d2fa, 0x39324a, 1.35));
-
-    // ========================================================
-    // ROARING ANIMATED OCEAN (ISLAND CITY ENVIRONMENT)
-    // ========================================================
-
-    // Ocean (static to avoid expensive vertex shader deformation causing shimmering)
-    const oceanGeo = new THREE.PlaneGeometry(3000, 3000, 32, 32);
-    const oceanTex = generatePBR('ocean', '#0ea5a6');
-    const oceanMat = new THREE.MeshStandardMaterial({ map: oceanTex.albedo, normalMap: oceanTex.normal, roughnessMap: oceanTex.roughness, metalness: 0.12, transparent: true, opacity: 0.92 });
-    const ocean = new THREE.Mesh(oceanGeo, oceanMat);
-    ocean.rotation.x = -Math.PI / 2;
-    ocean.position.y = -6;
-    ocean.receiveShadow = true;
-    oceanMat.normalScale = new THREE.Vector2(0.35, 0.35);
-    ocean.renderOrder = 0;
-    ocean.visible = false;
-    scene.add(ocean);
-
-    // Ocean vertex deformation disabled (was causing shimmering/z-fighting).
-    // ========================================================
-    // CITY ISLAND & HIGH-SPECULAR WET PLAZA GROUND
-    // ========================================================
-
-    const islandGeo = new THREE.CylinderGeometry(180, 220, 4, 32);
-    const islandMat = new THREE.MeshStandardMaterial({ color: 0x263e2d, roughness: 1 });
-    const islandBase = new THREE.Mesh(islandGeo, islandMat);
-    islandBase.position.y = -2;
-    islandMat.normalScale = new THREE.Vector2(0.6, 0.6);
-    scene.add(islandBase);
-
-    // ========================================================
-    // Wet urban pavement foundation
-    // ========================================================
-    const voidGroundGeo = new THREE.PlaneGeometry(4200, 4200);
-    const voidGroundMat = new THREE.MeshStandardMaterial({ color: 0x27452d, roughness: 1 });
-    const voidGroundMesh = new THREE.Mesh(voidGroundGeo, voidGroundMat);
-    voidGroundMesh.rotation.x = -Math.PI / 2;
-    voidGroundMesh.position.y = -6.8;
-    voidGroundMesh.receiveShadow = true;
-    scene.add(voidGroundMesh);
-
-    const districtGround = new THREE.Mesh(
-      new THREE.PlaneGeometry(280, 280),
-      new THREE.MeshStandardMaterial({ color: 0x477d4c, emissive: 0x153718, emissiveIntensity: 0.5, roughness: 1 })
-    );
-    districtGround.rotation.x = -Math.PI / 2;
-    districtGround.position.y = -0.02;
-    districtGround.receiveShadow = true;
-    scene.add(districtGround);
-
-    const asphaltPbr = generatePBR('night city asphalt', '#282c32');
-    asphaltPbr.albedo.repeat.set(2, 8);
-    asphaltPbr.normal.repeat.set(2, 8);
-    asphaltPbr.roughness.repeat.set(2, 8);
-    const roadMaterial = new THREE.MeshStandardMaterial({
-      map: asphaltPbr.albedo,
-      normalMap: asphaltPbr.normal,
-      roughnessMap: asphaltPbr.roughness,
-      color: 0x666d75,
-      roughness: 0.88,
-      metalness: 0.02
-    });
-    const sidewalkMaterial = new THREE.MeshStandardMaterial({ color: 0x666d72, roughness: 0.92 });
-    const curbMaterial = new THREE.MeshStandardMaterial({ color: 0xadb2ad, roughness: 0.8 });
-    const roadPaintMaterial = new THREE.MeshStandardMaterial({
-      color: 0xe7d59a,
-      emissive: 0x4a3210,
-      emissiveIntensity: 0.14,
-      roughness: 0.72
-    });
-    const streetSegments: Array<[number, number]> = [[-113, 54], [90, 100]];
-    for (const [centerZ, length] of streetSegments) {
-      const road = new THREE.Mesh(new THREE.PlaneGeometry(27, length), roadMaterial);
-      road.rotation.x = -Math.PI / 2;
-      road.position.set(0, 0.01, centerZ);
-      road.receiveShadow = true;
-      scene.add(road);
-
-      for (const side of [-1, 1]) {
-        const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(4.5, length), sidewalkMaterial);
-        sidewalk.rotation.x = -Math.PI / 2;
-        sidewalk.position.set(side * 16, 0.025, centerZ);
-        sidewalk.receiveShadow = true;
-        scene.add(sidewalk);
-        const curb = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.3, length), curbMaterial);
-        curb.position.set(side * 13.72, 0.14, centerZ);
-        curb.receiveShadow = true;
-        scene.add(curb);
-        const laneEdge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.025, length - 2), roadPaintMaterial);
-        laneEdge.position.set(side * 11.1, 0.035, centerZ);
-        scene.add(laneEdge);
-      }
-
-      for (let z = centerZ - length / 2 + 5; z < centerZ + length / 2 - 3; z += 7) {
-        const dash = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.025, 3.2), roadPaintMaterial);
-        dash.position.set(0, 0.035, z);
-        scene.add(dash);
-      }
-      if (centerZ > 0) {
-        const crosswalkZ = centerZ - length / 2 + 4;
-        for (let x = -10; x <= 10; x += 2) {
-          const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.025, 0.7), curbMaterial);
-          stripe.position.set(x, 0.04, crosswalkZ);
-          scene.add(stripe);
-        }
-      }
-    }
-
-    const park = new THREE.Mesh(
-      new THREE.PlaneGeometry(74, 90),
-      new THREE.MeshStandardMaterial({ color: 0x4c9850, emissive: 0x183f1b, emissiveIntensity: 0.42, roughness: 1 })
-    );
-    park.rotation.x = -Math.PI / 2;
-    park.position.set(0, 0.045, -5);
-    park.receiveShadow = true;
-    scene.add(park);
-
-    const parkPathMaterial = new THREE.MeshStandardMaterial({ color: 0x85877d, roughness: 0.92 });
-    const parkPath = new THREE.Mesh(new THREE.PlaneGeometry(7, 90), parkPathMaterial);
-    parkPath.rotation.x = -Math.PI / 2;
-    parkPath.position.set(0, 0.07, -5);
-    parkPath.receiveShadow = true;
-    scene.add(parkPath);
-    for (const z of [-32, -12]) {
-      for (const side of [-1, 1]) {
-        const bollard = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.16, 0.22, 1.5, 10),
-          new THREE.MeshStandardMaterial({ color: 0x273440, metalness: 0.65, roughness: 0.36 })
-        );
-        bollard.position.set(side * 5, 0.8, z);
-        scene.add(bollard);
-        const bollardGlow = new THREE.Mesh(
-          new THREE.SphereGeometry(0.19, 12, 8),
-          new THREE.MeshBasicMaterial({ color: 0x79eaff })
-        );
-        bollardGlow.position.set(side * 5, 1.55, z);
-        scene.add(bollardGlow);
-        const pathLight = new THREE.PointLight(0x43cfff, 2.8, 14);
-        pathLight.position.set(side * 5, 1.8, z);
-        scene.add(pathLight);
-      }
-    }
-
-    // ========================================================
-    // PALM BOULEVARD AND PARK FOLIAGE
-    // ========================================================
-
-    const palmFrondShape = new THREE.Shape();
-    palmFrondShape.moveTo(-0.02, 0);
-    palmFrondShape.quadraticCurveTo(-0.09, 0.35, -0.07, 0.72);
-    palmFrondShape.quadraticCurveTo(-0.025, 0.63, 0, 0.58);
-    palmFrondShape.quadraticCurveTo(0.025, 0.78, 0.07, 0.72);
-    palmFrondShape.quadraticCurveTo(0.09, 0.35, 0.02, 0);
-    palmFrondShape.closePath();
-    const palmLeafGeometry = new THREE.ShapeGeometry(palmFrondShape, 5);
-    const palmLeafMaterial = new THREE.MeshStandardMaterial({
-      color: 0x51b56c,
-      emissive: 0x123b20,
-      emissiveIntensity: 0.35,
-      roughness: 0.88,
-      side: THREE.DoubleSide
-    });
-    const palmTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x76513d, roughness: 0.94 });
-    const palmStemMaterial = new THREE.MeshStandardMaterial({ color: 0x4e8d5b, roughness: 0.9 });
-    const createPalmTree = (x: number, z: number, scale: number) => {
-      const tree = new THREE.Group();
-      tree.position.set(x, 0, z);
-      tree.scale.setScalar(scale);
-      const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.2, 0.52, 9.5, 12, 8),
-        palmTrunkMaterial
-      );
-      trunk.position.y = 4.75;
-      trunk.rotation.z = x < 0 ? -0.035 : 0.035;
-      trunk.castShadow = true;
-      trunk.receiveShadow = true;
-      tree.add(trunk);
-
-      const frondCount = 11;
-      const leafletsPerSide = 15;
-      const leaflets = new THREE.InstancedMesh(
-        palmLeafGeometry,
-        palmLeafMaterial,
-        frondCount * leafletsPerSide * 2
-      );
-      const leafTransform = new THREE.Object3D();
-      let leafIndex = 0;
-      for (let frond = 0; frond < frondCount; frond += 1) {
-        const angle = frond * Math.PI * 2 / frondCount;
-        const radial = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
-        const tip = new THREE.Vector3(radial.x * 5.2, 7.25, radial.z * 5.2);
-        const stemCurve = new THREE.CatmullRomCurve3([
-          new THREE.Vector3(0, 9.25, 0),
-          new THREE.Vector3(radial.x * 1.5, 9.7, radial.z * 1.5),
-          new THREE.Vector3(radial.x * 3.4, 9.3, radial.z * 3.4),
-          tip
-        ]);
-        const stem = new THREE.Mesh(new THREE.TubeGeometry(stemCurve, 16, 0.055, 5, false), palmStemMaterial);
-        stem.castShadow = true;
-        tree.add(stem);
-        for (let leaflet = 0; leaflet < leafletsPerSide; leaflet += 1) {
-          const progress = 0.12 + leaflet * 0.052;
-          const stemPoint = stemCurve.getPoint(progress);
-          const tangent = stemCurve.getTangent(progress).normalize();
-          for (const side of [-1, 1]) {
-            const lateral = new THREE.Vector3(-radial.z, 0, radial.x).multiplyScalar(side);
-            const direction = tangent.clone().multiplyScalar(0.32).addScaledVector(lateral, 0.92).normalize();
-            leafTransform.position.copy(stemPoint).addScaledVector(lateral, 0.06);
-            leafTransform.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
-            const size = 0.8 + Math.sin(progress * Math.PI) * 0.42;
-            leafTransform.scale.set(size, size, size);
-            leafTransform.updateMatrix();
-            leaflets.setMatrixAt(leafIndex, leafTransform.matrix);
-            leaflets.setColorAt(
-              leafIndex,
-              new THREE.Color([0x277b50, 0x328c58, 0x3c985f][(leaflet + frond) % 3])
-            );
-            leafIndex += 1;
-          }
-        }
-      }
-      leaflets.instanceMatrix.needsUpdate = true;
-      leaflets.computeBoundingSphere();
-      leaflets.castShadow = true;
-      leaflets.receiveShadow = true;
-      tree.add(leaflets);
-      return tree;
-    };
-
-    for (let index = 0; index < 9; index += 1) {
-      const z = -138 + index * 31;
-      scene.add(createPalmTree(-24 + Math.sin(index * 1.6) * 1.5, z, 1.12 + (index % 3) * 0.08));
-      scene.add(createPalmTree(24 + Math.cos(index * 1.7) * 1.5, z - 5, 1.14 + (index % 2) * 0.1));
-    }
-
-    const parkTreeTrunk = new THREE.MeshStandardMaterial({ color: 0x684a35, roughness: 0.95 });
-    const parkTreeLeaves = [
-      new THREE.MeshStandardMaterial({ color: 0x438e4e, emissive: 0x193b1b, emissiveIntensity: 0.42, roughness: 0.9 }),
-      new THREE.MeshStandardMaterial({ color: 0x63a657, emissive: 0x1d421c, emissiveIntensity: 0.4, roughness: 0.9 })
-    ];
-    for (const [x, z] of [[-33, -42], [33, -42], [-33, 32], [33, 32]] as const) {
-      const tree = new THREE.Group();
-      tree.position.set(x, 0, z);
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.62, 7, 10), parkTreeTrunk);
-      trunk.position.y = 3.5;
-      trunk.castShadow = true;
-      tree.add(trunk);
-      for (const [offsetX, offsetY, offsetZ, scale] of [
-        [0, 7.2, 0, 2.9], [-1.35, 6.7, 0.5, 2.15], [1.4, 6.6, -0.35, 2.25], [0.2, 8.35, -0.6, 2.05]
-      ] as const) {
-        const crown = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), parkTreeLeaves[(Math.abs(x + z) + Math.round(scale)) % 2]);
-        crown.position.set(offsetX, offsetY, offsetZ);
-        crown.scale.set(scale, scale * 0.72, scale * 0.88);
-        crown.castShadow = true;
-        tree.add(crown);
-      }
-      scene.add(tree);
-    }
-
-    const parkShrubMaterial = new THREE.MeshStandardMaterial({
-      color: 0x5ca85b,
-      emissive: 0x153b17,
-      emissiveIntensity: 0.34,
-      roughness: 0.94
-    });
-    for (const [x, z] of [[-25, 7], [-25, -23], [25, 7], [25, -23]] as const) {
-      for (let index = 0; index < 5; index += 1) {
-        const shrub = new THREE.Mesh(
-          new THREE.SphereGeometry(0.8 + (index % 2) * 0.22, 12, 9),
-          parkShrubMaterial
-        );
-        shrub.position.set(x + (index - 2) * 0.75, 0.58, z + Math.sin(index * 2) * 0.5);
-        shrub.scale.y = 0.78;
-        shrub.castShadow = true;
-        scene.add(shrub);
-      }
-    }
-
-    const fountain = new THREE.Group();
-    fountain.position.set(-7, 0.09, 8);
-    const fountainStone = new THREE.MeshStandardMaterial({ color: 0x9ca7a9, metalness: 0.28, roughness: 0.42 });
-    const fountainWater = new THREE.MeshPhysicalMaterial({
-      color: 0x33c6e8,
-      emissive: 0x07516a,
-      emissiveIntensity: 0.58,
-      metalness: 0.25,
-      roughness: 0.12,
-      transparent: true,
-      opacity: 0.88
-    });
-    const basin = new THREE.Mesh(new THREE.CylinderGeometry(5.4, 5.7, 0.75, 48), fountainStone);
-    basin.position.y = 0.38;
-    basin.receiveShadow = true;
-    fountain.add(basin);
-    const waterSurface = new THREE.Mesh(new THREE.CircleGeometry(5.1, 48), fountainWater);
-    waterSurface.rotation.x = -Math.PI / 2;
-    waterSurface.position.y = 0.79;
-    fountain.add(waterSurface);
-    const basinLip = new THREE.Mesh(new THREE.TorusGeometry(5.35, 0.24, 10, 48), fountainStone);
-    basinLip.rotation.x = Math.PI / 2;
-    basinLip.position.y = 0.78;
-    fountain.add(basinLip);
-    const fountainColumn = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.05, 2.5, 20), fountainStone);
-    fountainColumn.position.y = 1.85;
-    fountain.add(fountainColumn);
-    const upperBowl = new THREE.Mesh(new THREE.CylinderGeometry(2.05, 0.85, 0.42, 32), fountainStone);
-    upperBowl.position.y = 3.18;
-    fountain.add(upperBowl);
-    const upperWater = new THREE.Mesh(new THREE.CircleGeometry(1.9, 32), fountainWater);
-    upperWater.rotation.x = -Math.PI / 2;
-    upperWater.position.y = 3.42;
-    fountain.add(upperWater);
-    const waterJet = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.07, 0.12, 2.3, 10),
-      new THREE.MeshBasicMaterial({ color: 0x84edff, transparent: true, opacity: 0.74 })
-    );
-    waterJet.position.y = 4.55;
-    fountain.add(waterJet);
-    const fountainLight = new THREE.PointLight(0x2edbff, 2.1, 18);
-    fountainLight.position.y = 2.8;
-    fountain.add(fountainLight);
-    scene.add(fountain);
-
-    // ========================================================
-    // WINGED CIVIC MONUMENT
-    // ========================================================
-
-    const statueGroup = new THREE.Group();
-    statueGroup.position.set(0, 0, -40);
-
-    const pedestal = new THREE.Mesh(
-      new THREE.BoxGeometry(12, 4.5, 12),
-      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.1 })
-    );
-    pedestal.position.y = 2.25;
-    pedestal.castShadow = true;
-    pedestal.receiveShadow = true;
-    statueGroup.add(pedestal);
-
-    const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.5, 4, 8.5, 16),
-      new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.48, roughness: 0.38 })
-    );
-    pillar.position.y = 8.75;
-    statueGroup.add(pillar);
-
-    const statueMat = new THREE.MeshStandardMaterial({ color: 0x987044, metalness: 0.84, roughness: 0.3 });
-    const statueHighlightMat = new THREE.MeshStandardMaterial({ color: 0xc3a16b, metalness: 0.88, roughness: 0.24 });
-    const maskMat = new THREE.MeshStandardMaterial({ color: 0x6625a8, metalness: 0.58, roughness: 0.24 });
-    const maskTrimMat = new THREE.MeshStandardMaterial({ color: 0xdbc080, metalness: 0.88, roughness: 0.2 });
-    const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x342e2b, metalness: 0.76, roughness: 0.34 });
-
-    const addStatuePart = (geometry: THREE.BufferGeometry, material: THREE.Material, position: THREE.Vector3, scale: THREE.Vector3) => {
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.copy(position);
-      mesh.scale.copy(scale);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      statueGroup.add(mesh);
-      return mesh;
-    };
-
-    addStatuePart(new THREE.SphereGeometry(1, 24, 18), statueMat, new THREE.Vector3(0, 19.8, 0), new THREE.Vector3(1.7, 2.6, 0.9));
-    addStatuePart(new THREE.SphereGeometry(1, 20, 16), statueHighlightMat, new THREE.Vector3(0, 17.3, 0), new THREE.Vector3(1.25, 1.15, 0.78));
-    addStatuePart(new THREE.CylinderGeometry(1.05, 0.62, 3.8, 12), statueMat, new THREE.Vector3(0, 14.85, 0), new THREE.Vector3(1, 1, 0.9));
-    addStatuePart(new THREE.SphereGeometry(0.8, 20, 16), statueMat, new THREE.Vector3(0, 22.25, 0), new THREE.Vector3(0.95, 0.52, 0.78));
-    addStatuePart(new THREE.SphereGeometry(0.76, 24, 20), statueMat, new THREE.Vector3(0, 23.45, 0.04), new THREE.Vector3(0.88, 1.08, 0.76));
-
-    const addStatueLimb = (start: THREE.Vector3, end: THREE.Vector3, radius: number, material: THREE.Material) => {
-      const direction = new THREE.Vector3().subVectors(end, start);
-      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.78, radius, direction.length(), 12), material);
-      mesh.position.copy(start).add(end).multiplyScalar(0.5);
-      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      statueGroup.add(mesh);
-      return mesh;
-    };
-
-    for (const side of [-1, 1]) {
-      addStatueLimb(new THREE.Vector3(side * 1.35, 21.3, 0), new THREE.Vector3(side * 2.6, 20.25, 0.05), 0.62, statueMat);
-      addStatuePart(new THREE.SphereGeometry(0.58, 16, 12), statueHighlightMat, new THREE.Vector3(side * 2.6, 20.25, 0.05), new THREE.Vector3(1, 1, 0.9));
-      addStatueLimb(new THREE.Vector3(side * 2.6, 20.25, 0.05), new THREE.Vector3(side * 3.85, 20.85, 0.08), 0.42, statueMat);
-      addStatuePart(new THREE.SphereGeometry(0.48, 16, 12), statueHighlightMat, new THREE.Vector3(side * 4.04, 20.94, 0.08), new THREE.Vector3(0.7, 0.4, 0.36));
-      addStatueLimb(new THREE.Vector3(side * 0.62, 16.9, 0), new THREE.Vector3(side * 0.72, 13.8, 0.02), 0.58, statueMat);
-      addStatuePart(new THREE.SphereGeometry(0.55, 16, 12), statueHighlightMat, new THREE.Vector3(side * 0.72, 13.8, 0.02), new THREE.Vector3(0.9, 0.9, 0.82));
-      addStatuePart(new THREE.SphereGeometry(0.52, 16, 12), darkMetalMat, new THREE.Vector3(side * 0.72, 13.2, 0.42), new THREE.Vector3(0.72, 0.25, 1.2));
-    }
-
-    const featherShape = new THREE.Shape();
-    featherShape.moveTo(-0.2, 0);
-    featherShape.quadraticCurveTo(-0.45, 1.1, -0.28, 2.35);
-    featherShape.quadraticCurveTo(-0.12, 3.55, 0.02, 4.15);
-    featherShape.quadraticCurveTo(0.34, 3.2, 0.42, 2.1);
-    featherShape.quadraticCurveTo(0.46, 0.75, 0.2, 0);
-    featherShape.closePath();
-    const featherGeometry = new THREE.ExtrudeGeometry(featherShape, {
-      depth: 0.14,
-      bevelEnabled: true,
-      bevelSegments: 2,
-      steps: 1,
-      bevelSize: 0.08,
-      bevelThickness: 0.06
-    });
-    const featherMaterials = [
-      new THREE.MeshStandardMaterial({ color: 0x6e5136, metalness: 0.82, roughness: 0.3, side: THREE.DoubleSide }),
-      new THREE.MeshStandardMaterial({ color: 0xc1a16d, metalness: 0.85, roughness: 0.25, side: THREE.DoubleSide })
-    ];
-
-    for (const side of [-1, 1]) {
-      const wingBones = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(side * 1.1, 21.6, -0.72),
-        new THREE.Vector3(side * 4.2, 22.2, -0.78),
-        new THREE.Vector3(side * 8.5, 22.8, -0.78),
-        new THREE.Vector3(side * 12.6, 23.2, -0.72)
-      ]);
-      const wingFrame = new THREE.Mesh(new THREE.TubeGeometry(wingBones, 24, 0.2, 10, false), statueHighlightMat);
-      wingFrame.castShadow = true;
-      statueGroup.add(wingFrame);
-
-      for (let feather = 0; feather < 9; feather += 1) {
-        const x = side * (0.9 + feather * 1.42);
-        const angle = -side * (0.34 + feather * 0.065);
-        const lengthScale = 0.82 + feather * 0.055;
-        const primary = new THREE.Mesh(featherGeometry, featherMaterials[feather % 2]);
-        primary.position.set(x, 21.95 + feather * 0.1, -0.65);
-        primary.rotation.z = angle;
-        primary.scale.set(1, lengthScale, 1);
-        primary.castShadow = true;
-        primary.receiveShadow = true;
-        statueGroup.add(primary);
-
-        const covert = new THREE.Mesh(featherGeometry, featherMaterials[(feather + 1) % 2]);
-        covert.position.set(side * (0.65 + feather * 1.26), 20.85, -0.32);
-        covert.rotation.z = angle * 0.72;
-        covert.scale.set(0.72, 0.63 + feather * 0.025, 0.8);
-        covert.castShadow = true;
-        covert.receiveShadow = true;
-        statueGroup.add(covert);
-      }
-    }
-
-    const mask = addStatuePart(
-      new THREE.SphereGeometry(0.76, 32, 24),
-      maskMat,
-      new THREE.Vector3(0, 23.55, 0.66),
-      new THREE.Vector3(1.12, 0.66, 0.34)
-    );
-    mask.rotation.x = -0.08;
-    for (const side of [-1, 1]) {
-      addStatuePart(new THREE.SphereGeometry(0.16, 16, 10), darkMetalMat, new THREE.Vector3(side * 0.31, 23.59, 0.955), new THREE.Vector3(1.15, 0.42, 0.3));
-    }
-
-    const maskCrest = new THREE.Group();
-    maskCrest.position.set(0, 23.93, 1.0);
-    for (const side of [-1, 1]) {
-      const chevron = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.36, 0.08), maskTrimMat);
-      chevron.rotation.z = side * -0.58;
-      chevron.position.x = side * 0.1;
-      maskCrest.add(chevron);
-    }
-    const crestDot = new THREE.Mesh(new THREE.SphereGeometry(0.085, 12, 8), maskTrimMat);
-    crestDot.position.y = 0.2;
-    maskCrest.add(crestDot);
-    statueGroup.add(maskCrest);
-
-    const plaque = new THREE.Mesh(
-      new THREE.BoxGeometry(7.2, 1.35, 0.34),
-      new THREE.MeshStandardMaterial({ color: 0x352c25, metalness: 0.74, roughness: 0.32 })
-    );
-    plaque.position.set(0, 3.15, 6.19);
-    plaque.castShadow = true;
-    statueGroup.add(plaque);
-
-    const plaqueCanvas = document.createElement('canvas');
-    plaqueCanvas.width = 1024;
-    plaqueCanvas.height = 256;
-    const plaqueContext = plaqueCanvas.getContext('2d');
-    if (!plaqueContext) throw new Error('Could not create the monument plaque.');
-    plaqueContext.fillStyle = '#352c25';
-    plaqueContext.fillRect(0, 0, plaqueCanvas.width, plaqueCanvas.height);
-    plaqueContext.strokeStyle = '#c9a96f';
-    plaqueContext.lineWidth = 12;
-    plaqueContext.strokeRect(18, 18, plaqueCanvas.width - 36, plaqueCanvas.height - 36);
-    plaqueContext.textAlign = 'center';
-    plaqueContext.textBaseline = 'middle';
-    plaqueContext.font = 'bold 116px Georgia, serif';
-    plaqueContext.fillStyle = '#f0d7a3';
-    plaqueContext.shadowColor = '#100d0a';
-    plaqueContext.shadowBlur = 8;
-    plaqueContext.fillText('THE GAT', plaqueCanvas.width / 2, plaqueCanvas.height / 2 + 4);
-    const plaqueTexture = new THREE.CanvasTexture(plaqueCanvas);
-    plaqueTexture.colorSpace = THREE.SRGBColorSpace;
-    const plaqueFace = new THREE.Mesh(
-      new THREE.PlaneGeometry(6.7, 1.1),
-      new THREE.MeshStandardMaterial({ map: plaqueTexture, metalness: 0.5, roughness: 0.38 })
-    );
-    plaqueFace.position.set(0, 3.15, 6.37);
-    statueGroup.add(plaqueFace);
-
-    scene.add(statueGroup);
-
-    // Load locally bundled CC0 assets; retain the scene-built fallback if a file cannot load.
-    (async () => {
-      try {
-        const gltfLoader = new GLTFLoader();
-        const lampAsset = await gltfLoader.loadAsync('/assets/foyer/models/street_lamp_01/street_lamp_01_1k.gltf');
-        if (!sceneDisposed) {
-          fallbackStreetLights.forEach(fallback => scene.remove(fallback));
-          for (const fallback of fallbackStreetLights) {
-            const side = Math.sign(fallback.position.x);
-            const index = Math.round((fallback.position.z + 104) / 29);
-            const lamp = lampAsset.scene.clone(true);
-            const originalBounds = new THREE.Box3().setFromObject(lamp);
-            const dimensions = originalBounds.getSize(new THREE.Vector3());
-            lamp.scale.setScalar(8 / dimensions.y);
-            const bounds = new THREE.Box3().setFromObject(lamp);
-            lamp.position.set(
-              fallback.position.x - (bounds.min.x + bounds.max.x) / 2,
-              -bounds.min.y,
-              fallback.position.z - (bounds.min.z + bounds.max.z) / 2
-            );
-            lamp.traverse(object => {
-              if (object instanceof THREE.Mesh) {
-                object.castShadow = true;
-                object.receiveShadow = true;
-              }
-            });
-            scene.add(lamp);
-            const lampLight = new THREE.PointLight(index % 2 === 0 ? 0x3acbff : 0xd85bff, 3.2, 38, 1.8);
-            lampLight.position.set(side * 28, 7.3, -104 + index * 29);
-            scene.add(lampLight);
-          }
-        }
-      } catch (error) {
-        console.error('[GodotFoyer] Failed to load the local street-lamp model; using procedural lamps.', error);
-      }
-
-      try {
-        const gltfLoader = new GLTFLoader();
-        const benchAsset = await gltfLoader.loadAsync('/assets/foyer/models/modular_street_seating/modular_street_seating_1k.gltf');
-        if (!sceneDisposed) {
-          const benchBounds = new THREE.Box3().setFromObject(benchAsset.scene);
-          const benchSize = benchBounds.getSize(new THREE.Vector3());
-          const scale = 5.2 / Math.max(benchSize.x, benchSize.z);
-          for (const [x, z, rotation] of [
-            [-19, -36, 0], [19, -48, Math.PI], [-20, -81, 0], [20, -95, Math.PI]
-          ] as const) {
-            const bench = benchAsset.scene.clone(true);
-            bench.scale.setScalar(scale);
-            const bounds = new THREE.Box3().setFromObject(bench);
-            bench.position.set(
-              x - (bounds.min.x + bounds.max.x) / 2,
-              -bounds.min.y,
-              z - (bounds.min.z + bounds.max.z) / 2
-            );
-            bench.rotation.y = rotation;
-            bench.traverse(object => {
-              if (object instanceof THREE.Mesh) {
-                object.castShadow = true;
-                object.receiveShadow = true;
-              }
-            });
-            scene.add(bench);
-          }
-        }
-      } catch (error) {
-        console.error('[GodotFoyer] Failed to load the local seating models.', error);
-      }
-
-    })();
-
-    // ========================================================
-    // VIBRANT HIGH-RISE SKYSCRAPERS & NEON BILLBOARDS
-    // ========================================================
-
-    type CivicWatchBillboard = {
-      canvas: HTMLCanvasElement;
-      context: CanvasRenderingContext2D;
-      texture: THREE.CanvasTexture;
-      version: number;
-      story?: BillboardStory;
-      mesh?: THREE.Mesh;
-      building?: THREE.Group;
-    };
-    const mediaBillboards: CivicWatchBillboard[] = [];
-    let billboardStories: BillboardStory[] = [];
-    let billboardStoryIndex = 0;
-    const drawCivicWatchBillboard = (screen: CivicWatchBillboard, story?: BillboardStory) => {
-      const { canvas, context, texture } = screen;
-      const version = ++screen.version;
-      screen.story = story;
-      if (screen.mesh) screen.mesh.userData.billboardStory = story;
-      if (screen.building) screen.building.userData.billboardStory = story;
-      context.fillStyle = '#07111d';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      if (!story) {
-        context.fillStyle = '#102339';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.strokeStyle = '#16cce8';
-        context.lineWidth = 6;
-        context.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
-        context.fillStyle = '#22d8f6';
-        context.font = 'bold 43px sans-serif';
-        context.fillText('CIVICVERSE COMMUNITY + OPEN NEWS', 42, 105);
-        context.fillStyle = '#e6f4ff';
-        context.font = '30px sans-serif';
-        context.fillText('No community stories are available right now', 42, 180);
-        context.fillStyle = '#9db2c5';
-        context.font = '24px sans-serif';
-        context.fillText('Interact with a screen to open its source.', 42, 235);
-        texture.needsUpdate = true;
-        return;
-      }
-
-      const paintStory = (image?: HTMLImageElement) => {
-        if (sceneDisposed || screen.version !== version) return;
-        if (image) {
-          const scale = Math.max(canvas.width / image.width, 430 / image.height);
-          const width = image.width * scale;
-          const height = image.height * scale;
-          context.drawImage(image, (canvas.width - width) / 2, (430 - height) / 2, width, height);
-        } else {
-          const gradient = context.createLinearGradient(0, 0, canvas.width, 430);
-          gradient.addColorStop(0, story.category === 'OPEN SOURCE' ? '#123f37' : '#12334f');
-          gradient.addColorStop(1, '#101327');
-          context.fillStyle = gradient;
-          context.fillRect(0, 0, canvas.width, 430);
-          context.fillStyle = '#e3f7ff';
-          context.font = 'bold 42px sans-serif';
-          const words = story.title.split(/\s+/);
-          let line = '';
-          let y = 150;
-          for (const word of words) {
-            const candidate = `${line}${word} `;
-            if (context.measureText(candidate).width > canvas.width - 100 && line) {
-              context.fillText(line.trim(), 48, y);
-              line = `${word} `;
-              y += 58;
-            } else line = candidate;
-          }
-          if (line && y < 410) context.fillText(line.trim(), 48, y);
-        }
-
-        const footer = context.createLinearGradient(0, 380, 0, 512);
-        footer.addColorStop(0, 'rgba(2, 9, 20, 0.15)');
-        footer.addColorStop(1, 'rgba(2, 9, 20, 0.97)');
-        context.fillStyle = footer;
-        context.fillRect(0, 360, canvas.width, 152);
-        context.fillStyle = '#27e6ff';
-        context.font = 'bold 22px sans-serif';
-        context.fillText(`${story.category}  ·  INTERACT TO OPEN SOURCE`, 34, 400);
-        context.fillStyle = '#ffffff';
-        context.font = 'bold 27px sans-serif';
-        context.fillText(story.title.slice(0, 55), 34, 445);
-        context.fillStyle = '#aebed0';
-        context.font = '19px sans-serif';
-        context.fillText(`by ${story.author}`.slice(0, 72), 34, 480);
-        texture.needsUpdate = true;
-      };
-
-      if (story.imageUrl) {
-        const image = new Image();
-        image.onload = () => paintStory(image);
-        image.onerror = () => paintStory();
-        image.src = story.imageUrl;
-      } else paintStory();
-    };
-
-    const addBillboard = (
-      building: THREE.Group,
-      width: number,
-      height: number,
-      y: number,
-      faceOffset: number,
-      kind: 'logo' | 'community',
-      face: 'front' | 'rear' | 'left' | 'right' = 'front'
-    ) => {
-      const isSide = face === 'left' || face === 'right';
-      const faceSign = face === 'rear' || face === 'left' ? -1 : 1;
-      const screenWidth = width;
-      const screenHeight = height;
-      const x = isSide ? faceSign * (faceOffset + 0.14) : 0;
-      const screenZ = isSide ? 0 : faceSign * (faceOffset + 0.14);
-      const frame = new THREE.Mesh(
-        new THREE.BoxGeometry(screenWidth + 0.7, screenHeight + 0.7, 0.48),
-        new THREE.MeshStandardMaterial({ color: 0x111a26, metalness: 0.72, roughness: 0.28 })
-      );
-      frame.position.set(isSide ? faceSign * (faceOffset - 0.12) : 0, y, screenZ - faceSign * 0.26);
-      if (isSide) frame.rotation.y = face === 'right' ? Math.PI / 2 : -Math.PI / 2;
-      building.add(frame);
-
-      const canvas = makeCanvas(1024, 512);
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('Could not create a CivicWatch billboard canvas.');
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      const screen = new THREE.Mesh(
-        new THREE.PlaneGeometry(screenWidth, screenHeight),
-        new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, side: THREE.DoubleSide })
-      );
-      screen.position.set(x, y, screenZ);
-      if (face === 'rear') screen.rotation.y = Math.PI;
-      if (face === 'right') screen.rotation.y = Math.PI / 2;
-      if (face === 'left') screen.rotation.y = -Math.PI / 2;
-      building.add(screen);
-
-      if (kind === 'logo') {
-        context.fillStyle = '#06111d';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.strokeStyle = '#24d8f3';
-        context.lineWidth = 8;
-        context.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
-        const logo = new Image();
-        logo.onload = () => {
-          if (sceneDisposed) return;
-          const scale = Math.min(380 / logo.width, 350 / logo.height);
-          context.drawImage(logo, (canvas.width - logo.width * scale) / 2, 28, logo.width * scale, logo.height * scale);
-          context.fillStyle = '#e8faff';
-          context.font = 'bold 36px sans-serif';
-          context.textAlign = 'center';
-          context.fillText('CIVICVERSE  /  NEW DISTRICT', canvas.width / 2, 470);
-          texture.needsUpdate = true;
-        };
-        logo.onerror = () => console.error('[GodotFoyer] Could not load the Civicverse logo for the tower billboard.');
-        logo.src = CIVICVERSE_LOGO;
-        texture.needsUpdate = true;
-        return;
-      }
-
-      const board: CivicWatchBillboard = { canvas, context, texture, version: 0, mesh: screen, building };
-      mediaBillboards.push(board);
-      drawCivicWatchBillboard(board);
-    };
-
-    const createCyberBuilding = (x: number, z: number, w: number, h: number, d: number, title: string, neonColor: number) => {
-      const bGroup = new THREE.Group();
-      bGroup.position.set(x, 0, z);
-
-      const bMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(w, h, d),
-        new THREE.MeshStandardMaterial({
-          color: 0x18243a,
-          metalness: 0.72,
-          roughness: 0.3,
-          envMapIntensity: 0.8
-        })
-      );
-      bMesh.position.y = h / 2;
-      bMesh.castShadow = true;
-      bGroup.add(bMesh);
-
-      if (title === 'CIVIC CENTRE') {
-        for (const face of ['front', 'rear', 'left', 'right'] as const) {
-          const faceOffset = (face === 'left' || face === 'right' ? w : d) / 2 + 0.5;
-          addBillboard(bGroup, 18, 9, h - 5, faceOffset, 'logo', face);
-        }
-      }
-      if (title === 'CIVICVERSE') {
-        addBillboard(bGroup, 20, 9, h - 5, d / 2 + 0.5, 'logo', 'front');
-      }
-      if (title === 'NEW DISTRICT' || title === 'CITY SERVICES') {
-        for (const face of ['front', 'rear', 'left', 'right'] as const) {
-          const faceOffset = (face === 'left' || face === 'right' ? w : d) / 2 + 0.5;
-          addBillboard(bGroup, 18, 9, h - 5, faceOffset, 'community', face);
-        }
-      }
-
-      const windowWidth = Math.max(1.5, Math.min(2.2, w / 14));
-      const windowHeight = 2.7;
-      const columns = Math.max(3, Math.floor((w - 5) / 3.2));
-      const sideColumns = Math.max(3, Math.floor((d - 5) / 3.2));
-      const rows = Math.max(5, Math.floor((h - 18) / 5));
-      const windowGeo = new THREE.BoxGeometry(windowWidth, windowHeight, 0.04);
-      const windowMat = new THREE.MeshStandardMaterial({
-        color: 0xd8f3ff,
-        emissive: neonColor,
-        emissiveIntensity: 0.58,
-        roughness: 0.35,
-        metalness: 0.1
-      });
-      const warmWindow = new THREE.Color(0xffd69a);
-      const coolWindow = new THREE.Color(0x9bc7ec);
-      const windowFallback = new THREE.Group();
-      const addWindowFace = (horizontalCount: number, alongDepth: boolean, sign: number) => {
-        const windows = new THREE.InstancedMesh(windowGeo, windowMat, horizontalCount * rows);
-        const instance = new THREE.Object3D();
-        let index = 0;
-        for (let row = 0; row < rows; row += 1) {
-          for (let column = 0; column < horizontalCount; column += 1) {
-            const offset = (column - (horizontalCount - 1) / 2) *
-              ((alongDepth ? d : w) - 5) / horizontalCount;
-            instance.position.set(
-              alongDepth ? sign * (w / 2 + 0.08) : offset,
-              7 + row * 4.2,
-              alongDepth ? offset : sign * (d / 2 + 0.08)
-            );
-            instance.rotation.y = alongDepth ? Math.PI / 2 : 0;
-            instance.updateMatrix();
-            windows.setMatrixAt(index, instance.matrix);
-            windows.setColorAt(index, Math.random() > 0.55 ? warmWindow : coolWindow);
-            index += 1;
-          }
-        }
-        windows.instanceMatrix.needsUpdate = true;
-        windowFallback.add(windows);
-      };
-      addWindowFace(columns, false, 1);
-      addWindowFace(columns, false, -1);
-      addWindowFace(sideColumns, true, 1);
-      addWindowFace(sideColumns, true, -1);
-      bGroup.add(windowFallback);
-      const facadeTrim = new THREE.Mesh(
-        new THREE.BoxGeometry(w + 0.5, 0.55, d + 0.5),
-        new THREE.MeshStandardMaterial({
-          color: 0x1d263b,
-          emissive: neonColor,
-          emissiveIntensity: 0.38,
-          metalness: 0.52,
-          roughness: 0.38
-        })
-      );
-      facadeTrim.position.y = h - 1;
-      bGroup.add(facadeTrim);
-      const verticalNeon = new THREE.MeshStandardMaterial({
-        color: neonColor,
-        emissive: neonColor,
-        emissiveIntensity: 0.72,
-        metalness: 0.28,
-        roughness: 0.35
-      });
-      for (const sign of [-1, 1]) {
-        const towerEdge = new THREE.Mesh(
-          new THREE.BoxGeometry(0.16, h - 2, 0.12),
-          verticalNeon
-        );
-        towerEdge.position.set(sign * (w / 2 - 0.4), h / 2, d / 2 + 0.12);
-        bGroup.add(towerEdge);
-      }
-
-      bGroup.name = title;
-
-      return bGroup;
-    };
-
-    scene.add(createCyberBuilding(-65, -80, 31, 92, 30, 'CIVIC CENTRE', 0x5ca7ed));
-    scene.add(createCyberBuilding(65, -85, 32, 108, 30, 'NEW DISTRICT', 0xd989bd));
-    scene.add(createCyberBuilding(-72, 4, 30, 78, 28, 'CVC EXCHANGE', 0xe9a957));
-    scene.add(createCyberBuilding(72, 5, 32, 88, 30, 'CITY SERVICES', 0x71b9dd));
-    scene.add(createCyberBuilding(0, -158, 46, 118, 34, 'CIVICVERSE', 0x5ebcff));
-
-    const skyline = [
-      [-128, -172, 28, 102, 27], [-96, -205, 24, 136, 24], [-53, -205, 30, 114, 28],
-      [52, -208, 26, 132, 25], [96, -196, 34, 96, 29], [132, -175, 30, 122, 28],
-      [-138, -80, 28, 108, 26], [136, -78, 26, 116, 24], [-114, 35, 29, 86, 28],
-      [112, 38, 34, 92, 30], [-104, 162, 34, 98, 30], [-66, 194, 28, 124, 26],
-      [-24, 174, 36, 112, 32], [26, 208, 34, 138, 30], [72, 177, 32, 96, 28],
-      [112, 150, 30, 118, 26]
-    ] as const;
-    skyline.forEach(([x, z, width, height, depth], index) => {
-      scene.add(createCyberBuilding(x, z, width, height, depth, index % 2 ? 'CIVIC' : 'DISTRICT', index % 2 ? 0x77a9df : 0xe9b86c));
-    });
-
-    if (mediaBillboards.length) {
-      const fetchJson = async (url: string) => {
-        const controller = new AbortController();
-        const timeout = window.setTimeout(() => controller.abort(), 8000);
-        try {
-          const response = await fetch(url, { signal: controller.signal });
-          if (!response.ok) throw new Error(`Feed request returned HTTP ${response.status}.`);
-          return await response.json();
-        } finally {
-          window.clearTimeout(timeout);
-        }
-      };
-      const isHttpUrl = (value: unknown): value is string => {
-        if (typeof value !== 'string') return false;
-        try {
-          return ['http:', 'https:'].includes(new URL(value).protocol);
-        } catch {
-          return false;
-        }
-      };
-      const paintAllBillboards = () => {
-        mediaBillboards.forEach((board, index) => {
-          const buildingOffset = Math.floor(index / 4);
-          const story = billboardStories.length
-            ? billboardStories[(buildingOffset + billboardStoryIndex) % billboardStories.length]
-            : undefined;
-          drawCivicWatchBillboard(board, story);
-        });
-      };
-      const refreshBillboardStories = async () => {
-        const [socialResult, civicWatchResult, newsResult] = await Promise.allSettled([
-          fetchJson('/api/social/explore?limit=30'),
-          fetchJson('/api/civicwatch/media?limit=2'),
-          fetchJson('/api/billboard/news')
-        ]);
-        if (sceneDisposed) return;
-
-        const stories: BillboardStory[] = [];
-        if (socialResult.status === 'fulfilled' && Array.isArray(socialResult.value.posts)) {
-          for (const post of socialResult.value.posts) {
-            if (typeof post?.id !== 'string' || typeof post.authorId !== 'string') continue;
-            const profileUrl = `/profile/${encodeURIComponent(post.authorId)}`;
-            const postText = typeof post.content === 'string' ? post.content.trim() : '';
-            const linkedSource = postText.match(/https?:\/\/[^\s<>"']+/)?.[0];
-            const mediaUrl = typeof post.media?.url === 'string' &&
-              typeof post.media.mimeType === 'string' &&
-              post.media.mimeType.startsWith('image/') &&
-              /^\/api\/social\/media\/[0-9a-f-]{36}$/i.test(post.media.url)
-              ? post.media.url
-              : undefined;
-            if (!postText && !mediaUrl) continue;
-            stories.push({
-              id: `post-${post.id}`,
-              title: postText || post.media?.name || 'Community media',
-              author: typeof post.authorName === 'string' ? post.authorName : 'Civicverse member',
-              category: 'COMMUNITY',
-              imageUrl: mediaUrl,
-              sourceUrl: linkedSource && isHttpUrl(linkedSource) ? linkedSource : profileUrl,
-              profileUrl,
-              authorId: post.authorId
-            });
-          }
-        } else if (socialResult.status === 'rejected') {
-          console.info('[GodotFoyer] Community explore feed is unavailable.', socialResult.reason);
-        }
-
-        if (civicWatchResult.status === 'fulfilled' && Array.isArray(civicWatchResult.value.items)) {
-          for (const item of civicWatchResult.value.items) {
-            if (typeof item?.id !== 'string' || typeof item.title !== 'string') continue;
-            const profileUrl = typeof item.authorId === 'string'
-              ? `/profile/${encodeURIComponent(item.authorId)}`
-              : undefined;
-            const imageUrl = typeof item.image === 'string' &&
-              /^data:image\/(?:jpeg|png|webp);base64,/.test(item.image)
-              ? item.image
-              : undefined;
-            stories.push({
-              id: `civicwatch-${item.id}`,
-              title: item.title,
-              author: typeof item.authorName === 'string' ? item.authorName : 'CivicWatch contributor',
-              category: 'CIVICWATCH',
-              imageUrl,
-              sourceUrl: '/civicwatch',
-              profileUrl,
-              ...(typeof item.authorId === 'string' ? { authorId: item.authorId } : {})
-            });
-          }
-        } else if (civicWatchResult.status === 'rejected') {
-          console.info('[GodotFoyer] CivicWatch billboard feed is unavailable.', civicWatchResult.reason);
-        }
-
-        if (newsResult.status === 'fulfilled' && Array.isArray(newsResult.value.items)) {
-          for (const item of newsResult.value.items) {
-            if (typeof item?.id !== 'string' || typeof item.title !== 'string' || !isHttpUrl(item.sourceUrl)) continue;
-            stories.push({
-              id: item.id,
-              title: item.title,
-              author: typeof item.author === 'string' ? item.author : 'Open news',
-              category: typeof item.category === 'string' ? item.category : 'LIVE NEWS',
-              sourceUrl: item.sourceUrl
-            });
-          }
-        } else if (newsResult.status === 'rejected') {
-          console.info('[GodotFoyer] Open news feed is unavailable.', newsResult.reason);
-        }
-
-        for (let index = stories.length - 1; index > 0; index -= 1) {
-          const swapIndex = Math.floor(Math.random() * (index + 1));
-          [stories[index], stories[swapIndex]] = [stories[swapIndex], stories[index]];
-        }
-        billboardStories = stories;
-        billboardStoryIndex = 0;
-        paintAllBillboards();
-      };
-      void refreshBillboardStories();
-      civicWatchMediaTimer = window.setInterval(() => void refreshBillboardStories(), 60000);
-      billboardRotationTimer = window.setInterval(() => {
-        if (!billboardStories.length || sceneDisposed) return;
-        billboardStoryIndex = (billboardStoryIndex + 1) % billboardStories.length;
-        paintAllBillboards();
-      }, 12000);
-    }
-
-    const fallbackStreetLights: THREE.Group[] = [];
-    const boulevardLampMaterial = new THREE.MeshStandardMaterial({ color: 0x252a34, metalness: 0.72, roughness: 0.35 });
-    const lampGlowMaterial = new THREE.MeshStandardMaterial({ color: 0xffd69a, emissive: 0xffbc69, emissiveIntensity: 1.4 });
-    for (const side of [-1, 1]) {
-      for (let index = 0; index < 4; index += 1) {
-        const lamp = new THREE.Group();
-        lamp.position.set(side * 28, 0, -104 + index * 29);
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.19, 8, 10), boulevardLampMaterial);
-        post.position.y = 4;
-        lamp.add(post);
-        const arm = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.14, 0.18), boulevardLampMaterial);
-        arm.position.set(-side * 0.72, 7.7, 0);
-        lamp.add(arm);
-        const lampHead = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.18, 0.42), lampGlowMaterial);
-        lampHead.position.set(-side * 1.35, 7.55, 0);
-        lamp.add(lampHead);
-        fallbackStreetLights.push(lamp);
-        scene.add(lamp);
-      }
-    }
+    scene.add(new THREE.HemisphereLight(0x8796d8, 0x28213c, 2.4));
+    scene.add(new THREE.AmbientLight(0x53648f, 1.2));
 
     // ========================================================
     // HIGH-FIDELITY DETAILED HUMAN CHARACTER & 3D WEAPON
     // ========================================================
+
+    const cityAnimationHandles = buildDetailedCity(scene);
+    const refreshCivicWatchMedia = async () => {
+      const endpoints = ['/api/social/explore?limit=50', '/api/civicwatch/media?limit=20'];
+      const responses = await Promise.allSettled(endpoints.map(endpoint => fetch(endpoint)));
+      const stories: BillboardStory[] = [];
+      const colors = ['#00f3ff', '#ff4fd8', '#8bff6b', '#ffd166'];
+
+      for (let endpointIndex = 0; endpointIndex < responses.length; endpointIndex += 1) {
+        const result = responses[endpointIndex];
+        if (result.status === 'rejected') {
+          console.warn(`[CivicWatch] Could not load ${endpoints[endpointIndex]}.`, result.reason);
+          continue;
+        }
+        if (!result.value.ok) {
+          console.warn(`[CivicWatch] ${endpoints[endpointIndex]} returned HTTP ${result.value.status}.`);
+          continue;
+        }
+
+        try {
+          const payload: unknown = await result.value.json();
+          if (!payload || typeof payload !== 'object') continue;
+          const data = payload as Record<string, unknown>;
+          const entries = endpointIndex === 0 ? data.posts : data.items;
+          if (!Array.isArray(entries)) continue;
+
+          entries.forEach((entry: unknown, entryIndex: number) => {
+            if (!entry || typeof entry !== 'object') return;
+            const item = entry as Record<string, unknown>;
+            const id = typeof item.id === 'string' || typeof item.id === 'number' ? String(item.id) : `${endpointIndex}-${entryIndex}`;
+            const title = typeof item.content === 'string'
+              ? item.content
+              : typeof item.title === 'string'
+                ? item.title
+                : typeof item.description === 'string'
+                  ? item.description
+                  : 'CivicWatch community report';
+            const author = typeof item.authorName === 'string' ? item.authorName : 'Civicverse contributor';
+            const authorId = typeof item.authorId === 'string' ? item.authorId : undefined;
+            const profileUrl = authorId ? `/profile/${encodeURIComponent(authorId)}` : undefined;
+            const color = colors[(stories.length + entryIndex) % colors.length];
+
+            if (endpointIndex === 0) {
+              const media = item.media && typeof item.media === 'object'
+                ? item.media as Record<string, unknown>
+                : undefined;
+              const mimeType = typeof media?.mimeType === 'string' ? media.mimeType : '';
+              const url = typeof media?.url === 'string'
+                ? media.url
+                : typeof media?.dataUrl === 'string'
+                  ? media.dataUrl
+                  : undefined;
+              if (!url || !/^(video|image)\//.test(mimeType)) return;
+              const isVideo = mimeType.startsWith('video/');
+              stories.push({
+                id: `post-${id}`,
+                title,
+                author,
+                authorId,
+                category: isVideo ? 'VIDEO REPORT' : 'PHOTO REPORT',
+                tag: 'COMMUNITY',
+                color,
+                sourceUrl: profileUrl || '/civicwatch',
+                profileUrl,
+                imageUrl: !isVideo ? url : undefined,
+                videoUrl: isVideo ? url : undefined,
+                mimeType
+              });
+              return;
+            }
+
+            if (typeof item.image === 'string') {
+              stories.push({
+                id: `watch-${id}`,
+                title,
+                author,
+                authorId,
+                category: 'FIELD REPORT',
+                tag: 'CIVICWATCH',
+                color,
+                sourceUrl: profileUrl || '/civicwatch',
+                profileUrl,
+                imageUrl: item.image,
+                mimeType: 'image/jpeg'
+              });
+            }
+          });
+        } catch (error) {
+          console.warn(`[CivicWatch] Could not parse ${endpoints[endpointIndex]}.`, error);
+        }
+      }
+
+      if (!sceneDisposed) updateCityBillboardStories(cityAnimationHandles, stories);
+    };
+    void refreshCivicWatchMedia();
+    civicWatchMediaTimer = window.setInterval(() => void refreshCivicWatchMedia(), 30000);
 
     const playerGroup = new THREE.Group();
     playerGroup.position.set(0, 0, 20);
@@ -1570,7 +419,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       nametag: THREE.Sprite;
       bubble?: THREE.Sprite;
       bubbleMessageId?: string;
-      characterJson: string;
+      characterRef: unknown;
       username: string;
       targetPos: THREE.Vector3;
       targetRotY: number;
@@ -1579,6 +428,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     }>();
     const localChatBubble: ChatBubble = { sprite: new THREE.Sprite(), messageId: '' };
     const remoteChatBubbles = new Map<string, ChatBubble>();
+    const latestNearbyMessages = new Map<string, ReturnType<typeof useMultiplayerStore.getState>['chatHistory'][number]>();
+    let lastNearbyMessageRefresh = 0;
 
     const createChatBubble = (text: string) => {
       const canvas = document.createElement('canvas');
@@ -1683,21 +534,88 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     const keys: Record<string, boolean> = {};
     let pitch = 0;
-    let yaw = 0;
+    let yaw = -Math.PI / 4;
     let isJumping = false;
     let jumpVelocity = 0;
     // Movement velocity vector (units per second)
     const velocity = new THREE.Vector3(0, 0, 0);
     const accel = 80; // acceleration units/sec^2
     const damping = 10; // damping factor
+    let activeVehicle: (typeof cityAnimationHandles.vehicles)[number] | undefined;
+    let vehicleSpeed = 0;
+    let lastVehicleImpactAt = -Infinity;
+    const roadSurfaceHeight = 0.08;
+    const getGroundHeight = (x: number, z: number) => {
+      const { bridge } = cityAnimationHandles;
+      const distance = x * bridge.axisX + z * bridge.axisZ;
+      const lateral = x * bridge.sideX + z * bridge.sideZ;
+      return distance >= bridge.startDistance && distance <= bridge.endDistance &&
+        Math.abs(lateral) <= bridge.halfWidth - 1
+        ? bridge.heightAt(distance)
+        : roadSurfaceHeight;
+    };
+    const intersectsRotatedRect = (
+      x: number,
+      z: number,
+      radius: number,
+      centerX: number,
+      centerZ: number,
+      halfWidth: number,
+      halfDepth: number,
+      rotationY: number
+    ) => {
+      const dx = x - centerX;
+      const dz = z - centerZ;
+      const cosine = Math.cos(rotationY);
+      const sine = Math.sin(rotationY);
+      const localX = cosine * dx - sine * dz;
+      const localZ = sine * dx + cosine * dz;
+      const outsideX = Math.max(Math.abs(localX) - halfWidth, 0);
+      const outsideZ = Math.max(Math.abs(localZ) - halfDepth, 0);
+      return Math.hypot(outsideX, outsideZ) < radius;
+    };
+    const canOccupy = (x: number, z: number, radius: number, ignoredVehicle?: typeof activeVehicle) => {
+      const { bridge, collisionObstacles } = cityAnimationHandles;
+      const distance = x * bridge.axisX + z * bridge.axisZ;
+      const lateral = x * bridge.sideX + z * bridge.sideZ;
+      if (
+        distance >= bridge.startDistance && distance <= bridge.endDistance &&
+        Math.abs(lateral) > bridge.halfWidth - radius
+      ) return false;
+      if (collisionObstacles.some(obstacle =>
+        intersectsRotatedRect(
+          x,
+          z,
+          radius,
+          obstacle.x,
+          obstacle.z,
+          obstacle.halfWidth,
+          obstacle.halfDepth,
+          obstacle.rotationY
+        )
+      )) return false;
+      return cityAnimationHandles.vehicles.every(vehicle =>
+        vehicle === ignoredVehicle ||
+        !intersectsRotatedRect(
+          x,
+          z,
+          radius,
+          vehicle.group.position.x,
+          vehicle.group.position.z,
+          vehicle.width / 2,
+          vehicle.length / 2,
+          vehicle.group.rotation.y
+        )
+      );
+    };
 
     const onMouseMove = (e: MouseEvent) => {
       if (isChatFocusedRef.current) return;
       if (document.pointerLockElement === canvasElement) {
         // Horizontal look: use natural movement (positive movementX -> look right)
         yaw -= e.movementX * 0.0022;
-        // Vertical look: use natural movement (positive movementY -> look down)
-        pitch += e.movementY * 0.0022;
+        const pitchDirection = cameraModeRef.current === '3RD' ? 1 : -1;
+        pitch += e.movementY * 0.0022 * pitchDirection;
         // Clamp pitch to avoid flipping
         pitch = Math.max(-1.48, Math.min(1.48, pitch));
       }
@@ -1730,8 +648,54 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         return;
       }
 
-      if (e.code === 'KeyE') {
+      if (e.code === 'KeyE' || e.code === 'KeyZ') {
         e.preventDefault();
+        if (e.repeat) return;
+        if (activeVehicle) {
+          const vehicleToExit = activeVehicle;
+          const exitOffset = new THREE.Vector3(vehicleToExit.width / 2 + 1.2, 0, 0)
+            .applyAxisAngle(new THREE.Vector3(0, 1, 0), vehicleToExit.group.rotation.y);
+          const nearbyExit = {
+            x: vehicleToExit.group.position.x + exitOffset.x,
+            z: vehicleToExit.group.position.z + exitOffset.z
+          };
+          const exitPosition = canOccupy(nearbyExit.x, nearbyExit.z, 0.8, vehicleToExit)
+            ? nearbyExit
+            : { x: 0, z: 20 };
+          playerGroup.position.set(
+            exitPosition.x,
+            getGroundHeight(exitPosition.x, exitPosition.z),
+            exitPosition.z
+          );
+          playerGroup.rotation.y = vehicleToExit.group.rotation.y;
+          yaw = vehicleToExit.group.rotation.y;
+          playerGroup.visible = true;
+          activeVehicle = undefined;
+          vehicleSpeed = 0;
+          velocity.set(0, 0, 0);
+          return;
+        }
+
+        const nearbyVehicle = cityAnimationHandles.vehicles.find(vehicle =>
+          Math.hypot(
+            playerGroup.position.x - vehicle.group.position.x,
+            playerGroup.position.z - vehicle.group.position.z
+          ) < 6
+        );
+        if (nearbyVehicle) {
+          activeVehicle = nearbyVehicle;
+          vehicleSpeed = 0;
+          playerGroup.position.copy(nearbyVehicle.group.position);
+          playerGroup.rotation.y = nearbyVehicle.group.rotation.y;
+          yaw = nearbyVehicle.group.rotation.y;
+          velocity.set(0, 0, 0);
+          playerGroup.visible = false;
+          cameraModeRef.current = '3RD';
+          setCameraMode('3RD');
+          if (document.pointerLockElement) document.exitPointerLock();
+          return;
+        }
+
         const billboardStory = findBillboardStory(new THREE.Vector2(0, 0));
         if (billboardStory) {
           if (document.pointerLockElement) document.exitPointerLock();
@@ -1754,9 +718,12 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       }
 
       // Jump with Space
-      if (e.code === 'Space' && !isJumping) {
-        isJumping = true;
-        jumpVelocity = 8.5;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!activeVehicle && !isJumping) {
+          isJumping = true;
+          jumpVelocity = 8.5;
+        }
       }
     };
 
@@ -1837,7 +804,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     const updateWeaponSlot = (newSlot: number) => {
       activeSlotRef.current = newSlot;
-      setActiveSlot(newSlot);
       playWeaponSwapSound();
 
       const col = slotPlasmaColors[newSlot] || 0x00f3ff;
@@ -1855,9 +821,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // ========================================================
     // STRICT CANVAS-ONLY INTERACTION & POINTER LOCK ISOLATION
     // ========================================================
-    const canvasElement = renderer.domElement;
-    canvasElement.id = 'cv-3d-engine-canvas';
-
     const playerRaycaster = new THREE.Raycaster();
     const findBillboardStory = (pointer: THREE.Vector2) => {
       playerRaycaster.setFromCamera(pointer, camera);
@@ -1911,8 +874,15 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       // Only engage pointer lock if clicking directly on the 3D WebGL Canvas
       if (document.pointerLockElement !== canvasElement) {
         try {
-          canvasElement.requestPointerLock?.();
-        } catch (err) {}
+          const pointerLockRequest = canvasElement.requestPointerLock?.();
+          if (pointerLockRequest instanceof Promise) {
+            void pointerLockRequest.catch(error => {
+              console.warn('[GodotFoyer] pointer lock request failed', error);
+            });
+          }
+        } catch (error) {
+          console.warn('[GodotFoyer] pointer lock request failed', error);
+        }
         return; // Do not fire weapon or initiate walking on the lock acquisition click
       }
 
@@ -1924,8 +894,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         weaponGroup.rotation.x = -0.12;
 
         playLaserSound();
-
-        setAmmo(prev => ({ ...prev, current: Math.max(0, prev.current - 1) }));
 
         setTimeout(() => {
           muzzleLight.intensity = 0;
@@ -1995,75 +963,156 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     let lastMoveBroadcast = 0;
     let nextLightningAt = 7 + Math.random() * 12;
     let lightningOffAt = 0;
+    let fpsSampleStart = 0;
+    let fpsSampleFrames = 0;
+    let lastResolutionChange = 0;
+    renderScaleRef.current = renderer.getPixelRatio();
 
     const animate = () => {
       frameId = requestAnimationFrame(animate);
       try {
         const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
-        nebulaMaterial.uniforms.time.value = elapsed;
-        rain.position.set(playerGroup.position.x, playerGroup.position.y, playerGroup.position.z);
-        const rainAttribute = rainGeometry.getAttribute('position') as THREE.BufferAttribute;
-        const rainData = rainAttribute.array as Float32Array;
-        const rainStep = Math.min(delta, 0.05) * 62;
-        for (let index = 0; index < rainCount; index += 1) {
-          const offset = index * 6;
-          rainData[offset + 1] -= rainStep;
-          rainData[offset] += rainStep * 0.12;
-          rainData[offset + 2] += rainStep * 0.04;
-          if (rainData[offset + 1] < 0) {
-            rainData[offset] = (Math.random() - 0.5) * 120;
-            rainData[offset + 1] = 45 + Math.random() * 20;
-            rainData[offset + 2] = (Math.random() - 0.5) * 120;
+        fpsSampleFrames += 1;
+        if (elapsed - fpsSampleStart >= 2) {
+          const sampleDuration = elapsed - fpsSampleStart;
+          const measuredFps = fpsSampleFrames / sampleDuration;
+          const maximumScale = Math.min(window.devicePixelRatio, pixelCapRef.current);
+          const currentScale = renderScaleRef.current;
+          let nextScale = currentScale;
+          if (measuredFps < 56 && currentScale > 1) {
+            nextScale = Math.max(1, currentScale - 0.25);
+          } else if (measuredFps >= 59 && elapsed - lastResolutionChange >= 8) {
+            nextScale = Math.min(maximumScale, currentScale + 0.125);
           }
-          rainData[offset + 3] = rainData[offset] + 0.2;
-          rainData[offset + 4] = rainData[offset + 1] - 1.8;
-          rainData[offset + 5] = rainData[offset + 2] + 0.08;
+
+          if (nextScale !== currentScale) {
+            renderScaleRef.current = nextScale;
+            lastResolutionChange = elapsed;
+            const width = containerRef.current!.clientWidth;
+            const height = containerRef.current!.clientHeight;
+            renderer.setPixelRatio(nextScale);
+            renderer.setSize(width, height);
+            composer.setPixelRatio(nextScale);
+            composer.setSize(width, height);
+            smaaPass.setSize(width * nextScale, height * nextScale);
+          }
+
+          fpsSampleStart = elapsed;
+          fpsSampleFrames = 0;
         }
-        rainAttribute.needsUpdate = true;
+        updateCityAnimation(cityAnimationHandles, elapsed, playerGroup.position, delta);
         if (elapsed >= nextLightningAt) {
           lightning.intensity = 2.8;
           lightningOffAt = elapsed + 0.12;
           nextLightningAt = elapsed + 12 + Math.random() * 18;
         }
         if (lightning.intensity > 0 && elapsed >= lightningOffAt) lightning.intensity = 0;
-        // 2. Player Movement: WASD / Arrow Keys + Right Click Walk
+        // 2. Pedestrian movement and vehicle controls
         const moveDir = new THREE.Vector3();
-        if (keys['KeyW'] || keys['ArrowUp'] || isRightMouseDown) moveDir.z -= 1;
-        if (keys['KeyS'] || keys['ArrowDown']) moveDir.z += 1;
+        const forwardPressed = keys['KeyW'] || keys['ArrowUp'];
+        const reversePressed = keys['KeyS'] || keys['ArrowDown'];
+        if (forwardPressed || isRightMouseDown) moveDir.z -= 1;
+        if (reversePressed) moveDir.z += 1;
         if (keys['KeyA'] || keys['ArrowLeft']) moveDir.x -= 1;
         if (keys['KeyD'] || keys['ArrowRight']) moveDir.x += 1;
+        let isMoving = moveDir.length() > 0;
 
-        const isRunning = keys['ShiftLeft'] || keys['ShiftRight'];
-        const targetSpeed = isRunning ? 14 : 8; // units/sec smooth walking/sprinting speed
-        let desired = new THREE.Vector3(0, 0, 0);
-        if (moveDir.length() > 0) {
-          moveDir.normalize();
-          const rotQuaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-          moveDir.applyQuaternion(rotQuaternion);
-          desired.copy(moveDir).multiplyScalar(targetSpeed);
-        }
+        if (activeVehicle) {
+          const steering = Number(keys['KeyA'] || keys['ArrowLeft']) -
+            Number(keys['KeyD'] || keys['ArrowRight']);
+          const handbrake = keys['Space'];
+          const boosting = keys['ShiftLeft'] || keys['ShiftRight'];
+          const damagedSpeedFactor = 1 - activeVehicle.damage * 0.0035;
+          const maxSpeed = activeVehicle.maxSpeed * damagedSpeedFactor * (boosting ? 1.18 : 1);
+          if (steering !== 0 && Math.abs(vehicleSpeed) > 0.05) {
+            const speedFactor = THREE.MathUtils.clamp(
+              Math.abs(vehicleSpeed) / Math.max(activeVehicle.maxSpeed, 1),
+              0.18,
+              1
+            );
+            activeVehicle.group.rotation.y += steering * activeVehicle.steeringRate *
+              speedFactor * delta * Math.sign(vehicleSpeed);
+          }
+          if (forwardPressed) {
+            if (vehicleSpeed < 0) {
+              vehicleSpeed = Math.min(0, vehicleSpeed + activeVehicle.brakeForce * delta);
+            } else {
+              vehicleSpeed = Math.min(maxSpeed, vehicleSpeed + activeVehicle.acceleration * (boosting ? 1.35 : 1) * delta);
+            }
+          } else if (reversePressed) {
+            if (vehicleSpeed > 0) {
+              vehicleSpeed = Math.max(0, vehicleSpeed - activeVehicle.brakeForce * delta);
+            } else {
+              vehicleSpeed = Math.max(-activeVehicle.maxReverseSpeed, vehicleSpeed - activeVehicle.acceleration * 0.65 * delta);
+            }
+          } else {
+            vehicleSpeed *= Math.exp(-activeVehicle.coastDrag * delta);
+          }
+          if (handbrake) vehicleSpeed *= Math.exp(-8 * delta);
 
-        // Accelerate towards desired velocity (smoothed)
-        const vLerpFactor = Math.min(1, 10 * delta);
-        velocity.lerp(desired, vLerpFactor);
+          const forward = new THREE.Vector3(0, 0, -1)
+            .applyAxisAngle(new THREE.Vector3(0, 1, 0), activeVehicle.group.rotation.y);
+          const nextX = activeVehicle.group.position.x + forward.x * vehicleSpeed * delta;
+          const nextZ = activeVehicle.group.position.z + forward.z * vehicleSpeed * delta;
+          if (canOccupy(nextX, nextZ, activeVehicle.collisionRadius, activeVehicle)) {
+            const wheelRadius = activeVehicle.wheelRadius;
+            activeVehicle.group.position.set(
+              nextX,
+              Math.max(roadSurfaceHeight, getGroundHeight(nextX, nextZ)),
+              nextZ
+            );
+            activeVehicle.wheels.forEach(wheel => {
+              wheel.rotation.x += vehicleSpeed * delta / wheelRadius;
+            });
+          } else {
+            const impactSpeed = Math.abs(vehicleSpeed);
+            if (impactSpeed > 3 && elapsed - lastVehicleImpactAt > 0.35) {
+              activeVehicle.applyDamage(Math.min(25, (impactSpeed - 2) * 0.8));
+              lastVehicleImpactAt = elapsed;
+            }
+            vehicleSpeed = impactSpeed > 6 ? -Math.sign(vehicleSpeed) * impactSpeed * 0.12 : 0;
+          }
+          playerGroup.position.copy(activeVehicle.group.position);
+          playerGroup.rotation.y = activeVehicle.group.rotation.y;
+          yaw = activeVehicle.group.rotation.y;
+          velocity.set(0, 0, 0);
+          isMoving = Math.abs(vehicleSpeed) > 0.2;
+        } else {
+          const isRunning = keys['ShiftLeft'] || keys['ShiftRight'];
+          const targetSpeed = isRunning ? 14 : 8;
+          const desired = new THREE.Vector3(0, 0, 0);
+          if (moveDir.length() > 0) {
+            moveDir.normalize();
+            const rotQuaternion = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            moveDir.applyQuaternion(rotQuaternion);
+            desired.copy(moveDir).multiplyScalar(targetSpeed);
+          }
+          velocity.lerp(desired, Math.min(1, 10 * delta));
 
-        // Apply gravity/jump
-        if (isJumping) {
-          playerGroup.position.y += jumpVelocity * delta;
-          jumpVelocity -= 22 * delta; // Gravity
-          if (playerGroup.position.y <= 0) {
-            playerGroup.position.y = 0;
+          if (isJumping) {
+            playerGroup.position.y += jumpVelocity * delta;
+            jumpVelocity -= 22 * delta;
+          }
+
+          const nextX = playerGroup.position.x + velocity.x * delta;
+          const nextZ = playerGroup.position.z + velocity.z * delta;
+          if (canOccupy(nextX, nextZ, 0.8)) {
+            playerGroup.position.x = nextX;
+            playerGroup.position.z = nextZ;
+          } else {
+            velocity.set(0, 0, 0);
+          }
+
+          const groundHeight = getGroundHeight(playerGroup.position.x, playerGroup.position.z);
+          if (playerGroup.position.y <= groundHeight) {
+            playerGroup.position.y = groundHeight;
             isJumping = false;
             jumpVelocity = 0;
           }
         }
 
-        // Move player by velocity (frame-rate independent)
-        playerGroup.position.addScaledVector(velocity, delta);
-
         // Local player gait animation on custom decentralized avatar
-        const isMoving = moveDir.length() > 0;
         const targetMeshY = isMoving ? Math.sin(elapsed * 8) * 0.04 : Math.sin(elapsed * 2) * 0.01;
         localCharacterMesh.position.y = THREE.MathUtils.lerp(localCharacterMesh.position.y, targetMeshY, 0.1);
 
@@ -2085,16 +1134,18 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
         // Synchronize remote multiplayer players in 3D scene
         const remotePlayers = useMultiplayerStore.getState().players;
-        const chatMessages = useMultiplayerStore.getState().chatHistory;
-        const latestNearbyMessages = new Map<string, typeof chatMessages[number]>();
         const now = Date.now();
-        chatMessages.forEach(message => {
-          if (!message.proximity || !message.sentAt || now - message.sentAt > 4500 || now < message.sentAt) return;
-          const previous = latestNearbyMessages.get(message.playerId);
-          if (!previous || (previous.sentAt || 0) < message.sentAt) {
-            latestNearbyMessages.set(message.playerId, message);
-          }
-        });
+        if (now - lastNearbyMessageRefresh >= 250) {
+          latestNearbyMessages.clear();
+          useMultiplayerStore.getState().chatHistory.forEach(message => {
+            if (!message.proximity || !message.sentAt || now - message.sentAt > 4500 || now < message.sentAt) return;
+            const previous = latestNearbyMessages.get(message.playerId);
+            if (!previous || (previous.sentAt || 0) < message.sentAt) {
+              latestNearbyMessages.set(message.playerId, message);
+            }
+          });
+          lastNearbyMessageRefresh = now;
+        }
         const localPlayerId = useMultiplayerStore.getState().localPlayerId;
         const localMessage = latestNearbyMessages.get(localPlayerId);
         if (localMessage) {
@@ -2114,7 +1165,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         remotePlayers.forEach((p, pId) => {
           activeRemoteIds.add(pId);
           let remoteObj = remoteMeshes.get(pId);
-          const cJson = JSON.stringify(p.character || {});
 
           if (!remoteObj) {
             const grp = new THREE.Group();
@@ -2134,7 +1184,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
               group: grp,
               mesh: m,
               nametag: tag,
-              characterJson: cJson,
+              characterRef: p.character,
               username: p.username,
               targetPos: new THREE.Vector3(p.position.x, p.position.y, p.position.z),
               targetRotY: p.rotation.y,
@@ -2143,13 +1193,13 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             };
             remoteMeshes.set(pId, remoteObj);
           } else {
-            if (remoteObj.characterJson !== cJson) {
+            if (remoteObj.characterRef !== p.character) {
               remoteObj.group.remove(remoteObj.mesh);
               const newM = createCharacterMesh(p.character || defaultCharacter);
               newM.rotation.y = Math.PI;
               remoteObj.group.add(newM);
               remoteObj.mesh = newM;
-              remoteObj.characterJson = cJson;
+              remoteObj.characterRef = p.character;
             }
 
             if (remoteObj.username !== p.username) {
@@ -2220,40 +1270,47 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
         // 3. CAMERA MODES & 360° PITCH/YAW POSITIONING
         if (cameraModeRef.current === '1ST') {
-          // First Person Mode: Camera placed at player eye level with pitch/yaw
+          const cockpitOffset = activeVehicle
+            ? new THREE.Vector3(0, 0, activeVehicle.cockpitOffsetZ)
+              .applyAxisAngle(new THREE.Vector3(0, 1, 0), activeVehicle.group.rotation.y)
+            : new THREE.Vector3();
           camera.position.set(
-            playerGroup.position.x,
-            playerGroup.position.y + 2.45,
-            playerGroup.position.z
+            playerGroup.position.x + cockpitOffset.x,
+            playerGroup.position.y + (activeVehicle ? activeVehicle.cockpitHeight : 2.45),
+            playerGroup.position.z + cockpitOffset.z
           );
           // Use quaternion from Euler to avoid gimbal issues
           camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
 
           // Position weapon in front of 1ST person view (follow camera)
-          weaponGroup.position.set(0.25, 2.1, -0.5);
-          weaponGroup.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+          weaponGroup.visible = !activeVehicle;
+          if (!activeVehicle) {
+            weaponGroup.position.set(0.25, 2.1, -0.5);
+            weaponGroup.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+          }
         } else {
-          // Third Person Mode: 360° Orbit Camera around player at distance r=7.0
-          const camDistance = 4.8;
+          weaponGroup.visible = true;
+          const camDistance = activeVehicle ? 9 : 4.8;
           const camX = playerGroup.position.x + Math.sin(yaw) * Math.cos(pitch) * camDistance;
-          const camY = playerGroup.position.y + 2.15 + Math.sin(pitch) * camDistance;
+          const camY = playerGroup.position.y + (activeVehicle ? 3.4 : 2.15) + Math.sin(pitch) * camDistance;
           const camZ = playerGroup.position.z + Math.cos(yaw) * Math.cos(pitch) * camDistance;
 
           camera.position.set(camX, Math.max(0.5, camY), camZ);
-          camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1.35, playerGroup.position.z);
+          camera.lookAt(
+            playerGroup.position.x,
+            playerGroup.position.y + (activeVehicle ? 1.2 : 1.35),
+            playerGroup.position.z
+          );
 
           // Position weapon in player hands in 3RD person view
           weaponGroup.position.set(0.4, 1.3, -0.4);
         }
 
-        starMat.uniforms.time.value = elapsed;
-        nebulaMaterial.uniforms.time.value = elapsed;
-
         // Use composer if available for postprocessing
         try {
           (composer as any).render();
         } catch (e) {
-          renderer.render(scene, camera);
+          composer.render();
         }
       } catch (err) {
         console.error('[GodotFoyer] render loop error', err)
@@ -2330,7 +1387,12 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       className="relative w-full h-full bg-[#1a0628] overflow-hidden select-none cursor-crosshair"
     >
       {/* 3D Canvas target */}
-      <canvas id="canvas" className="absolute inset-0 w-full h-full block" />
+      <canvas ref={canvasRef} id="canvas" className="absolute inset-0 w-full h-full block" />
+      {sceneErrorMessage && (
+        <div role="alert" className="absolute inset-0 z-50 flex items-center justify-center bg-[#080b14]/95 p-6 text-center font-mono text-sm text-rose-200">
+          {sceneErrorMessage}
+        </div>
+      )}
 
       {/* ======================================================== */}
       {/* FPS CROSSHAIR (WHEN IN 1ST PERSON MODE)                  */}
@@ -2348,19 +1410,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           </div>
         </div>
       )}
-
-      {/* ======================================================== */}
-      {/* CAMERA MODE TOGGLE BUTTON (SAFE CLICK / PRESS 'V')       */}
-      {/* ======================================================== */}
-      <button 
-        type="button"
-        onClick={toggleCameraMode}
-        className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-[#090d16]/90 border border-cyan-500/50 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer hover:border-cyan-400 transition-all pointer-events-auto outline-none"
-      >
-        <Camera className="w-4 h-4 text-cyan-400 animate-pulse" />
-        <span className="text-xs font-black text-white uppercase tracking-wider">VIEW: {cameraMode} PERSON</span>
-        <span className="bg-cyan-500/20 text-cyan-400 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded">PRESS 'V'</span>
-      </button>
 
       {selectedBillboardStory && (
         <div
@@ -2390,7 +1439,16 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            {selectedBillboardStory.imageUrl && (
+            {selectedBillboardStory.videoUrl && (
+              <video
+                src={selectedBillboardStory.videoUrl}
+                className="mb-4 max-h-56 w-full rounded-lg bg-black/30 object-contain"
+                controls
+                muted
+                playsInline
+              />
+            )}
+            {!selectedBillboardStory.videoUrl && selectedBillboardStory.imageUrl && (
               <img src={selectedBillboardStory.imageUrl} alt="" className="mb-4 max-h-56 w-full rounded-lg bg-black/30 object-contain" />
             )}
             <div className="flex flex-wrap gap-2">
@@ -2435,13 +1493,13 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       )}
 
       {/* Controls HUD Badge */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 max-w-[min(760px,85vw)] rounded-xl border border-cyan-500/40 bg-[#090d16]/90 px-4 py-2 text-center font-mono text-[10px] leading-relaxed text-gray-200 shadow-[0_0_15px_rgba(0,0,0,0.6)] pointer-events-none">
-        <div><span className="font-bold text-cyan-300">HOW TO USE</span><span className="text-white"> · Right-click walks · Click a billboard/building or aim + E for links · V camera · Scroll hotbar · Left-click elsewhere shoots</span></div>
+      <div className="hidden absolute top-12 left-1/2 -translate-x-1/2 z-30 max-w-[min(760px,85vw)] rounded-xl border border-cyan-500/40 bg-[#090d16]/90 px-4 py-2 text-center font-mono text-[10px] leading-relaxed text-gray-200 shadow-[0_0_15px_rgba(0,0,0,0.6)] pointer-events-none">
+        <div><span className="font-bold text-cyan-300">HOW TO USE</span><span className="text-white"> · Right-click walks · E near a car to drive or exit · Click a billboard/building or aim + E for links · V camera · Scroll hotbar</span></div>
         <div className="text-gray-300">Chat below: type or tap an emoji to send · Nearby chat reaches citizens within 30 m; switch to Lobby for everyone</div>
       </div>
 
       {/* Quality Controls */}
-      <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-[#090d16]/80 border border-cyan-500/40 backdrop-blur-md px-3 py-2 rounded-xl text-xs text-white">
+      <div className="hidden absolute top-4 right-4 z-30 flex items-center gap-2 bg-[#090d16]/80 border border-cyan-500/40 backdrop-blur-md px-3 py-2 rounded-xl text-xs text-white">
         <div className="flex flex-col mr-2">
           <div className="font-bold text-[11px] mb-1">AA</div>
           <div className="flex gap-1">
@@ -2453,7 +1511,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           <div className="font-bold text-[11px] mb-1">Quality</div>
           <div className="flex gap-1">
             <button onClick={() => applyPixelCap(1)} className={`px-2 py-0.5 rounded ${pixelCap===1 ? 'bg-gray-600' : 'bg-transparent'}`}>1x</button>
-            <button onClick={() => applyPixelCap(2)} className={`px-2 py-0.5 rounded ${pixelCap===2 ? 'bg-cyan-600' : 'bg-transparent'}`}>2x</button>
+            <button onClick={() => applyPixelCap(1.25)} className={`px-2 py-0.5 rounded ${pixelCap===1.25 ? 'bg-cyan-600' : 'bg-transparent'}`}>1.25x</button>
+            <button onClick={() => applyPixelCap(2)} className={`px-2 py-0.5 rounded ${pixelCap===2 ? 'bg-transparent border border-cyan-500' : 'bg-transparent'}`}>2x</button>
             <button onClick={() => applyPixelCap(3)} className={`px-2 py-0.5 rounded ${pixelCap===3 ? 'bg-transparent border border-cyan-500' : 'bg-transparent'}`}>3x</button>
           </div>
         </div>
@@ -2464,7 +1523,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       {/* ======================================================== */}
 
       {/* 0. TOP-LEFT OVERLAY: MULTIPLAYER LIVE STATUS & 20-CITIZEN LOBBY */}
-      <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <div className="hidden absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2 pointer-events-auto">
         <div className="flex items-center gap-2 bg-[#090d16]/90 border border-emerald-500/50 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.3)]">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]" />
           <span className="text-xs font-black text-white tracking-wider uppercase">
@@ -2636,7 +1695,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       )}
 
       {/* 1. TOP-LEFT OVERLAY: ACTIVE QUEST */}
-      <div className="absolute top-16 left-4 z-20 w-64 bg-[#0d131f]/85 backdrop-blur-md border border-[#1e293b] rounded-xl p-3.5 shadow-2xl text-white pointer-events-auto">
+      <div className="hidden absolute top-16 left-4 z-20 w-64 bg-[#0d131f]/85 backdrop-blur-md border border-[#1e293b] rounded-xl p-3.5 shadow-2xl text-white pointer-events-auto">
         <div className="flex items-center justify-between border-b border-gray-800/60 pb-2 mb-2.5">
           <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400">
             <span className="text-cyan-400 font-extrabold">ACTIVE QUEST</span>
@@ -2664,7 +1723,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       </div>
 
       {/* Lobby players are linked to public profiles by Civic ID. */}
-      <div className="absolute top-4 left-4 z-20 w-64 max-w-[48vw] rounded-xl border border-fuchsia-500/30 bg-[#090d16]/90 p-3 shadow-2xl backdrop-blur-md pointer-events-auto">
+      <div className="hidden absolute top-4 left-4 z-20 w-64 max-w-[48vw] rounded-xl border border-fuchsia-500/30 bg-[#090d16]/90 p-3 shadow-2xl backdrop-blur-md pointer-events-auto">
         <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-fuchsia-200">
           <span>Lobby citizens</span><span>{visiblePlayers.length}</span>
         </div>
@@ -2683,7 +1742,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       </div>
 
       {/* 2. TOP-RIGHT OVERLAY: CIRCULAR MINIMAP */}
-      <div className="absolute top-4 right-4 z-20 flex flex-col items-center pointer-events-auto">
+      <div className="hidden absolute top-4 right-4 z-20 flex flex-col items-center pointer-events-auto">
         <div className="relative w-36 h-36 rounded-full bg-[#080d16]/90 border-2 border-cyan-500/40 backdrop-blur-md shadow-[0_0_20px_rgba(6,182,212,0.3)] overflow-hidden flex items-center justify-center">
           <div className="absolute inset-0 border border-cyan-500/10 rounded-full m-3" />
           <div className="absolute inset-0 border border-cyan-500/10 rounded-full m-6" />
@@ -2701,7 +1760,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       </div>
 
       {/* 3. BOTTOM-LEFT OVERLAY: REAL-TIME DISTRICT CHAT & MULTIPLAYER LOBBY */}
-      <div className="absolute bottom-20 left-4 z-20 w-80 max-w-sm bg-[#090d16]/90 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl pointer-events-auto">
+      <div className="hidden absolute bottom-20 left-4 z-20 w-80 max-w-sm bg-[#090d16]/90 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl pointer-events-auto">
         <div className="flex items-center justify-between gap-1.5 mb-2 text-[10px] font-bold text-gray-300 border-b border-gray-800/60 pb-1.5">
           <div className="flex items-center gap-1.5 text-cyan-400">
             <MessageSquare className="w-3.5 h-3.5" />
@@ -2761,92 +1820,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         </div>
       </div>
 
-      {/* 4. BOTTOM-CENTER OVERLAY: ACTION BAR & STATUS HUD */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-end gap-4 pointer-events-auto">
-        {/* Hotbar Slots */}
-        <div className="flex items-center gap-1.5 bg-[#080c14]/90 backdrop-blur-md p-1.5 rounded-xl border border-gray-800 shadow-2xl">
-          {[
-            { id: 1, icon: '🛡️', count: null },
-            { id: 2, icon: '🪙', count: 2 },
-            { id: 3, icon: '⚔️', count: 2 },
-            { id: 4, icon: '✳️', count: null },
-          ].map((slot) => (
-            <button
-              key={slot.id}
-              onClick={() => setActiveSlot(slot.id)}
-              className={`relative w-10 h-10 rounded-lg flex items-center justify-center text-base transition-all ${
-                activeSlot === slot.id 
-                  ? 'bg-cyan-500/20 border-2 border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.5)] scale-105' 
-                  : 'bg-gray-900/80 border border-gray-800 hover:border-gray-700'
-              }`}
-            >
-              <span>{slot.icon}</span>
-              <span className="absolute top-0.5 left-1 text-[9px] text-gray-400 font-mono">{slot.id}</span>
-              {slot.count && (
-                <span className="absolute bottom-0.5 right-1 text-[9px] font-bold text-cyan-400 font-mono">{slot.count}</span>
-              )}
-            </button>
-          ))}
-
-          {/* Center Official Civicverse Logo Emblem */}
-          <div className="relative mx-2 flex flex-col items-center">
-            <div className="w-11 h-11 rounded-full overflow-hidden shadow-[0_0_15px_rgba(255,107,0,0.6)] border border-orange-500/50 hover:scale-105 transition-transform">
-              <img src={CIVICVERSE_LOGO} alt="CV" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = './Civicverselogo.png'; }} />
-            </div>
-            <div className="mt-1 text-[10px] font-extrabold text-orange-400 font-mono tracking-tighter">LVL 42</div>
-          </div>
-
-          {[
-            { id: 5, icon: '🔮', count: null },
-            { id: 6, icon: '🌀', count: 5 },
-            { id: 7, icon: '💫', count: null },
-            { id: 8, icon: '⚡', count: null },
-          ].map((slot) => (
-            <button
-              key={slot.id}
-              onClick={() => setActiveSlot(slot.id)}
-              className={`relative w-10 h-10 rounded-lg flex items-center justify-center text-base transition-all ${
-                activeSlot === slot.id 
-                  ? 'bg-cyan-500/20 border-2 border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.5)] scale-105' 
-                  : 'bg-gray-900/80 border border-gray-800 hover:border-gray-700'
-              }`}
-            >
-              <span>{slot.icon}</span>
-              <span className="absolute top-0.5 left-1 text-[9px] text-gray-400 font-mono">{slot.id}</span>
-              {slot.count && (
-                <span className="absolute bottom-0.5 right-1 text-[9px] font-bold text-cyan-400 font-mono">{slot.count}</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* HP & SP Bars Stack + Ammo Counter */}
-        <div className="flex flex-col justify-end gap-1.5 w-48 mb-1">
-          {/* Health Bar */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-emerald-400 font-mono w-6">HP</span>
-            <div className="flex-1 bg-gray-900 h-2 rounded-full overflow-hidden border border-emerald-950 p-0.5">
-              <div className="bg-gradient-to-r from-emerald-500 to-green-400 h-full rounded-full w-full shadow-[0_0_8px_#10b981]" />
-            </div>
-            <span className="text-[10px] font-mono text-gray-300 font-bold">100/100</span>
-          </div>
-
-          {/* SP Bar */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-cyan-400 font-mono w-6">SP</span>
-            <div className="flex-1 bg-gray-900 h-2 rounded-full overflow-hidden border border-cyan-950 p-0.5">
-              <div className="bg-gradient-to-r from-cyan-500 to-blue-400 h-full rounded-full w-[86%] shadow-[0_0_8px_#06b6d4]" />
-            </div>
-            <span className="text-[10px] font-mono text-gray-300 font-bold">86/100</span>
-          </div>
-
-          {/* Ammo & XP Bar */}
-          <div className="flex items-center justify-between text-[9px] text-gray-400 font-mono">
-            <span className="text-cyan-400 font-bold">AMMO: {ammo.current}/{ammo.max}</span>
-            <span>8,450 / 15,000 XP</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

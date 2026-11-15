@@ -13,7 +13,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true,
+    // The desktop launcher opens the frontend once its services are ready.
+    // Letting Vite open it too creates a second tab and duplicate local players.
+    open: false,
     host: true,
     proxy: {
       '/api/identity': {

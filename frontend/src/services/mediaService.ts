@@ -336,22 +336,33 @@ function rotateMirror() {
   activeMirrorIndex = (activeMirrorIndex + 1) % RADIO_BROWSER_MIRRORS.length;
 }
 
+async function fetchRadioBrowserData(path: string): Promise<any[]> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < RADIO_BROWSER_MIRRORS.length; attempt += 1) {
+    try {
+      const res = await fetch(`${getApiBaseUrl()}${path}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: unknown = await res.json();
+      if (!Array.isArray(data)) throw new Error('Invalid station directory response');
+      return data;
+    } catch (error) {
+      lastError = error;
+      rotateMirror();
+    }
+  }
+
+  const reason = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`Radio-Browser directory unavailable: ${reason}`);
+}
+
 /**
  * Fetch open radio stations by tag from the Radio-Browser directory
  */
 export async function fetchStationsByTag(tag: string, limit: number = 20): Promise<MediaStation[]> {
-  const url = `${getApiBaseUrl()}/json/stations/bytag/${encodeURIComponent(tag)}?limit=${limit}&order=clickcount&reverse=true`;
-  try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'CivicverseMediaPlayer/1.0' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return formatRadioBrowserStations(data, 'radio');
-  } catch (err) {
-    console.warn(`Radio Browser tag query failed for ${tag}:`, err);
-    rotateMirror();
-    // Return curated matching stations as instant fallback
-    return CURATED_STATIONS.filter(s => s.tags.includes(tag.toLowerCase()) || s.category === 'synth');
-  }
+  const path = `/json/stations/bytag/${encodeURIComponent(tag)}?limit=${limit}&order=clickcount&reverse=true`;
+  const data = await fetchRadioBrowserData(path);
+  return formatRadioBrowserStations(data, 'radio');
 }
 
 /**
@@ -359,38 +370,24 @@ export async function fetchStationsByTag(tag: string, limit: number = 20): Promi
  */
 export async function searchRadioStations(query: string, limit: number = 25): Promise<MediaStation[]> {
   if (!query.trim()) return CURATED_STATIONS;
-  const url = `${getApiBaseUrl()}/json/stations/search?name=${encodeURIComponent(query)}&limit=${limit}&order=clickcount&reverse=true`;
-  try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'CivicverseMediaPlayer/1.0' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return formatRadioBrowserStations(data, 'radio');
-  } catch (err) {
-    console.warn(`Radio Browser search query failed for ${query}:`, err);
-    rotateMirror();
-    const q = query.toLowerCase();
-    return CURATED_STATIONS.filter(s => 
-      s.name.toLowerCase().includes(q) || 
-      s.tags.some(t => t.toLowerCase().includes(q))
-    );
-  }
+  const encodedQuery = encodeURIComponent(query.trim());
+  const suffix = `?limit=${limit}&order=clickcount&reverse=true`;
+  const [namedStations, taggedStations] = await Promise.all([
+    fetchRadioBrowserData(`/json/stations/search?name=${encodedQuery}${suffix}`),
+    fetchRadioBrowserData(`/json/stations/bytag/${encodedQuery}${suffix}`)
+  ]);
+  const stations = formatRadioBrowserStations([...namedStations, ...taggedStations], 'radio');
+  return stations.filter((station, index) =>
+    stations.findIndex(candidate => candidate.id === station.id) === index
+  ).slice(0, limit);
 }
 
 /**
  * Fetch top voted stations from the open community
  */
 export async function fetchTopStations(limit: number = 20): Promise<MediaStation[]> {
-  const url = `${getApiBaseUrl()}/json/stations/topclick/${limit}`;
-  try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'CivicverseMediaPlayer/1.0' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return formatRadioBrowserStations(data, 'radio');
-  } catch (err) {
-    console.warn('Radio Browser topclick failed:', err);
-    rotateMirror();
-    return CURATED_STATIONS;
-  }
+  const data = await fetchRadioBrowserData(`/json/stations/topclick/${limit}`);
+  return formatRadioBrowserStations(data, 'radio');
 }
 
 /**
@@ -551,7 +548,7 @@ export function getLastPlayedStation(): MediaStation {
     const raw = localStorage.getItem(LAST_PLAYED_KEY);
     if (raw) return JSON.parse(raw);
   } catch (e) {}
-  return CURATED_STATIONS[0]; // Default to DEF CON Radio
+  return CURATED_STATIONS.find(station => station.id === 'nightwave-plaza') || CURATED_STATIONS[0];
 }
 
 export function saveLastPlayedStation(station: MediaStation): void {

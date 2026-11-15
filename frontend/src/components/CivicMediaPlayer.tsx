@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Howl } from 'howler';
+import { useNavigate } from 'react-router-dom';
 import { 
   Play, 
   Pause, 
@@ -22,69 +23,134 @@ import {
   Minus, 
   Sparkles, 
   Compass, 
-  MapPin, 
   Navigation, 
   Heart,
   Music,
   Settings,
   Sliders,
-  RotateCcw,
   Zap,
   Info,
   Layers,
-  Wrench
+  Wrench,
+  Users
 } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
-import { useMultiplayerStore } from '../services/multiplayer';
+import { getLocalPlayerPosition, useMultiplayerStore } from '../services/multiplayer';
 import { 
   MediaStation, 
   CURATED_STATIONS, 
   searchRadioStations, 
+  fetchStationsByTag,
+  fetchTopStations,
   getLastPlayedStation, 
   saveLastPlayedStation, 
   fetchLiveTrackMetadata, 
   TrackMetadata 
 } from '../services/mediaService';
 import { CIVICVERSE_LOGO } from '../assets/logo';
+import { CivicNewsFeed } from './CivicNewsFeed';
+import { CivicWatchClips } from './CivicWatchClips';
 
-type FoyerTabMode = 'minimap' | 'trending' | 'news' | 'proximity' | 'emojis' | 'settings';
+type FoyerTabMode = 'music' | 'minimap' | 'citizens' | 'feeds' | 'civicwatch' | 'proximity' | 'emojis' | 'settings';
+
+type RadioGenre = { id: string; label: string; tag: string };
+
+const RADIO_GENRES: RadioGenre[] = [
+  { id: 'hiphop', label: 'HIP-HOP', tag: 'hiphop' },
+  { id: 'rnb', label: 'R&B', tag: 'rnb' },
+  { id: 'urban', label: 'URBAN', tag: 'urban' },
+  { id: 'synthwave', label: 'SYNTHWAVE', tag: 'synthwave' },
+  { id: 'vaporwave', label: 'VAPORWAVE', tag: 'vaporwave' },
+  { id: 'lofi', label: 'LO-FI', tag: 'lofi' },
+  { id: 'electronic', label: 'ELECTRONIC', tag: 'electronic' },
+  { id: 'ambient', label: 'AMBIENT', tag: 'ambient' },
+  { id: 'techno', label: 'TECHNO', tag: 'techno' },
+  { id: 'house', label: 'HOUSE', tag: 'house' },
+  { id: 'rock', label: 'ROCK', tag: 'rock' },
+  { id: 'jazz', label: 'JAZZ', tag: 'jazz' },
+  { id: 'gospel', label: 'GOSPEL', tag: 'gospel' },
+  { id: 'reggae', label: 'REGGAE', tag: 'reggae' },
+  { id: 'country', label: 'COUNTRY', tag: 'country' },
+  { id: 'classical', label: 'CLASSICAL', tag: 'classical' }
+];
+
+const STATION_PRESETS = [
+  { label: 'NEON DRIVE', stationId: 'nightwave-plaza' },
+  { label: 'SYNTH RUN', stationId: 'atomicwave-fm' },
+  { label: 'LO-FI FOCUS', stationId: 'lofi-cafe' },
+  { label: 'AMBIENT DRIFT', stationId: 'soma-groove-salad' },
+  { label: 'DEEP SPACE', stationId: 'soma-drone-zone' },
+  { label: 'CIVIC RADIO', stationId: 'wnyc-939' }
+];
+
+const getInitialStation = (): MediaStation => {
+  const savedStation = getLastPlayedStation();
+  if (
+    savedStation &&
+    typeof savedStation.id === 'string' &&
+    typeof savedStation.name === 'string' &&
+    typeof savedStation.url === 'string' &&
+    savedStation.id !== 'city-hiphop' &&
+    !/city\s*hip[\s-]*hop/i.test(savedStation.name)
+  ) {
+    return savedStation;
+  }
+
+  const defaultStation = CURATED_STATIONS.find(station => station.id === STATION_PRESETS[0].stationId);
+  if (!defaultStation) {
+    throw new Error(`The "${STATION_PRESETS[0].label}" preset references a missing station.`);
+  }
+  return defaultStation;
+};
 
 export const CivicMediaPlayer: React.FC = () => {
   const { user } = useGameStore();
+  const navigate = useNavigate();
 
   // Multiplayer store integration (Proximity Chat, Peers, Radar)
-  const chatHistory = useMultiplayerStore(state => state.chatHistory);
   const peerCount = useMultiplayerStore(state => state.peerCount);
   const players = useMultiplayerStore(state => state.players);
+  const chatHistory = useMultiplayerStore(state => state.chatHistory);
   const sendMessage = useMultiplayerStore(state => state.sendMessage);
+  const chatAudience = useMultiplayerStore(state => state.chatAudience);
+  const setChatAudience = useMultiplayerStore(state => state.setChatAudience);
+  const currentLobbyId = useMultiplayerStore(state => state.currentLobbyId);
+  const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
+  const availableLobbies = useMultiplayerStore(state => state.availableLobbies);
+  const switchLobby = useMultiplayerStore(state => state.switchLobby);
+  const [localPosition, setLocalPosition] = useState(getLocalPlayerPosition);
+  const [playerSearch, setPlayerSearch] = useState('');
 
   // Playback state
-  const [currentStation, setCurrentStation] = useState<MediaStation>(() => getLastPlayedStation() || CURATED_STATIONS[0]);
+  const [currentStation, setCurrentStation] = useState<MediaStation>(getInitialStation);
+  const [activePresetIndex, setActivePresetIndex] = useState<number>(() =>
+    STATION_PRESETS.findIndex(preset => preset.stationId === currentStation.id)
+  );
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackState, setPlaybackState] = useState<'idle' | 'buffering' | 'playing' | 'error'>('idle');
   const [volume, setVolume] = useState<number>(0.85);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<FoyerTabMode>('minimap');
+  const [activeTab, setActiveTab] = useState<FoyerTabMode>('music');
   const [isRepeat, setIsRepeat] = useState<boolean>(true);
   const [isRandom, setIsRandom] = useState<boolean>(false);
 
   // Scale Percentage State (Defaults to 55% / Half-size)
   const [scalePercent, setScalePercent] = useState<number>(() => {
     try {
-      const saved = localStorage.getItem('civicverse_foyer_fm_scale');
+      const saved = localStorage.getItem('civicverse_foyer_fm_scale_v2');
       if (saved) {
         const parsed = parseInt(saved, 10);
         if (!isNaN(parsed) && parsed >= 35 && parsed <= 140) return parsed;
       }
     } catch {}
-    return 55; // 55% default half-size
+    return 85;
   });
 
   const handleUpdateScale = (val: number) => {
     setScalePercent(val);
     try {
-      localStorage.setItem('civicverse_foyer_fm_scale', val.toString());
+      localStorage.setItem('civicverse_foyer_fm_scale_v2', val.toString());
     } catch {}
   };
 
@@ -107,53 +173,6 @@ export const CivicMediaPlayer: React.FC = () => {
     } catch {}
   };
 
-  // Auto-scroll mechanics with hover-pause
-  const feedScrollRef = useRef<HTMLDivElement | null>(null);
-  const [isFeedHovered, setIsFeedHovered] = useState<boolean>(false);
-  const scrollAccumulatorRef = useRef<number>(0);
-
-  // Reset accumulator on tab change
-  useEffect(() => {
-    scrollAccumulatorRef.current = 0;
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (scrollSpeed <= 0) return;
-
-    let animId: number;
-    let lastTime = performance.now();
-
-    const step = (now: number) => {
-      const deltaSec = Math.min((now - lastTime) / 1000, 0.1);
-      lastTime = now;
-
-      if (!isFeedHovered && feedScrollRef.current) {
-        const el = feedScrollRef.current;
-        const maxScroll = el.scrollHeight - el.clientHeight;
-
-        if (maxScroll > 4) {
-          scrollAccumulatorRef.current += scrollSpeed * deltaSec;
-          if (scrollAccumulatorRef.current >= 1) {
-            const pxToScroll = Math.floor(scrollAccumulatorRef.current);
-            scrollAccumulatorRef.current -= pxToScroll;
-
-            if (el.scrollTop >= maxScroll - 1) {
-              // Smooth loop back to top
-              el.scrollTop = 0;
-            } else {
-              el.scrollTop += pxToScroll;
-            }
-          }
-        }
-      }
-
-      animId = requestAnimationFrame(step);
-    };
-
-    animId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animId);
-  }, [scrollSpeed, isFeedHovered, activeTab]);
-
   // Real working live clock (updates every second)
   const [liveClock, setLiveClock] = useState<string>('');
 
@@ -163,64 +182,14 @@ export const CivicMediaPlayer: React.FC = () => {
   const [searchResults, setSearchResults] = useState<MediaStation[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
-
-  // Interactive Trending Feed state with working likes
-  const [trendingPosts, setTrendingPosts] = useState([
-    {
-      id: 'post-1',
-      author: 'MetaMike',
-      handle: '@MetaMike',
-      time: '2m ago',
-      avatar: './images/streamer_metamike.jpg',
-      content: 'District live streams are peaking in Plaza Alpha! Node mesh holding strong at 60 FPS.',
-      likes: 24,
-      liked: false
-    },
-    {
-      id: 'post-2',
-      author: 'NovaVoxel',
-      handle: '@NovaVoxel',
-      time: '7m ago',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Nova',
-      content: 'New rooftop DJ set broadcasting on Foyer FM right now. Turn on high quality 320k stream!',
-      likes: 41,
-      liked: false
-    },
-    {
-      id: 'post-3',
-      author: 'AuraCipher',
-      handle: '@AuraCipher',
-      time: '15m ago',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Cipher',
-      content: 'Verified smart contract reward pool just added 500 CVT for the night exploration mission.',
-      likes: 18,
-      liked: false
-    },
-    {
-      id: 'post-4',
-      author: 'Kira_Cyber',
-      handle: '@Kira',
-      time: '22m ago',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Kira',
-      content: 'Meet me at the central fountain plaza for the speed race tournament in 10 minutes!',
-      likes: 33,
-      liked: false
-    },
-    {
-      id: 'post-5',
-      author: 'KokomoRunner',
-      handle: '@Kokomo',
-      time: '34m ago',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Kokomo',
-      content: 'Local Kokomo node synchronization verified. Monero micro-dividends credited to citizen vault.',
-      likes: 57,
-      liked: false
-    }
-  ]);
+  const [stationSearchError, setStationSearchError] = useState<string>('');
 
   // Proximity Chat Input & Floating Emoji Particles
   const [chatMessage, setChatMessage] = useState<string>('');
   const [floatingEmojis, setFloatingEmojis] = useState<Array<{ id: number; emoji: string; x: number; y: number }>>([]);
+  const visibleCitizens = Array.from(players.values()).filter(player =>
+    `${player.username} ${player.civicId || ''}`.toLowerCase().includes(playerSearch.trim().toLowerCase())
+  );
 
   // Live Track Metadata
   const [metadata, setMetadata] = useState<TrackMetadata>({
@@ -233,18 +202,46 @@ export const CivicMediaPlayer: React.FC = () => {
   const howlRef = useRef<Howl | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Curated Foyer FM channels
-  const FOYER_STATIONS: MediaStation[] = useMemo(() => [
-    CURATED_STATIONS[0] || currentStation,
-    CURATED_STATIONS.find(s => s.id === 'nightwave-plaza') || CURATED_STATIONS[1] || currentStation,
-    CURATED_STATIONS.find(s => s.id === 'atomicwave-fm') || CURATED_STATIONS[2] || currentStation,
-    CURATED_STATIONS.find(s => s.id === 'soma-groove-salad') || CURATED_STATIONS[3] || currentStation,
-    CURATED_STATIONS[4] || currentStation,
-    CURATED_STATIONS[5] || currentStation,
-    CURATED_STATIONS[6] || currentStation,
-  ], [currentStation]);
+  useEffect(() => {
+    if (!showStationDrawer) return;
 
-  const [activeStationIndex, setActiveStationIndex] = useState<number>(0);
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      setIsSearching(true);
+      setStationSearchError('');
+
+      try {
+        const genre = RADIO_GENRES.find(item => item.id === selectedGenre);
+        const results = searchQuery.trim()
+          ? await searchRadioStations(searchQuery.trim(), 40)
+          : genre
+            ? await fetchStationsByTag(genre.tag, 40)
+            : await fetchTopStations(40);
+
+        if (active) {
+          setSearchResults(results);
+        }
+      } catch (error) {
+        console.error('[FoyerFM] Could not load the live station directory.', error);
+        if (active) {
+          setSearchResults([]);
+          setStationSearchError('The live station directory is unavailable. Please try again.');
+        }
+      } finally {
+        if (active) setIsSearching(false);
+      }
+    }, searchQuery.trim() ? 300 : 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [showStationDrawer, searchQuery, selectedGenre]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setLocalPosition(getLocalPlayerPosition()), 300);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Real clock update hook
   useEffect(() => {
@@ -270,6 +267,7 @@ export const CivicMediaPlayer: React.FC = () => {
     }
 
     setCurrentStation(station);
+    setActivePresetIndex(STATION_PRESETS.findIndex(preset => preset.stationId === station.id));
     saveLastPlayedStation(station);
     setPlaybackState('buffering');
     setIsPlaying(true);
@@ -302,6 +300,14 @@ export const CivicMediaPlayer: React.FC = () => {
         onstop: () => {
           setIsPlaying(false);
           setPlaybackState('idle');
+        },
+        onend: () => {
+          if (isRepeat) playStation(station);
+          else if (isRandom) stepPreset(1);
+          else {
+            setIsPlaying(false);
+            setPlaybackState('idle');
+          }
         },
         onloaderror: (_id, err) => {
           console.warn('[FoyerFM] Stream error, fallbacking:', err);
@@ -339,16 +345,22 @@ export const CivicMediaPlayer: React.FC = () => {
     setPlaybackState('idle');
   };
 
-  const handleNextStation = () => {
-    const nextIdx = (activeStationIndex + 1) % FOYER_STATIONS.length;
-    setActiveStationIndex(nextIdx);
-    playStation(FOYER_STATIONS[nextIdx]);
-  };
+  const stepPreset = (direction: -1 | 1) => {
+    const presetCount = STATION_PRESETS.length;
+    const nextIndex = activePresetIndex < 0
+      ? direction > 0 ? 0 : presetCount - 1
+      : isRandom && direction > 0 && presetCount > 1
+        ? (activePresetIndex + 1 + Math.floor(Math.random() * (presetCount - 1))) % presetCount
+        : (activePresetIndex + direction + presetCount) % presetCount;
+    const preset = STATION_PRESETS[nextIndex];
+    const station = CURATED_STATIONS.find(item => item.id === preset.stationId);
+    if (!station) {
+      console.error(`[FoyerFM] The "${preset.label}" preset references a missing station.`);
+      return;
+    }
 
-  const handlePrevStation = () => {
-    const prevIdx = (activeStationIndex - 1 + FOYER_STATIONS.length) % FOYER_STATIONS.length;
-    setActiveStationIndex(prevIdx);
-    playStation(FOYER_STATIONS[prevIdx]);
+    setActivePresetIndex(nextIndex);
+    playStation(station);
   };
 
   const handleVolumeUp = () => {
@@ -364,42 +376,16 @@ export const CivicMediaPlayer: React.FC = () => {
   };
 
   // Search stations
-  const handleSearchStations = async (query: string) => {
+  const handleSearchStations = (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const results = await searchRadioStations(query);
-      setSearchResults(results.slice(0, 25));
-    } catch (e) {
-      console.warn('Radio search error:', e);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Interactive like on trending post
-  const handleToggleLike = (postId: string) => {
-    setTrendingPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        return {
-          ...p,
-          liked: !p.liked,
-          likes: p.liked ? p.likes - 1 : p.likes + 1
-        };
-      }
-      return p;
-    }));
+    setSelectedGenre('all');
   };
 
   // Proximity chat send
   const handleSendProximityChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
-    sendMessage(chatMessage.trim(), 'text-cyan-300', true);
+    sendMessage(chatMessage.trim(), 'text-cyan-300');
     setChatMessage('');
   };
 
@@ -472,14 +458,14 @@ export const CivicMediaPlayer: React.FC = () => {
       {isMinimized ? (
         <div 
           onClick={() => setIsMinimized(false)}
-          className="fixed bottom-3 right-6 z-40 bg-gradient-to-r from-[#091524] via-[#10243b] to-[#091524] border-2 border-cyan-400/80 rounded-full px-3.5 py-1.5 flex items-center gap-2.5 shadow-[0_0_25px_rgba(0,217,255,0.5),0_8px_20px_rgba(0,0,0,0.8)] cursor-pointer hover:scale-105 transition-transform"
+          className="fixed bottom-9 right-6 z-40 bg-gradient-to-r from-[#091524] via-[#10243b] to-[#091524] border-2 border-cyan-400/80 rounded-full px-3.5 py-1.5 flex items-center gap-2.5 shadow-[0_0_25px_rgba(0,217,255,0.5),0_8px_20px_rgba(0,0,0,0.8)] cursor-pointer hover:scale-105 transition-transform"
           title="Restore Godot Mixmaster (Foyer FM Console)"
         >
           <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center">
             <Radio className="w-3 h-3 text-cyan-300 animate-pulse" />
           </div>
           <span className="font-mono text-xs font-black text-cyan-200 tracking-wider">
-            FOYER FM • {isPlaying ? 'LIVE 320K' : 'STANDBY'}
+            FOYER FM
           </span>
           <span className="text-[10px] text-gray-400 font-mono">[{liveClock}]</span>
           <ChevronUp className="w-3.5 h-3.5 text-cyan-400" />
@@ -491,9 +477,9 @@ export const CivicMediaPlayer: React.FC = () => {
         /* 1:1 High-End Render Replica matching webp visual concept */
         /* ======================================================== */
         <div 
-          className="fixed z-30 pointer-events-auto select-none transition-transform"
+          className="fixed z-40 pointer-events-auto select-none transition-transform"
           style={{
-            bottom: '12px',
+            bottom: '36px', // Raised ~0.25in per user request
             right: '48px', // Shifted left per instructions
             transform: `scale(${scalePercent / 100})`,
             transformOrigin: 'bottom right'
@@ -540,17 +526,17 @@ export const CivicMediaPlayer: React.FC = () => {
             </div>
 
             {/* ---------------------------------------------------- */}
-            {/* LAYER B: LUMINESCENT CYAN COOLING LOUVERS RING       */}
-            {/* Deep Cobalt Trench with 24 Radial Turbine Blades    */}
+            {/* LAYER B: RADIAL BLUE-STEEL ROTOR SEGMENTS            */}
+            {/* Raised alternating alloy vanes from the reference    */}
             {/* ---------------------------------------------------- */}
             <div className="absolute inset-5 rounded-full border-2 border-[#122e50] bg-gradient-to-b from-[#0a1e36] to-[#040e1c] flex items-center justify-center overflow-hidden shadow-[inset_0_0_30px_rgba(0,217,255,0.45)]">
               {[...Array(24)].map((_, i) => (
                 <div
                   key={i}
-                  className="absolute w-1.5 h-6 bg-gradient-to-t from-cyan-400 to-[#0284c7] rounded-xs shadow-[0_0_8px_#00e1ff,0_0_16px_rgba(0,225,255,0.6)]"
+                  className={`absolute w-3 h-8 rounded-[3px] border border-white/40 bg-gradient-to-b ${i % 6 === 0 ? 'from-[#f6fbfd] via-[#b9cedc] to-[#637f99]' : 'from-[#b9d8e8] via-[#467da3] to-[#173c5f]'} shadow-[inset_0_1px_2px_rgba(255,255,255,0.75),0_2px_3px_rgba(0,0,0,0.7)]`}
                   style={{
-                    transform: `rotate(${i * 15}deg) translateY(-145px)`,
-                    opacity: isPlaying ? 0.95 : 0.4
+                    transform: `rotate(${i * 15}deg) translateY(-166px)`,
+                    opacity: isPlaying ? 1 : 0.82
                   }}
                 />
               ))}
@@ -561,9 +547,9 @@ export const CivicMediaPlayer: React.FC = () => {
             {/* Multi-stop anisotropic conic gradient reflections    */}
             {/* ---------------------------------------------------- */}
             <div 
-              className="absolute inset-9 rounded-full border-[3px] border-[#374e69] shadow-[inset_0_4px_10px_rgba(0,0,0,0.95),inset_0_-3px_5px_rgba(255,255,255,0.7),0_0_18px_rgba(0,0,0,0.85)]"
+              className="absolute inset-9 rounded-full border-[3px] border-[#526b82] shadow-[inset_0_4px_10px_rgba(0,0,0,0.7),inset_0_-3px_5px_rgba(255,255,255,0.8),0_0_18px_rgba(0,0,0,0.85)]"
               style={{
-                background: 'conic-gradient(from 45deg at 50% 50%, #5a738e 0%, #d4e4f2 22%, #ffffff 38%, #5d7895 55%, #c8ddf0 72%, #ffffff 88%, #5a738e 100%)'
+                background: 'conic-gradient(from 45deg at 50% 50%, #53738b 0%, #dce8ee 14%, #fafcfc 25%, #7a9ab0 39%, #dce8ee 52%, #6d8da5 67%, #f4f8fa 82%, #6b899f 100%)'
               }}
             >
               {/* Four Cardinal Alignment Rivets / Indents */}
@@ -576,52 +562,52 @@ export const CivicMediaPlayer: React.FC = () => {
             {/* ---------------------------------------------------- */}
             {/* LAYER D: CENTRAL DIGITAL LCD SCREEN MONITOR          */}
             {/* ---------------------------------------------------- */}
-            <div className="absolute inset-12 rounded-full bg-gradient-to-b from-[#0e243d] via-[#071626] to-[#030a13] border-2 border-cyan-400/60 shadow-[inset_0_0_35px_rgba(0,217,255,0.35),inset_0_2px_8px_rgba(0,0,0,0.95)] flex flex-col items-center justify-between p-3.5 text-white overflow-hidden z-10 font-sans">
+            <div className="absolute inset-10 rounded-full bg-gradient-to-b from-[#102c48] via-[#091a2c] to-[#050e18] border-[3px] border-[#b9cfde] shadow-[inset_0_0_24px_rgba(0,217,255,0.24),inset_0_2px_8px_rgba(0,0,0,0.95),0_1px_2px_rgba(255,255,255,0.65)] flex items-center justify-center p-2 text-white overflow-hidden z-10 font-sans">
               
               {/* Glass Glare & Scanline Texture Overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-white/12 via-transparent to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,217,255,0.035)_1px,transparent_1px)] bg-[size:100%_3px] pointer-events-none" />
 
-              {/* REAL WORKING CLOCK & LIVE HD STATUS (Item 11 in render) */}
-              <div className="w-full px-3 flex items-center justify-between border-b border-cyan-500/25 pb-0.5 z-10">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-base font-black text-cyan-300 tracking-wider drop-shadow-[0_0_6px_#00e1ff]">
-                    {liveClock || '09:24:00'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-right font-mono text-[9px]">
-                  <span className={`px-1.5 py-0.2 rounded font-bold uppercase tracking-wider ${isPlaying ? 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 shadow-[0_0_6px_rgba(16,185,129,0.3)]' : 'bg-gray-800 text-gray-400'}`}>
-                    {isPlaying ? 'STEREO 320K' : 'STANDBY'}
-                  </span>
-                  <span className="text-cyan-400/80 font-semibold">42MS</span>
-                </div>
-              </div>
-
-              {/* DYNAMIC SCROLLING MARQUEE BANNER */}
-              <div className="w-full px-2 py-0.5 bg-[#081829]/95 border border-cyan-500/35 rounded text-center overflow-hidden z-10 my-0.5">
-                <div className="font-mono text-[11px] font-black text-cyan-200 tracking-wide truncate drop-shadow-[0_0_5px_rgba(0,217,255,0.6)]">
-                  {metadata.title} - {metadata.artist} ▶
-                </div>
-              </div>
-
-              {/* AUDIO SPECTRUM CANVAS BAR */}
-              <div className="w-full px-2 h-3 z-10">
-                <canvas ref={canvasRef} width={220} height={12} className="w-full h-full" />
-              </div>
-
               {/* ---------------------------------------------------- */}
-              {/* DYNAMIC MIDDLE CONTENT AREA + RIGHT ACTION COLUMN   */}
-              {/* Incorporates Item 15a action column from the render! */}
+              {/* Full circular display. Controls stay on the outside. */}
               {/* ---------------------------------------------------- */}
-              <div className="w-full flex-1 max-h-[128px] overflow-hidden my-0.5 rounded bg-[#05111e]/90 border border-cyan-500/35 p-1 flex gap-1 z-10">
+              <div className="absolute inset-2 z-10 flex overflow-hidden rounded-full bg-[#05111e]/90">
                 
                 {/* Main Content Pane */}
                 <div className="flex-1 flex flex-col overflow-hidden">
+
+                  {activeTab === 'music' && (
+                    <div className="h-full w-full overflow-y-auto px-5 py-6 scrollbar-thin">
+                      <div className="mb-4 text-center">
+                        <p className="truncate text-lg font-black text-cyan-100">{isPlaying ? metadata.title : currentStation.name}</p>
+                        <p className="mt-1 truncate text-xs text-cyan-300/70">{isPlaying ? metadata.artist : 'Choose a station to start listening'}</p>
+                        <canvas ref={canvasRef} width={320} height={32} className="mx-auto mt-3 h-8 w-full max-w-sm opacity-90" />
+                      </div>
+                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2 rounded-xl border border-cyan-400/20 bg-black/30 px-4 py-3 text-center">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-cyan-300/70">Station preset</span>
+                        <span className="text-sm font-black tracking-widest text-white">
+                          {activePresetIndex >= 0 ? STATION_PRESETS[activePresetIndex].label : 'LIVE DIRECTORY'}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {activePresetIndex >= 0
+                            ? `${activePresetIndex + 1} / ${STATION_PRESETS.length} · Use previous / next to switch presets`
+                            : 'Custom station · Use previous / next to browse presets'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowStationDrawer(true)}
+                          className="mt-1 flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-100 transition hover:bg-cyan-400/20"
+                        >
+                          <Search className="h-3 w-3" />
+                          Browse live radio
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* 1. TACTICAL RADAR MINIMAP */}
                   {activeTab === 'minimap' && (
-                    <div className="flex-1 relative rounded-full overflow-hidden flex items-center justify-center bg-[#040e1a] border border-cyan-500/40">
+                    <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#040e1a]">
                       {/* Concentric distance rings */}
                       <div className="absolute inset-2 border border-cyan-500/25 rounded-full" />
                       <div className="absolute inset-5 border border-cyan-500/20 rounded-full" />
@@ -635,9 +621,6 @@ export const CivicMediaPlayer: React.FC = () => {
                         <div className="h-full w-[1px] bg-cyan-500/20" />
                       </div>
 
-                      {/* North Cardinal Pointer */}
-                      <span className="absolute top-0.5 font-mono text-[8px] font-black text-cyan-400">N</span>
-
                       {/* Rotating Radar Sweep Cone */}
                       <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/25 via-transparent to-transparent rounded-full animate-spin duration-3000 pointer-events-none" />
 
@@ -646,144 +629,131 @@ export const CivicMediaPlayer: React.FC = () => {
                         <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 border-2 border-white shadow-[0_0_8px_#00e1ff]" />
                       </div>
 
-                      {/* POI Blips */}
-                      <div className="absolute top-3 right-6 flex items-center gap-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_6px_#ec4899]" />
-                        <span className="text-[7px] font-mono text-pink-300">HUB</span>
-                      </div>
-
-                      <div className="absolute bottom-4 left-6 flex items-center gap-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_6px_#facc15]" />
-                        <span className="text-[7px] font-mono text-yellow-300">VAULT</span>
-                      </div>
-
-                      {/* Multiplayer Citizen Peer Dots */}
-                      {Array.from(players.values()).slice(0, 4).map((p, i) => (
+                      {/* Live citizen positions relative to this player */}
+                      {Array.from(players.values()).map((p) => (
                         <div
-                          key={p.peerId || i}
-                          className="absolute w-2 h-2 rounded-full bg-emerald-400 border border-white shadow-[0_0_6px_#10b981]"
+                          key={p.id}
+                          className="absolute h-3 w-3 rounded-full border border-white bg-emerald-400 shadow-[0_0_8px_#10b981]"
                           style={{
-                            top: `${25 + (i * 18)}%`,
-                            left: `${30 + (i * 15)}%`
+                            top: `${Math.max(4, Math.min(96, 50 + ((p.position?.z ?? localPosition.z) - localPosition.z) * 0.4))}%`,
+                            left: `${Math.max(4, Math.min(96, 50 + ((p.position?.x ?? localPosition.x) - localPosition.x) * 0.4))}%`
                           }}
                           title={p.username || 'Citizen'}
                         />
                       ))}
-
-                      {/* Coordinates & District HUD */}
-                      <div className="absolute bottom-1 right-2 text-[7px] font-mono text-cyan-300/90 bg-black/70 px-1 rounded border border-cyan-500/30">
-                        42.8N, 71.4W
-                      </div>
                     </div>
                   )}
 
-                  {/* 2. TRENDING FOYER SOCIAL FEED (WITH WORKING AUTO-SCROLL & LIKES) */}
-                  {activeTab === 'trending' && (
-                    <div 
-                      ref={feedScrollRef}
-                      onMouseEnter={() => setIsFeedHovered(true)}
-                      onMouseLeave={() => setIsFeedHovered(false)}
-                      onTouchStart={() => setIsFeedHovered(true)}
-                      onTouchEnd={() => setTimeout(() => setIsFeedHovered(false), 1500)}
-                      className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 scrollbar-thin text-[9.5px] select-text"
-                    >
-                      {trendingPosts.map(post => (
-                        <div key={post.id} className="p-1.5 rounded bg-[#091a2d]/80 border border-cyan-500/30 hover:border-cyan-400/60 transition-all">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 font-bold text-cyan-300">
-                              <span>{post.handle}</span>
-                              <span className="text-gray-500 text-[8px] font-normal">{post.time}</span>
-                            </div>
+                  {activeTab === 'citizens' && (
+                    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-5 text-white scrollbar-thin">
+                      <section>
+                        <div className="mb-2 flex items-center justify-between">
+                          <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-cyan-200">
+                            <Users className="h-4 w-4" /> Citizens
+                          </h2>
+                          <span className="text-[10px] font-mono text-cyan-300">{1 + peerCount}/20</span>
+                        </div>
+                        <input
+                          value={playerSearch}
+                          onChange={event => setPlayerSearch(event.target.value)}
+                          placeholder="Search username or Civic ID"
+                          className="w-full rounded-lg border border-cyan-500/30 bg-black/35 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none"
+                        />
+                        <div className="mt-2 max-h-32 space-y-1 overflow-y-auto">
+                          {visibleCitizens.map(player => (
                             <button
-                              onClick={() => handleToggleLike(post.id)}
-                              className="flex items-center gap-0.5 text-pink-400 hover:scale-110 transition-transform cursor-pointer"
+                              key={player.id}
+                              type="button"
+                              disabled={!player.civicId}
+                              onClick={() => player.civicId && navigate(`/profile/${encodeURIComponent(player.civicId)}`)}
+                              className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-left text-xs hover:bg-cyan-500/10 disabled:cursor-default disabled:opacity-70"
                             >
-                              <Heart className={`w-2.5 h-2.5 ${post.liked ? 'fill-pink-500 text-pink-500' : 'text-gray-400'}`} />
-                              <span className="text-[8px]">{post.likes}</span>
+                              <span className="truncate font-bold">{player.username}</span>
+                              <span className="shrink-0 text-[9px] text-cyan-300">{player.civicId ? 'PROFILE' : 'GUEST'}</span>
                             </button>
-                          </div>
-                          <p className="text-gray-200 mt-0.5 leading-snug">{post.content}</p>
+                          ))}
+                          {!visibleCitizens.length && (
+                            <p className="py-2 text-center text-[10px] text-slate-400">
+                              {playerSearch ? 'No matching citizens.' : 'No other citizens in this lobby.'}
+                            </p>
+                          )}
                         </div>
-                      ))}
+                      </section>
+
+                      <section className="border-t border-cyan-500/20 pt-3">
+                        <div className="mb-2 flex items-center justify-between">
+                          <h3 className="text-[10px] font-black uppercase tracking-widest text-cyan-200">Lobby</h3>
+                          <span className="truncate text-[9px] text-slate-400">{currentLobbyName}</span>
+                        </div>
+                        <div className="space-y-1">
+                          {availableLobbies.map(lobby => (
+                            <div key={lobby.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
+                              <span className="truncate text-[10px] text-slate-200">{lobby.name}</span>
+                              {lobby.id === currentLobbyId ? (
+                                <span className="shrink-0 text-[9px] font-bold text-emerald-300">CURRENT</span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={lobby.isFull}
+                                  onClick={() => switchLobby(lobby.id)}
+                                  className="shrink-0 rounded border border-cyan-400/40 px-2 py-1 text-[9px] font-bold text-cyan-200 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  {lobby.isFull ? 'FULL' : 'JOIN'}
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </section>
                     </div>
                   )}
 
-                  {/* 3. REAL CIVIC PROTOCOL NEWS TICKER (WITH WORKING AUTO-SCROLL) */}
-                  {activeTab === 'news' && (
-                    <div 
-                      ref={feedScrollRef}
-                      onMouseEnter={() => setIsFeedHovered(true)}
-                      onMouseLeave={() => setIsFeedHovered(false)}
-                      onTouchStart={() => setIsFeedHovered(true)}
-                      onTouchEnd={() => setTimeout(() => setIsFeedHovered(false), 1500)}
-                      className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 scrollbar-thin text-[9.5px] select-text"
-                    >
-                      <div className="p-1.5 rounded bg-[#091a2d]/80 border border-cyan-500/30">
-                        <div className="flex items-center gap-1 text-cyan-400 font-bold uppercase text-[8px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                          <span>P2P MESH v2.4 DEPLOYED</span>
-                        </div>
-                        <p className="text-gray-200 mt-0.5 leading-snug">Sub-50ms latency established across decentralized regional nodes.</p>
-                      </div>
+                  {/* Live Civicverse social, trending and government feeds */}
+                  {activeTab === 'feeds' && <div className="flex-1 min-h-0 min-w-0 w-full overflow-hidden"><CivicNewsFeed embedded scrollSpeed={scrollSpeed} /></div>}
 
-                      <div className="p-1.5 rounded bg-[#091a2d]/80 border border-cyan-500/30">
-                        <div className="flex items-center gap-1 text-emerald-400 font-bold uppercase text-[8px]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                          <span>COMMUNITY TREASURY SYNC</span>
-                        </div>
-                        <p className="text-gray-200 mt-0.5 leading-snug">+250 CVT distributed to high-bandwidth streaming node operators.</p>
-                      </div>
-
-                      <div className="p-1.5 rounded bg-[#091a2d]/80 border border-cyan-500/30">
-                        <div className="flex items-center gap-1 text-yellow-400 font-bold uppercase text-[8px]">
-                          <span>DISPATCH NOTICE</span>
-                        </div>
-                        <p className="text-gray-200 mt-0.5 leading-snug">Verified CivicWatch missions available in the Vault portal.</p>
-                      </div>
-
-                      <div className="p-1.5 rounded bg-[#091a2d]/80 border border-cyan-500/30">
-                        <div className="flex items-center gap-1 text-fuchsia-400 font-bold uppercase text-[8px]">
-                          <span>FOYER FM MULTICAST</span>
-                        </div>
-                        <p className="text-gray-200 mt-0.5 leading-snug">Decentralized audio wizard online. Auto-scroll streaming active.</p>
-                      </div>
-                    </div>
-                  )}
+                  {activeTab === 'civicwatch' && <div className="flex-1 min-h-0 min-w-0 w-full overflow-hidden"><CivicWatchClips /></div>}
 
                   {/* 4. REAL MULTIPLAYER PROXIMITY CHAT & INPUT (WITH WORKING AUTO-SCROLL) */}
                   {activeTab === 'proximity' && (
-                    <div className="flex-1 flex flex-col overflow-hidden text-[9px]">
-                      <div 
-                        ref={feedScrollRef}
-                        onMouseEnter={() => setIsFeedHovered(true)}
-                        onMouseLeave={() => setIsFeedHovered(false)}
-                        onTouchStart={() => setIsFeedHovered(true)}
-                        onTouchEnd={() => setTimeout(() => setIsFeedHovered(false), 1500)}
-                        className="flex-1 overflow-y-auto space-y-1 pr-0.5 font-mono scrollbar-thin select-text"
-                      >
-                        {chatHistory.slice(-8).map(msg => (
-                          <div key={msg.id} className="leading-tight break-words">
-                            <span className={`font-bold mr-1 ${msg.color || 'text-cyan-400'}`}>{msg.username}:</span>
-                            <span className="text-gray-200">{msg.text}</span>
-                            <span className="ml-1 text-[7px] text-fuchsia-300 font-normal">[Nearby]</span>
-                          </div>
+                    <div className="flex min-h-0 flex-1 flex-col gap-2 p-4 text-white">
+                      <div className="flex flex-wrap gap-1">
+                        {(['nearby', 'friends', 'lobby', 'off'] as const).map(audience => (
+                          <button
+                            key={audience}
+                            type="button"
+                            onClick={() => setChatAudience(audience)}
+                            className={`rounded-md border px-2 py-1 text-[8px] font-bold uppercase ${
+                              chatAudience === audience
+                                ? 'border-cyan-300 bg-cyan-400/20 text-cyan-100'
+                                : 'border-white/10 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {audience}
+                          </button>
                         ))}
-                        {chatHistory.length === 0 && (
-                          <p className="text-gray-500 italic text-center py-2">No nearby messages yet. Say hello!</p>
+                      </div>
+                      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg bg-black/25 p-3 text-[10px] scrollbar-thin">
+                        {chatHistory.filter(message => !message.isSystem).slice(-20).map(message => (
+                          <p key={message.id} className="break-words leading-snug">
+                            <span className={`mr-1 font-bold ${message.color || 'text-cyan-300'}`}>{message.username}:</span>
+                            <span className="text-slate-200">{message.text}</span>
+                          </p>
+                        ))}
+                        {!chatHistory.some(message => !message.isSystem) && (
+                          <p className="text-center text-slate-500">No messages yet.</p>
                         )}
                       </div>
-
-                      {/* Proximity Chat Input */}
-                      <form onSubmit={handleSendProximityChat} className="mt-1 flex gap-1 pt-1 border-t border-cyan-500/20">
+                      <form onSubmit={handleSendProximityChat} className="flex w-full gap-1 border-t border-cyan-500/20 pt-2">
                         <input
                           type="text"
                           value={chatMessage}
+                          disabled={chatAudience === 'off'}
                           onChange={e => setChatMessage(e.target.value)}
-                          placeholder="Say to nearby citizens..."
-                          className="flex-1 bg-[#081524] border border-cyan-500/40 rounded px-1.5 py-0.5 text-[9px] text-white focus:outline-none focus:border-cyan-400"
+                          placeholder={chatAudience === 'off' ? 'Chat is off' : `Say to ${chatAudience === 'nearby' ? 'nearby citizens' : chatAudience === 'friends' ? 'friends' : 'the lobby'}...`}
+                          className="min-w-0 flex-1 rounded-lg border border-cyan-500/40 bg-[#081524] px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
                         />
-                        <button type="submit" className="px-1.5 py-0.5 bg-cyan-500/30 border border-cyan-400 rounded text-cyan-300 hover:bg-cyan-500/50 cursor-pointer">
-                          <Send className="w-2.5 h-2.5" />
+                        <button type="submit" disabled={chatAudience === 'off'} className="rounded-lg border border-cyan-400 bg-cyan-500/30 px-3 text-cyan-100 hover:bg-cyan-500/50 disabled:opacity-50">
+                          <Send className="h-4 w-4" />
                         </button>
                       </form>
                     </div>
@@ -791,12 +761,12 @@ export const CivicMediaPlayer: React.FC = () => {
 
                   {/* 5. INTERACTIVE EMOJIS REACTION PAD */}
                   {activeTab === 'emojis' && (
-                    <div className="flex-1 flex flex-wrap items-center justify-center gap-1 p-1">
+                    <div className="flex-1 flex flex-wrap items-center justify-center gap-3 p-6">
                       {['🔥', '💎', '🚀', '⚡', '🛡️', '🌐', '❤️', '🎉', '👽', '🎧', '🕹️', '👾'].map(emoji => (
                         <button
                           key={emoji}
                           onClick={() => handleTriggerEmoji(emoji)}
-                          className="text-base p-1 rounded hover:bg-cyan-500/20 hover:scale-125 transition-transform cursor-pointer"
+                          className="text-4xl p-2 rounded-xl hover:bg-cyan-500/20 hover:scale-125 transition-transform cursor-pointer"
                           title="Broadcast reaction"
                         >
                           {emoji}
@@ -807,7 +777,7 @@ export const CivicMediaPlayer: React.FC = () => {
 
                   {/* 6. SETTINGS HUD (SCALE ADJUSTER + AUTO-SCROLL SPEED SELECTOR) */}
                   {activeTab === 'settings' && (
-                    <div className="flex-1 flex flex-col justify-between p-1 text-[8.5px] font-mono overflow-y-auto scrollbar-thin">
+                    <div className="flex-1 flex flex-col justify-between p-5 text-xs font-mono overflow-y-auto scrollbar-thin">
                       <div className="space-y-1.5">
                         
                         {/* Setting 1: HUD SCALE % */}
@@ -832,7 +802,7 @@ export const CivicMediaPlayer: React.FC = () => {
                             <div className="grid grid-cols-4 gap-1 mt-1">
                               {[
                                 { label: '45% Mini', val: 45 },
-                                { label: '55% Def', val: 55 },
+                                { label: '85% Default', val: 85 },
                                 { label: '75% Mid', val: 75 },
                                 { label: '100% Max', val: 100 },
                               ].map(p => (
@@ -902,92 +872,11 @@ export const CivicMediaPlayer: React.FC = () => {
 
                       </div>
 
-                      <div className="pt-1 mt-1 border-t border-cyan-500/20 flex items-center justify-between text-[7px] text-gray-400">
-                        <span>FEEDS: AUTO-LOOP ON</span>
-                        <span className="text-emerald-400">P2P HD AUDIO</span>
-                      </div>
                     </div>
                   )}
 
                 </div>
 
-                {/* Right LCD Action Buttons Stack (Item 15a in render) */}
-                <div className="w-8 flex flex-col justify-between py-0.5 border-l border-cyan-500/30 pl-1 font-mono text-[7px] font-bold text-cyan-300">
-                  <button 
-                    onClick={() => setShowStationDrawer(true)}
-                    className="p-0.5 rounded bg-[#091726] border border-cyan-500/30 hover:bg-cyan-500/30 text-center hover:text-white transition-all cursor-pointer"
-                    title="Add station"
-                  >
-                    ADD
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (activeTab === 'proximity') useMultiplayerStore.setState({ chatHistory: [] });
-                    }}
-                    className="p-0.5 rounded bg-[#091726] border border-cyan-500/30 hover:bg-cyan-500/30 text-center hover:text-white transition-all cursor-pointer"
-                    title="Clear chat"
-                  >
-                    CLR
-                  </button>
-                  <button 
-                    onClick={() => setShowStationDrawer(true)}
-                    className="p-0.5 rounded bg-[#091726] border border-cyan-500/30 hover:bg-cyan-500/30 text-center hover:text-white transition-all cursor-pointer"
-                    title="Load stations"
-                  >
-                    LOAD
-                  </button>
-                  {/* AUTO-SCROLL QUICK TOGGLE BUTTON (Item requested by user!) */}
-                  <button 
-                    onClick={() => handleUpdateScrollSpeed(scrollSpeed > 0 ? 0 : 30)}
-                    className={`p-0.5 rounded border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                      scrollSpeed > 0 
-                        ? 'bg-emerald-500/30 border-emerald-400 text-emerald-300 shadow-[0_0_6px_rgba(16,185,129,0.5)]' 
-                        : 'bg-[#091726] border-gray-700 text-gray-500'
-                    }`}
-                    title="Toggle Auto-Scroll"
-                  >
-                    <span>AUTO</span>
-                    <span className={`w-1 h-1 rounded-full mt-0.2 ${scrollSpeed > 0 ? 'bg-emerald-400' : 'bg-gray-600'}`} />
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('settings')}
-                    className="p-0.5 rounded bg-[#091726] border border-cyan-500/30 hover:bg-cyan-500/30 text-center hover:text-white transition-all cursor-pointer"
-                    title="Settings"
-                  >
-                    INFO
-                  </button>
-                  <button 
-                    onClick={() => setShowStationDrawer(true)}
-                    className="p-0.5 rounded bg-[#091726] border border-cyan-500/30 hover:bg-cyan-500/30 text-center hover:text-white transition-all cursor-pointer flex items-center justify-center"
-                    title="Search Radio"
-                  >
-                    <Search className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-
-              </div>
-
-              {/* LOWER EMBOSSED METALLIC ARC (Item 14 in render: GODOT EMBLEM) */}
-              <div 
-                className="w-full py-1 px-3 flex items-center justify-between border-t-2 border-[#546e89] shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_2px_4px_rgba(255,255,255,0.3)] z-10 rounded-b-full"
-                style={{
-                  background: 'linear-gradient(180deg, #334860 0%, #1c2b3c 60%, #0d1722 100%)'
-                }}
-              >
-                <div className="flex items-center gap-1.5">
-                  {/* Godot Robot Icon (SVG replica matching Item 14 in render) */}
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-cyan-400 filter drop-shadow-[0_0_5px_rgba(0,217,255,0.7)]">
-                    <path d="M12 2C6.48 2 2 6.48 2 12c0 4.41 2.87 8.16 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.33.85 0 1.7.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z" />
-                  </svg>
-                  <span className="font-black text-[11px] tracking-widest text-cyan-200 drop-shadow-[0_0_6px_#00e1ff]">
-                    GODOT
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1 font-mono text-[8px] text-cyan-300/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>TOTAL: 01:55:20</span>
-                </div>
               </div>
 
             </div>
@@ -1004,10 +893,11 @@ export const CivicMediaPlayer: React.FC = () => {
             >
               {/* ▲ OPEN (STATION SELECTOR / EXPANDER - Item 24 in render) */}
               <button
-                onClick={() => setShowStationDrawer(true)}
+                onClick={() => { setActiveTab('music'); setShowStationDrawer(true); }}
                 className="w-full py-1 bg-gradient-to-r from-cyan-600/60 to-blue-600/60 hover:from-cyan-500/80 hover:to-blue-500/80 border border-cyan-400/80 rounded text-cyan-100 font-black text-center tracking-wider shadow-[0_0_8px_rgba(0,217,255,0.5)] cursor-pointer flex items-center justify-center gap-1 active:scale-95 transition-all"
                 title="Open Foyer FM Station Selector (Curated & 60,000+)"
               >
+                <Music className="w-2.5 h-2.5" />
                 <span>▲ OPEN</span>
               </button>
 
@@ -1067,29 +957,23 @@ export const CivicMediaPlayer: React.FC = () => {
               {/* PREV / NEXT Buttons (Items 5 & 6 in render) */}
               <div className="grid grid-cols-2 gap-1">
                 <button
-                  onClick={handlePrevStation}
+                  onClick={() => stepPreset(-1)}
                   className="py-1 bg-[#0b1624] hover:bg-white/15 border border-white/20 rounded flex items-center justify-center text-gray-300 active:scale-95 cursor-pointer transition-all"
-                  title="Previous Station"
+                  title="Previous preset"
+                  aria-label="Previous station preset"
                 >
                   <SkipBack className="w-2.5 h-2.5" />
                 </button>
                 <button
-                  onClick={handleNextStation}
+                  onClick={() => stepPreset(1)}
                   className="py-1 bg-[#0b1624] hover:bg-white/15 border border-white/20 rounded flex items-center justify-center text-gray-300 active:scale-95 cursor-pointer transition-all"
-                  title="Next Station"
+                  title="Next preset"
+                  aria-label="Next station preset"
                 >
                   <SkipForward className="w-2.5 h-2.5" />
                 </button>
               </div>
 
-              {/* CD COPY & IN/OUT Status (Items 7, 8, 9 in render) */}
-              <div className="pt-0.5 border-t border-white/10 flex items-center justify-between text-[6.5px] text-cyan-400/80 font-bold">
-                <div className="flex items-center gap-0.5">
-                  <span className={`w-1 h-1 rounded-full ${isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'}`} />
-                  <span>CD COPY</span>
-                </div>
-                <span>.WAV</span>
-              </div>
             </div>
 
             {/* ---------------------------------------------------- */}
@@ -1097,7 +981,6 @@ export const CivicMediaPlayer: React.FC = () => {
             {/* Items 16-21 from render & Foyer Feature Tabs         */}
             {/* ---------------------------------------------------- */}
             <div className="absolute -right-14 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-20 font-mono text-[8px] font-bold">
-              
               {/* Tab 1: 🗺️ MINIMAP */}
               <button
                 onClick={() => setActiveTab('minimap')}
@@ -1110,28 +993,41 @@ export const CivicMediaPlayer: React.FC = () => {
                 <span>🗺️ MINIMAP</span>
               </button>
 
-              {/* Tab 2: 🔥 TRENDING */}
               <button
-                onClick={() => setActiveTab('trending')}
+                onClick={() => setActiveTab('citizens')}
                 className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
-                  activeTab === 'trending'
+                  activeTab === 'citizens'
                     ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
                     : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
                 }`}
+                title="Search citizens and switch lobbies"
               >
-                <span>🔥 TRENDING</span>
+                <Users className="h-3 w-3" />
+                <span>PEOPLE</span>
               </button>
 
-              {/* Tab 3: 📰 CIVIC NEWS */}
+              {/* Live social, trending and civic feeds */}
               <button
-                onClick={() => setActiveTab('news')}
+                onClick={() => setActiveTab('feeds')}
                 className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
-                  activeTab === 'news'
+                  activeTab === 'feeds'
                     ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
                     : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
                 }`}
               >
-                <span>📰 NEWS</span>
+                <span>📰 FEEDS</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('civicwatch')}
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                  activeTab === 'civicwatch'
+                    ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
+                    : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                }`}
+                title="CivicWatch community video feed"
+              >
+                <span>▶ WATCH</span>
               </button>
 
               {/* Tab 4: 💬 PROX CHAT */}
@@ -1205,7 +1101,7 @@ export const CivicMediaPlayer: React.FC = () => {
               <div className="flex items-center gap-2 text-cyan-400">
                 <Radio className="w-4 h-4 animate-pulse" />
                 <span className="font-black text-xs tracking-widest text-white uppercase">
-                  FOYER FM • STATION SELECTOR
+                  FOYER FM • OPEN STATION DIRECTORY
                 </span>
                 <span className="text-[9px] bg-cyan-500/20 px-1.5 py-0.5 rounded text-cyan-300 font-mono">60,000+ STATIONS</span>
               </div>
@@ -1222,28 +1118,27 @@ export const CivicMediaPlayer: React.FC = () => {
                   type="text"
                   value={searchQuery}
                   onChange={e => handleSearchStations(e.target.value)}
-                  placeholder="Search station name, genre (e.g. Synthwave, Lofi, Cyberpunk, SomaFM)..."
+                  placeholder="Search 60,000+ stations by name, genre, city, or country..."
                   className="w-full bg-[#0a1829] border border-cyan-500/40 rounded-lg py-1.5 pl-8 pr-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               {/* Genre Quick Filters */}
               <div className="flex gap-1 mt-2 overflow-x-auto pb-0.5 text-[10px] font-mono">
-                {['ALL', 'SYNTH', 'VAPOR', 'LOFI', 'HACK', 'CHILL', 'AMBIENT'].map(genre => (
+                {[{ id: 'all', label: 'ALL' }, ...RADIO_GENRES].map(genre => (
                   <button
-                    key={genre}
+                    key={genre.id}
                     onClick={() => {
-                      setSelectedGenre(genre.toLowerCase());
-                      if (genre !== 'ALL') handleSearchStations(genre.toLowerCase());
-                      else setSearchQuery('');
+                      setSelectedGenre(genre.id);
+                      setSearchQuery('');
                     }}
                     className={`px-2 py-0.5 rounded-full border transition-all ${
-                      selectedGenre === genre.toLowerCase()
+                      selectedGenre === genre.id
                         ? 'bg-cyan-500/30 border-cyan-400 text-cyan-300 font-bold'
                         : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
                     }`}
                   >
-                    {genre}
+                    {genre.label}
                   </button>
                 ))}
               </div>
@@ -1251,11 +1146,25 @@ export const CivicMediaPlayer: React.FC = () => {
 
             {/* Stations Result List */}
             <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 max-h-[48vh] scrollbar-thin">
-              {(searchQuery.trim() ? searchResults : FOYER_STATIONS).map((station, idx) => (
+              {isSearching && (
+                <div className="py-6 text-center text-xs text-cyan-300">
+                  Searching the live station directory...
+                </div>
+              )}
+              {!isSearching && stationSearchError && (
+                <div role="alert" className="py-6 text-center text-xs text-rose-300">
+                  {stationSearchError}
+                </div>
+              )}
+              {!isSearching && !stationSearchError && searchResults.length === 0 && (
+                <div className="py-6 text-center text-xs text-gray-400">
+                  No stations found. Try another name or genre.
+                </div>
+              )}
+              {!isSearching && !stationSearchError && searchResults.map(station => (
                 <div
                   key={station.id}
                   onClick={() => {
-                    setActiveStationIndex(idx);
                     playStation(station);
                     setShowStationDrawer(false);
                   }}

@@ -27,7 +27,9 @@ import {
   NewsArticle,
   NewsPreferences,
   fetchTrendingArticles,
+  fetchGitHubTrendingArticles,
   fetchCivicArticles,
+  fetchCivicWatchArticles,
   getFollowedEntities,
   toggleFollowEntity,
   isFollowingEntity,
@@ -35,11 +37,13 @@ import {
   getNewsPreferences,
   saveNewsPreferences,
   toggleLikeArticle,
-  toggleRetweetArticle
+  toggleRetweetArticle,
+  CustomNewsSource,
+  fetchCustomArticles
 } from '../services/newsService';
 import LiveFriendsFeed from './LiveFriendsFeed';
 
-export const CivicNewsFeed: React.FC = () => {
+export const CivicNewsFeed: React.FC<{ embedded?: boolean; scrollSpeed?: number }> = ({ embedded = false, scrollSpeed }) => {
   // Navigation tab: 'Following' | 'Trending' | 'Civic News'
   const [activeTab, setActiveTab] = useState<'Following' | 'Trending' | 'Civic News'>('Trending');
 
@@ -60,6 +64,9 @@ export const CivicNewsFeed: React.FC = () => {
   // Preferences
   const [preferences, setPreferences] = useState<NewsPreferences>(() => getNewsPreferences());
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+  const [newSourceName, setNewSourceName] = useState('');
+  const [newSourceUrl, setNewSourceUrl] = useState('');
+  const [newSourceCategory, setNewSourceCategory] = useState<'trending' | 'civic'>('trending');
 
   // Auto-scroll mechanics
   const feedScrollRef = useRef<HTMLDivElement | null>(null);
@@ -93,12 +100,15 @@ export const CivicNewsFeed: React.FC = () => {
     else setIsRefreshing(true);
 
     try {
-      const [trending, civic] = await Promise.all([
+      const [trending, github, civic, civicWatch, custom] = await Promise.all([
         fetchTrendingArticles(30),
-        fetchCivicArticles(30)
+        fetchGitHubTrendingArticles(20),
+        fetchCivicArticles(30),
+        fetchCivicWatchArticles(),
+        fetchCustomArticles(preferences.customSources || [])
       ]);
-      setTrendingArticles(trending);
-      setCivicArticles(civic);
+      setTrendingArticles([...trending, ...github, ...custom.filter(article => article.sourceCategory !== 'civic')]);
+      setCivicArticles([...civicWatch, ...civic, ...custom.filter(article => article.sourceCategory === 'civic')]);
       setLastUpdatedTime(new Date());
     } catch (err) {
       console.warn('Error loading real-time news data:', err);
@@ -118,7 +128,7 @@ export const CivicNewsFeed: React.FC = () => {
     }, intervalSec * 1000);
 
     return () => clearInterval(interval);
-  }, [preferences.autoRefreshInterval]);
+  }, [preferences.autoRefreshInterval, preferences.customSources]);
 
   // --------------------------------------------------------------------------
   // 2. FOLLOWING TAB RESOLUTION
@@ -167,7 +177,8 @@ export const CivicNewsFeed: React.FC = () => {
   // --------------------------------------------------------------------------
   useEffect(() => {
     const container = feedScrollRef.current;
-    if (!container || !preferences.autoScroll) {
+    const embeddedSpeed = Math.max(0, scrollSpeed ?? 30);
+    if (!container || (embedded ? embeddedSpeed === 0 : !preferences.autoScroll)) {
       if (autoScrollRafRef.current) cancelAnimationFrame(autoScrollRafRef.current);
       return;
     }
@@ -177,7 +188,7 @@ export const CivicNewsFeed: React.FC = () => {
       normal: 0.85, // ~50 px/sec (calm teleprompter pace, slowed down just a tad)
       fast: 1.4     // ~84 px/sec (casual scanning pace)
     };
-    const speed = speedMap[preferences.scrollSpeed] || 0.85;
+    const speed = embedded ? embeddedSpeed / 60 : (speedMap[preferences.scrollSpeed] || 0.85);
 
     let lastTimestamp = performance.now();
     scrollPosRef.current = container.scrollTop;
@@ -186,7 +197,7 @@ export const CivicNewsFeed: React.FC = () => {
       const delta = Math.min(2.5, (now - lastTimestamp) / 16.6); // normalized 60fps delta
       lastTimestamp = now;
 
-      const shouldPause = (preferences.pauseOnHover && isHovered) || isUserInteracting;
+      const shouldPause = ((embedded || preferences.pauseOnHover) && isHovered) || isUserInteracting;
 
       if (!shouldPause && container) {
         scrollPosRef.current += speed * delta;
@@ -214,7 +225,7 @@ export const CivicNewsFeed: React.FC = () => {
     return () => {
       if (autoScrollRafRef.current) cancelAnimationFrame(autoScrollRafRef.current);
     };
-  }, [preferences.autoScroll, preferences.scrollSpeed, preferences.pauseOnHover, isHovered, isUserInteracting, displayedArticles]);
+  }, [embedded, scrollSpeed, preferences.autoScroll, preferences.scrollSpeed, preferences.pauseOnHover, isHovered, isUserInteracting, displayedArticles]);
 
   const handleUserWheel = () => {
     setIsUserInteracting(true);
@@ -266,7 +277,7 @@ export const CivicNewsFeed: React.FC = () => {
 
     setTrendingArticles(updater);
     setCivicArticles(updater);
-    showToast(nextRetweet ? 'Broadcasted to Foyer Feed' : 'Broadcast removed');
+    showToast(nextRetweet ? 'Saved to your local reposts' : 'Removed from your local reposts');
   };
 
   const handleShare = (e: React.MouseEvent, article: NewsArticle) => {
@@ -284,7 +295,7 @@ export const CivicNewsFeed: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#080d16] overflow-hidden select-none relative">
+    <div className={`h-full flex flex-col ${embedded ? 'bg-transparent' : 'bg-[#080d16]'} overflow-hidden select-none relative`}>
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -297,8 +308,8 @@ export const CivicNewsFeed: React.FC = () => {
       {/* ==================================================================== */}
       {/* 1. TOP HEADER: TITLE & CONTROLS                                     */}
       {/* ==================================================================== */}
-      <div className="p-2.5 px-3 bg-stainless-steel flex items-center justify-between border-b border-stainless-steel shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="px-2 py-1.5 bg-[#101b28]/80 flex items-center justify-end border-b border-cyan-900/50 shrink-0">
+        {!embedded && <div className="flex items-center gap-2 mr-auto">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-black tracking-wider text-white uppercase drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]">
@@ -308,7 +319,7 @@ export const CivicNewsFeed: React.FC = () => {
           <span className="text-[9px] font-mono text-cyan-400/80 bg-cyan-950/60 border border-cyan-500/30 px-1.5 py-0.2 rounded font-bold uppercase">
             LIVE OPEN WIRE
           </span>
-        </div>
+        </div>}
 
         <div className="flex items-center gap-1 text-gray-400">
           {/* Search Toggle */}
@@ -333,7 +344,7 @@ export const CivicNewsFeed: React.FC = () => {
           <button 
             onClick={() => setShowSettingsModal(true)}
             className="p-1 rounded hover:text-white transition-colors"
-            title="Foyer Feed Preferences & Auto-Scroll"
+            title={embedded ? 'Manage feed sources and follows' : 'Feed Preferences'}
           >
             <Settings className="w-3.5 h-3.5" />
           </button>
@@ -368,8 +379,8 @@ export const CivicNewsFeed: React.FC = () => {
       {/* ==================================================================== */}
       {/* 2. NAVIGATION TABS (FOLLOWING | TRENDING | CIVIC NEWS)               */}
       {/* ==================================================================== */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-gray-800/60 bg-[#090e18] shrink-0 text-xs font-bold">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between px-2 py-1 border-b border-cyan-900/50 bg-[#07111b]/75 shrink-0 text-xs font-bold">
+        <div className="flex items-center gap-2">
           {(['Following', 'Trending', 'Civic News'] as const).map((tab) => {
             const isActive = activeTab === tab;
             return (
@@ -398,7 +409,7 @@ export const CivicNewsFeed: React.FC = () => {
         </div>
 
         {/* Auto-Scroll Quick Status Pill & Speed Cycler */}
-        <div className="flex items-center gap-1">
+        {!embedded && <div className="flex items-center gap-1">
           <button
             onClick={() => handleUpdatePref('autoScroll', !preferences.autoScroll)}
             className={`px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase transition-all flex items-center gap-1 border ${
@@ -434,7 +445,7 @@ export const CivicNewsFeed: React.FC = () => {
               {preferences.scrollSpeed === 'slow' ? '0.5x' : preferences.scrollSpeed === 'normal' ? '0.9x' : '1.4x'}
             </button>
           )}
-        </div>
+        </div>}
       </div>
 
       {/* ==================================================================== */}
@@ -446,7 +457,7 @@ export const CivicNewsFeed: React.FC = () => {
         onMouseLeave={() => { if (preferences.pauseOnHover) setIsHovered(false); }}
         onWheel={handleUserWheel}
         onTouchMove={handleUserWheel}
-        className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin select-text"
+        className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin select-text"
       >
         {activeTab === 'Following' && <LiveFriendsFeed />}
         {isLoading ? (
@@ -514,7 +525,7 @@ export const CivicNewsFeed: React.FC = () => {
         ) : displayedArticles.length === 0 ? (
           
           <div className="py-16 text-center text-gray-500 text-xs font-mono">
-            No articles match your search filter.
+            {searchQuery.trim() ? 'No articles match your search filter.' : 'No live items from these sources right now. Add or change sources in settings.'}
           </div>
 
         ) : (
@@ -616,7 +627,7 @@ export const CivicNewsFeed: React.FC = () => {
                   <button 
                     onClick={(e) => handleRetweet(e, article)}
                     className="flex items-center gap-1 hover:text-emerald-400 transition-colors"
-                    title="Broadcast to Civicverse"
+                    title="Save or remove this article from your local reposts"
                   >
                     <Repeat2 className="w-3 h-3" />
                     <span className="text-[10px] font-mono">{article.retweets}</span>
@@ -665,14 +676,14 @@ export const CivicNewsFeed: React.FC = () => {
       {/* 4. PREFERENCES SETTINGS MODAL (REQUESTED FEATURE)                   */}
       {/* ==================================================================== */}
       {showSettingsModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div className={`${embedded ? 'absolute inset-0' : 'fixed inset-0'} z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3`}>
           <div className="w-full max-w-md bg-[#0a0f1b] border border-cyan-500/50 rounded-xl shadow-[0_0_35px_rgba(6,182,212,0.3)] flex flex-col max-h-[85vh] overflow-hidden animate-fadeIn">
             
             {/* Header */}
             <div className="p-3 bg-[#0d1424] border-b border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-black text-white tracking-wider uppercase">FOYER FEED PREFERENCES</span>
+                <span className="text-xs font-black text-white tracking-wider uppercase">{embedded ? 'FEED SOURCES & FOLLOWS' : 'FOYER FEED PREFERENCES'}</span>
               </div>
               <button onClick={() => setShowSettingsModal(false)} className="text-gray-400 hover:text-white p-1">
                 <X className="w-4 h-4" />
@@ -683,7 +694,7 @@ export const CivicNewsFeed: React.FC = () => {
             <div className="p-4 space-y-4 overflow-y-auto text-xs text-gray-300">
               
               {/* SECTION A: AUTO-SCROLL CONTROLS */}
-              <div className="space-y-2 border-b border-gray-800 pb-3">
+              {!embedded && <div className="space-y-2 border-b border-gray-800 pb-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-white flex items-center gap-1.5">
@@ -732,7 +743,7 @@ export const CivicNewsFeed: React.FC = () => {
                     className="w-3.5 h-3.5 accent-cyan-400 cursor-pointer"
                   />
                 </div>
-              </div>
+              </div>}
 
               {/* SECTION B: REFRESH INTERVAL */}
               <div className="space-y-2 border-b border-gray-800 pb-3">
@@ -754,7 +765,37 @@ export const CivicNewsFeed: React.FC = () => {
                 </div>
               </div>
 
-              {/* SECTION C: MANAGE FOLLOWED CITIZENS & AGENCIES */}
+              {/* SECTION C: USER-DEFINED RSS / ATOM SOURCES */}
+              <div className="space-y-2 border-b border-gray-800 pb-3">
+                <div className="font-bold text-white">Your feed sources</div>
+                <p className="text-[10px] text-gray-400">Add any public RSS or Atom feed. Civic sources appear under Civic News; other sources appear under Trending.</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <input value={newSourceName} onChange={event => setNewSourceName(event.target.value)} placeholder="Source name" className="rounded border border-gray-700 bg-[#080d16] px-2 py-1.5 text-[10px] text-white" />
+                  <select value={newSourceCategory} onChange={event => setNewSourceCategory(event.target.value as 'trending' | 'civic')} className="rounded border border-gray-700 bg-[#080d16] px-2 py-1.5 text-[10px] text-white">
+                    <option value="trending">Trending</option><option value="civic">Civic</option>
+                  </select>
+                  <input value={newSourceUrl} onChange={event => setNewSourceUrl(event.target.value)} placeholder="https://example.org/feed.xml" className="col-span-2 rounded border border-gray-700 bg-[#080d16] px-2 py-1.5 text-[10px] text-white" />
+                </div>
+                <button onClick={() => {
+                  const name = newSourceName.trim();
+                  let parsed: URL | null = null;
+                  try { parsed = new URL(newSourceUrl.trim()); } catch {}
+                  if (!name || !parsed || !['http:', 'https:'].includes(parsed.protocol)) { showToast('Enter a source name and a valid http(s) feed URL'); return; }
+                  const source: CustomNewsSource = { id: crypto.randomUUID(), name, feedUrl: parsed.toString(), category: newSourceCategory };
+                  const customSources = [...(preferences.customSources || []), source];
+                  handleUpdatePref('customSources', customSources);
+                  setNewSourceName(''); setNewSourceUrl('');
+                  showToast(`Added ${name}`);
+                }} className="w-full rounded border border-cyan-500/40 bg-cyan-950/60 py-1.5 text-[10px] font-bold text-cyan-200 hover:bg-cyan-900/70">Add source</button>
+                {(preferences.customSources || []).map(source => (
+                  <div key={source.id} className="flex items-center justify-between gap-2 rounded bg-[#080d16] px-2 py-1 text-[10px]">
+                    <span className="min-w-0 truncate text-gray-200" title={source.feedUrl}>{source.name} <span className="text-gray-500">· {source.category}</span></span>
+                    <button onClick={() => handleUpdatePref('customSources', (preferences.customSources || []).filter(item => item.id !== source.id))} className="shrink-0 text-red-300 hover:text-red-100" aria-label={`Remove ${source.name}`}>Remove</button>
+                  </div>
+                ))}
+              </div>
+
+              {/* SECTION D: MANAGE FOLLOWED CITIZENS & AGENCIES */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white flex items-center gap-1.5">

@@ -14,7 +14,12 @@ export interface ChatMessage {
   position?: { x: number; y: number; z: number };
   sentAt?: number;
   channelId?: string;
+  audience?: 'nearby' | 'friends' | 'lobby';
+  recipientIds?: string[];
+  bubble?: boolean;
 }
+
+export type ChatAudience = 'nearby' | 'friends' | 'lobby' | 'off';
 
 export interface RemotePlayer {
   id: string;
@@ -61,12 +66,15 @@ export interface MultiplayerState {
   // Players & Chat
   players: Map<string, RemotePlayer>;
   chatHistory: ChatMessage[];
+  chatAudience: ChatAudience;
+  friendCivicIds: string[];
   ubiStatus: UbiStatus | null;
 
   // Methods
   initialize: (username: string, character?: CharacterConfig, civicId?: string) => () => void;
   disconnect: () => void;
   sendMessage: (text: string, color?: string, proximity?: boolean, channelId?: string) => void;
+  setChatAudience: (audience: ChatAudience) => void;
   updatePosition: (position: { x: number; y: number; z: number }, rotation: { x: number; y: number; z: number }, isMoving?: boolean) => void;
   setIdentity: (username: string, character?: CharacterConfig, civicId?: string) => void;
   switchLobby: (lobbyId: string) => void;
@@ -83,6 +91,7 @@ let broadcastChannel: BroadcastChannel | null = null;
 // PeerJS instances
 let peerInstance: Peer | null = null;
 const activeDataConnections = new Map<string, DataConnection>();
+const civicIdByPeerId = new Map<string, string>();
 
 // WebSocket instance (for backend server)
 let wsClient: WebSocket | null = null;
@@ -92,9 +101,29 @@ let localCharacter: CharacterConfig | undefined;
 let localCivicId = '';
 let localPosition = { x: 0, y: 0, z: 20 };
 let activeLobbyId = 'district-lobby-1';
+let localOnlyMode = false;
+let localServerPlayerId = '';
+
+export const getLocalPlayerPosition = () => ({ ...localPosition });
 
 // Deduplication cache for recently seen messages
 const processedMsgIds = new Set<string>();
+const CHAT_MESSAGE_TTL_MS = 4500;
+function loadChatAudience(): ChatAudience {
+  try {
+    const saved = localStorage.getItem('civicverse_chat_audience');
+    if (saved === 'nearby' || saved === 'friends' || saved === 'lobby' || saved === 'off') return saved;
+  } catch {}
+  return 'nearby';
+}
+function expireChatMessage(id: string) {
+  window.setTimeout(() => {
+    useMultiplayerStore.setState(state => ({
+      chatHistory: state.chatHistory.filter(message => message.id !== id)
+    }));
+  }, CHAT_MESSAGE_TTL_MS);
+}
+
 function isDuplicate(id: string): boolean {
   if (!id) return false;
   if (processedMsgIds.has(id)) return true;
@@ -107,9 +136,9 @@ function isDuplicate(id: string): boolean {
 }
 
 const DEFAULT_LOBBIES: LobbyInfo[] = [
-  { id: 'district-lobby-1', name: 'New District — Plaza Alpha', playerCount: 1, maxPlayers: 20, isFull: false },
-  { id: 'district-lobby-2', name: 'New District — Plaza Beta', playerCount: 0, maxPlayers: 20, isFull: false },
-  { id: 'district-lobby-3', name: 'New District — Plaza Gamma', playerCount: 0, maxPlayers: 20, isFull: false },
+  { id: 'district-lobby-1', name: 'Gathering Grounds 1', playerCount: 1, maxPlayers: 20, isFull: false },
+  { id: 'district-lobby-2', name: 'Gathering Grounds 2', playerCount: 0, maxPlayers: 20, isFull: false },
+  { id: 'district-lobby-3', name: 'Gathering Grounds 3', playerCount: 0, maxPlayers: 20, isFull: false },
 ];
 
 export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
@@ -118,31 +147,44 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
   localPlayerId: LOCAL_ID,
   peerCount: 0,
   currentLobbyId: 'district-lobby-1',
-  currentLobbyName: 'New District — Plaza Alpha (20 Max)',
+  currentLobbyName: 'Gathering Grounds 1 (20 Max)',
   maxLobbySize: 20,
   availableLobbies: DEFAULT_LOBBIES,
   players: new Map(),
   chatHistory: [],
+  chatAudience: loadChatAudience(),
+  friendCivicIds: [],
   ubiStatus: null,
 
   initialize: (username: string, character?: CharacterConfig, civicId?: string) => {
     localUsername = username || 'Citizen';
     localCharacter = character;
     localCivicId = civicId || '';
+    localServerPlayerId = '';
     (window as any)._cv_username = localUsername;
     (window as any)._cv_character = character;
 
-    // 1. Initialize BroadcastChannel for local tabs in this lobby
-    setupBroadcastChannel(activeLobbyId);
+    const localHost = typeof window !== 'undefined'
+      && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const multiplayerMode = (import.meta as any).env?.VITE_MULTIPLAYER_MODE;
+    localOnlyMode = localHost && multiplayerMode !== 'online';
+
+    // Local sessions use the local relay as their single source of truth.
+    // BroadcastChannel plus WebSocket reported the same tab under two IDs.
+    if (!localOnlyMode) setupBroadcastChannel(activeLobbyId);
 
     // 2. Initialize WebSocket relay
     initWebSocket(localUsername, localCharacter);
 
-    // 3. Initialize PeerJS WebRTC P2P mesh
-    initPeerJS(localUsername, localCharacter, activeLobbyId);
+    // Local testing uses only the localhost WebSocket relay. Joining the public
+    // PeerJS room here mixed hosted visitors into a developer's local session.
+    // Opt in to public P2P from localhost with VITE_MULTIPLAYER_MODE=online.
+    if (!localOnlyMode) {
+      initPeerJS(localUsername, localCharacter, activeLobbyId);
+    }
 
     // 4. Send initial join announcement
-    setTimeout(() => {
+    const joinTimeout = setTimeout(() => {
       broadcastPacket({
         type: 'player_join',
         playerId: LOCAL_ID,
@@ -189,7 +231,11 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       });
     }, 3000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(joinTimeout);
+      clearInterval(interval);
+      get().disconnect();
+    };
   },
 
   disconnect: () => {
@@ -216,14 +262,22 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       wsClient = null;
     }
 
+    localServerPlayerId = '';
+
     activeDataConnections.clear();
     set({ isConnected: false, connectionMode: 'offline', players: new Map(), peerCount: 0 });
   },
 
-  sendMessage: (text: string, color = 'text-cyan-400', proximity = false, channelId?: string) => {
-    if (!text.trim()) return;
+  setChatAudience: (audience) => {
+    try { localStorage.setItem('civicverse_chat_audience', audience); } catch {}
+    set({ chatAudience: audience });
+  },
 
-    const trimmed = text.trim();
+  sendMessage: (text: string, color = 'text-cyan-400', _proximity = false, channelId?: string) => {
+    const audience = get().chatAudience;
+    if (!text.trim() || audience === 'off') return;
+
+    const trimmed = text.trim().slice(0, 500);
 
     // Support chat command /tip @target [amount]
     if (trimmed.startsWith('/tip')) {
@@ -238,7 +292,10 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       playerId: LOCAL_ID,
       username: localUsername,
       text: trimmed,
-      proximity,
+      proximity: audience === 'nearby',
+      audience: audience === 'off' ? undefined : audience,
+      recipientIds: audience === 'friends' ? get().friendCivicIds : undefined,
+      bubble: true,
       position: localPosition,
       sentAt: Date.now(),
       channelId,
@@ -250,6 +307,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     set((state) => ({
       chatHistory: [...state.chatHistory, chatMsg].slice(-100)
     }));
+    expireChatMessage(chatMsg.id);
 
     broadcastPacket({
       type: 'chat_message',
@@ -329,12 +387,12 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     });
 
     activeLobbyId = lobbyId;
-    setupBroadcastChannel(activeLobbyId);
+    if (!localOnlyMode) setupBroadcastChannel(activeLobbyId);
 
     // Clear remote players from old instance
     set({
       currentLobbyId: lobbyId,
-      currentLobbyName: `New District — ${lobbyId.replace('district-', '').toUpperCase()}`,
+      currentLobbyName: `Gathering Grounds ${lobbyId.match(/(\d+)$/)?.[1] || '1'}`,
       players: new Map(),
       peerCount: 0
     });
@@ -347,8 +405,8 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       }));
     }
 
-    // Re-init WebRTC peer for this room
-    initPeerJS(localUsername, localCharacter, lobbyId);
+    // Re-init the public WebRTC peer for this room when using hosted play.
+    if (!localOnlyMode) initPeerJS(localUsername, localCharacter, lobbyId);
 
     // Send join packet to new lobby
     setTimeout(() => {
@@ -516,6 +574,8 @@ function handleIncomingNetworkMessage(data: any, source: string) {
     }
 
     case 'chat_message': {
+      if (store.chatAudience === 'off') return;
+      if (data.audience === 'friends' && (!Array.isArray(data.recipientIds) || !data.recipientIds.includes(localCivicId))) return;
       if (data.proximity && data.position) {
         const dx = data.position.x - localPosition.x;
         const dz = data.position.z - localPosition.z;
@@ -532,12 +592,16 @@ function handleIncomingNetworkMessage(data: any, source: string) {
         proximity: !!data.proximity,
         position: data.position,
         sentAt: typeof data.sentAt === 'number' ? data.sentAt : Date.now(),
-        channelId: typeof data.channelId === 'string' ? data.channelId : undefined
+        channelId: typeof data.channelId === 'string' ? data.channelId : undefined,
+        audience: data.audience === 'friends' || data.audience === 'lobby' || data.audience === 'nearby' ? data.audience : undefined,
+        recipientIds: Array.isArray(data.recipientIds) ? data.recipientIds.filter((id: unknown) => typeof id === 'string').slice(0, 100) : undefined,
+        bubble: data.bubble === true || data.audience === 'friends' || data.audience === 'lobby' || data.audience === 'nearby'
       };
 
       useMultiplayerStore.setState((state) => ({
         chatHistory: [...state.chatHistory, chatMsg].slice(-100)
       }));
+      expireChatMessage(chatMsg.id);
       break;
     }
 
@@ -551,18 +615,8 @@ function handleIncomingNetworkMessage(data: any, source: string) {
       break;
     }
 
-    case 'chat_history': {
-      if (Array.isArray(data.history) && data.history.length > 0) {
-        useMultiplayerStore.setState((state) => ({
-          chatHistory: [
-            ...state.chatHistory,
-            ...data.history.map((message: ChatMessage) => ({
-              ...message,
-              playerId: String(message.playerId || 'unknown')
-            }))
-          ].slice(-100)
-        }));
-      }
+    case 'player_id': {
+      localServerPlayerId = String(data.playerId || '');
       break;
     }
 
@@ -572,7 +626,7 @@ function handleIncomingNetworkMessage(data: any, source: string) {
         const currentPlayers = new Map(store.players);
         data.players.forEach((p: any) => {
           const pid = String(p.id);
-          if (pid === LOCAL_ID) return;
+          if (pid === LOCAL_ID || pid === localServerPlayerId) return;
           const existing = currentPlayers.get(pid);
           currentPlayers.set(pid, {
             id: pid,
@@ -689,6 +743,7 @@ function setupConnection(conn: DataConnection, username: string, character?: Cha
       playerId: LOCAL_ID,
       lobbyId: activeLobbyId,
       username,
+      civicId: localCivicId,
       character,
       position: { x: 0, y: 0, z: 20 },
       rotation: { x: 0, y: Math.PI, z: 0 },
@@ -697,15 +752,33 @@ function setupConnection(conn: DataConnection, username: string, character?: Cha
   });
 
   conn.on('data', (data) => {
+    // Hosted PeerJS rooms use the browser that owns the well-known room ID as
+    // their signaling relay. Forward each chat packet to the other room peers;
+    // do not echo it back to its sender. The message ID deduplicates the sender's
+    // local copy and any duplicate WebSocket/PeerJS delivery.
+    const isRoomHost = peerInstance?.id === getRoomHostId(activeLobbyId);
+    if (isRoomHost && data?.type === 'player_join' && data.lobbyId === activeLobbyId && typeof data.civicId === 'string') {
+      civicIdByPeerId.set(conn.peer, data.civicId);
+    }
+    if (isRoomHost && data?.type === 'chat_message' && data.lobbyId === activeLobbyId) {
+      activeDataConnections.forEach((otherConn, peerId) => {
+        const allowed = data.audience !== 'friends' || (Array.isArray(data.recipientIds) && data.recipientIds.includes(civicIdByPeerId.get(peerId) || ''));
+        if (peerId !== conn.peer && otherConn.open && allowed) {
+          try { otherConn.send(data); } catch {}
+        }
+      });
+    }
     handleIncomingNetworkMessage(data, 'webrtc');
   });
 
   conn.on('close', () => {
     activeDataConnections.delete(conn.peer);
+    civicIdByPeerId.delete(conn.peer);
   });
 
   conn.on('error', () => {
     activeDataConnections.delete(conn.peer);
+    civicIdByPeerId.delete(conn.peer);
   });
 }
 
@@ -735,6 +808,7 @@ function initWebSocket(username: string, character?: CharacterConfig) {
         type: 'player_identity',
         lobbyId: activeLobbyId,
         username,
+        civicId: localCivicId,
         character
       }));
     };

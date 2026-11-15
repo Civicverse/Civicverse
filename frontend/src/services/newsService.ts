@@ -35,6 +35,14 @@ export interface NewsPreferences {
   pauseOnHover: boolean;
   autoRefreshInterval: number; // in seconds (e.g. 60)
   compactView: boolean;
+  customSources?: CustomNewsSource[];
+}
+
+export interface CustomNewsSource {
+  id: string;
+  name: string;
+  feedUrl: string;
+  category: 'trending' | 'civic';
 }
 
 const DEFAULT_PREFERENCES: NewsPreferences = {
@@ -43,6 +51,11 @@ const DEFAULT_PREFERENCES: NewsPreferences = {
   pauseOnHover: false,
   autoRefreshInterval: 60,
   compactView: false,
+  customSources: [
+    { id: 'jpl-news', name: 'NASA JPL News', feedUrl: 'https://www.jpl.nasa.gov/feeds/news/', category: 'trending' },
+    { id: 'nasa-apod', name: 'NASA Astronomy Picture of the Day', feedUrl: 'https://apod.nasa.gov/apod.rss', category: 'trending' },
+    { id: 'epa-news', name: 'EPA News Releases', feedUrl: 'https://www.epa.gov/newsreleases/search/rss/news_releases_language/en/subject/compliance-and-enforcement-226191', category: 'civic' }
+  ]
 };
 
 const STORAGE_KEYS = {
@@ -121,7 +134,7 @@ export async function fetchTrendingArticles(limit: number = 30): Promise<NewsArt
         timeAgo: formatTimeAgo(item.created_at_i || item.created_at),
         score: item.points || 0,
         comments: item.num_comments || 0,
-        retweets: isRetweeted ? Math.floor((item.points || 10) * 0.4) + 1 : Math.floor((item.points || 10) * 0.4),
+        retweets: isRetweeted ? 1 : 0,
         typeBadge: isOSS ? 'OPEN SOURCE' : (item.points > 200 ? 'HOT TRENDING' : 'TECH BROADCAST'),
         badgeColor: isOSS 
           ? 'bg-emerald-950/70 text-emerald-400 border-emerald-500/40' 
@@ -133,8 +146,48 @@ export async function fetchTrendingArticles(limit: number = 30): Promise<NewsArt
       };
     });
   } catch (err) {
-    console.warn('Failed to fetch from Algolia HN API, trying fallback:', err);
-    return getOfflineTrendingFallback();
+    console.warn('Could not load Hacker News trending items:', err);
+      return [];
+  }
+}
+
+/** Fresh open-source project activity from GitHub's public repository search API. */
+export async function fetchGitHubTrendingArticles(limit: number = 20): Promise<NewsArticle[]> {
+  const likedSet = new Set(getLikedArticleIds());
+  try {
+    const response = await fetch(`https://api.github.com/search/repositories?q=stars:%3E1000&sort=updated&order=desc&per_page=${Math.min(limit, 100)}`, {
+      headers: { Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!response.ok) throw new Error(`GitHub returned HTTP ${response.status}.`);
+    const data = await response.json();
+    if (!Array.isArray(data.items)) return [];
+    return data.items.map((item: any): NewsArticle => {
+      const id = `github-${item.id}`;
+      const liked = likedSet.has(id);
+      return {
+        id,
+        title: `${item.full_name}${item.description ? ` — ${item.description}` : ''}`,
+        url: item.html_url,
+        author: item.owner?.login || 'GitHub contributor',
+        handle: `@${item.owner?.login || 'github'}`,
+        source: 'GitHub', sourceDomain: 'github.com', sourceCategory: 'opensource',
+        publishedAt: item.updated_at || new Date().toISOString(),
+        timeAgo: formatTimeAgo(item.updated_at),
+        score: item.stargazers_count || 0,
+        comments: item.open_issues_count || 0,
+        retweets: 0,
+        abstract: item.language ? `Updated project · ${item.language}` : 'Recently updated open-source project',
+        typeBadge: 'OPEN SOURCE',
+        badgeColor: 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40',
+        verified: false,
+        avatar: item.owner?.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(item.full_name)}`,
+        liked, likes: item.stargazers_count || 0
+      };
+    });
+  } catch (error) {
+    console.warn('Could not load GitHub trending repositories:', error);
+    return [];
   }
 }
 
@@ -189,22 +242,92 @@ export async function fetchCivicArticles(limit: number = 30): Promise<NewsArticl
         sourceCategory: 'civic',
         publishedAt: item.publication_date || new Date().toISOString(),
         timeAgo: formatTimeAgo(item.publication_date),
-        score: Math.floor(Math.random() * 80) + 40,
-        comments: Math.floor(Math.random() * 30) + 5,
-        retweets: isRetweeted ? 25 : Math.floor(Math.random() * 20) + 4,
+        score: 0,
+        comments: 0,
+        retweets: isRetweeted ? 1 : 0,
         abstract: item.abstract ? item.abstract.replace(/<[^>]*>?/gm, '').slice(0, 170) + '...' : undefined,
         typeBadge,
         badgeColor,
         verified: true,
         avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(agencyName)}`,
         liked: isLiked,
-        likes: (isLiked ? 1 : 0) + Math.floor(Math.random() * 50) + 15,
+        likes: isLiked ? 1 : 0,
       };
     });
   } catch (err) {
-    console.warn('Failed to fetch from Federal Register API, trying fallback:', err);
-    return getOfflineCivicFallback();
+    console.warn('Could not load Federal Register documents:', err);
+    return [];
   }
+}
+
+/** Recent, user-submitted CivicWatch proof media shared from the local node. */
+export async function fetchCivicWatchArticles(): Promise<NewsArticle[]> {
+  try {
+    const response = await fetch('/api/civicwatch/media?limit=30', { signal: AbortSignal.timeout(8000) });
+    if (!response.ok) throw new Error(`CivicWatch returned HTTP ${response.status}.`);
+    const data = await response.json();
+    if (!Array.isArray(data.items)) return [];
+    return data.items.filter((item: any) => typeof item?.id === 'string' && typeof item.title === 'string').map((item: any): NewsArticle => ({
+      id: `civicwatch-${item.id}`,
+      title: item.title,
+      url: '/civicwatch',
+      author: item.authorName || 'CivicWatch contributor',
+      handle: `@${item.authorName || 'CivicWatch'}`,
+      source: 'CivicWatch', sourceDomain: 'Civicverse', sourceCategory: 'civic',
+      publishedAt: item.createdAt || new Date().toISOString(),
+      timeAgo: formatTimeAgo(item.createdAt || Date.now()),
+      score: 0, comments: 0, retweets: 0,
+      abstract: item.description || 'A community contribution shared from a verified CivicWatch mission.',
+      typeBadge: 'CIVICWATCH',
+      badgeColor: 'bg-blue-950/70 text-blue-300 border-blue-500/40',
+      verified: true,
+      avatar: item.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(item.authorName || item.id)}`,
+      liked: false, likes: 0
+    }));
+  } catch (error) {
+    console.info('CivicWatch community feed is unavailable.', error);
+    return [];
+  }
+}
+
+/** Load user-added RSS/Atom sources through the public RSS-to-JSON bridge. */
+export async function fetchCustomArticles(sources: CustomNewsSource[]): Promise<NewsArticle[]> {
+  const likedSet = new Set(getLikedArticleIds());
+  const results = await Promise.allSettled(sources.map(async source => {
+    const endpoint = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(source.feedUrl)}`;
+    const response = await fetch(endpoint, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error(`Feed request returned HTTP ${response.status}.`);
+    const data = await response.json();
+    if (data.status !== 'ok' || !Array.isArray(data.items)) throw new Error('Feed could not be read.');
+    return data.items.slice(0, 30).map((item: any, index: number): NewsArticle => {
+      const url = item.link || source.feedUrl;
+      const id = `rss-${source.id}-${item.guid || item.link || index}`;
+      const author = item.author || data.feed?.title || source.name;
+      const title = String(item.title || 'Untitled update').replace(/<[^>]*>/g, '').trim();
+      const publishedAt = item.pubDate || new Date().toISOString();
+      const liked = likedSet.has(id);
+      return {
+        id, title, url, author, handle: `@${author}`, source: source.name,
+        sourceDomain: extractDomain(url), sourceCategory: source.category,
+        publishedAt, timeAgo: formatTimeAgo(publishedAt), score: 0, comments: 0,
+        retweets: 0, abstract: String(item.description || '').replace(/<[^>]*>/g, '').slice(0, 220),
+        typeBadge: source.category === 'civic' ? 'CIVIC SOURCE' : 'CUSTOM SOURCE',
+        badgeColor: source.category === 'civic' ? 'bg-blue-950/70 text-blue-300 border-blue-500/40' : 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40',
+        verified: false,
+        avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(source.name)}`,
+        liked, likes: liked ? 1 : 0
+      };
+    });
+  }));
+  return results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+}
+
+export function getCustomNewsSources(): CustomNewsSource[] {
+  return getNewsPreferences().customSources || [];
+}
+
+export function saveCustomNewsSources(sources: CustomNewsSource[]): void {
+  saveNewsPreferences({ ...getNewsPreferences(), customSources: sources });
 }
 
 // ----------------------------------------------------------------------------
@@ -326,81 +449,3 @@ export function toggleRetweetArticle(articleId: string): boolean {
   return nextRetweet;
 }
 
-// ----------------------------------------------------------------------------
-// HIGH-RESILIENCE INSTANT FALLBACKS (WHEN NET OFFLINE)
-// ----------------------------------------------------------------------------
-
-function getOfflineTrendingFallback(): NewsArticle[] {
-  return [
-    {
-      id: 'fallback-1',
-      title: 'Decentralized Civic Infrastructure & Open Protocol Standards Published',
-      url: 'https://github.com/Civicverse/Civicverse',
-      author: 'Civicverse Core',
-      handle: '@CivicverseCore',
-      source: 'github.com',
-      sourceDomain: 'github.com',
-      sourceCategory: 'opensource',
-      publishedAt: new Date().toISOString(),
-      timeAgo: '12m ago',
-      score: 342,
-      comments: 78,
-      retweets: 120,
-      typeBadge: 'OPEN SOURCE',
-      badgeColor: 'bg-emerald-950/70 text-emerald-400 border-emerald-500/40',
-      verified: true,
-      avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=civicverse',
-      liked: false,
-      likes: 342
-    },
-    {
-      id: 'fallback-2',
-      title: 'Linux Kernel 6.12 Adds Real-Time Deterministic Scheduling by Default',
-      url: 'https://kernel.org',
-      author: 'Torvalds_Team',
-      handle: '@KernelOrg',
-      source: 'kernel.org',
-      sourceDomain: 'kernel.org',
-      sourceCategory: 'opensource',
-      publishedAt: new Date().toISOString(),
-      timeAgo: '1h ago',
-      score: 512,
-      comments: 145,
-      retweets: 210,
-      typeBadge: 'HOT TRENDING',
-      badgeColor: 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40',
-      verified: true,
-      avatar: 'https://api.dicebear.com/7.x/identicon/svg?seed=kernel',
-      liked: false,
-      likes: 512
-    }
-  ];
-}
-
-function getOfflineCivicFallback(): NewsArticle[] {
-  return [
-    {
-      id: 'gov-fallback-1',
-      title: 'Federal Energy Regulatory Mandate: Modernization of Distributed Grid Power',
-      url: 'https://www.federalregister.gov',
-      author: 'Federal Energy Regulatory Commission',
-      handle: '@FERC_Gov',
-      agency: 'Federal Energy Regulatory Commission',
-      source: 'Federal Register',
-      sourceDomain: 'federalregister.gov',
-      sourceCategory: 'civic',
-      publishedAt: new Date().toISOString(),
-      timeAgo: '3h ago',
-      score: 180,
-      comments: 32,
-      retweets: 45,
-      abstract: 'Order establishing new technical requirements for interconnection of distributed clean generation resources.',
-      typeBadge: 'FEDERAL MANDATE',
-      badgeColor: 'bg-amber-950/70 text-amber-300 border-amber-500/40',
-      verified: true,
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=FERC',
-      liked: false,
-      likes: 180
-    }
-  ];
-}

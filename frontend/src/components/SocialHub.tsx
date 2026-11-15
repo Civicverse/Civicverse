@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CharacterViewer } from './3d/CharacterViewer';
 import { useGameStore } from '../store/gameStore';
-import { SocialCursor, SocialEffect, SocialGroup, SocialPost, SocialProfile, SocialTheme, socialService } from '../services/social';
+import { DirectMessage, SocialCursor, SocialEffect, SocialGroup, SocialPost, SocialProfile, SocialTheme, socialService } from '../services/social';
 
 interface SocialHubProps {
   profileId?: string;
@@ -82,6 +82,74 @@ export default function SocialHub({ profileId }: SocialHubProps) {
   const [groupDescription, setGroupDescription] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [activeDm, setActiveDm] = useState<{ civicId: string; username: string } | null>(null);
+  const [dmKeyPair, setDmKeyPair] = useState<CryptoKeyPair | null>(null);
+  const [dmKeyReady, setDmKeyReady] = useState(false);
+  const [dmDraft, setDmDraft] = useState('');
+  const [dmError, setDmError] = useState('');
+  const [dmMessages, setDmMessages] = useState<Array<DirectMessage & { displayUntil: number }>>([]);
+
+  useEffect(() => {
+    if (!activeDm || !user?.civicId) return;
+    let active = true;
+    let requesting = false;
+    let pair: CryptoKeyPair | null = null;
+    let lastKeyPublish = 0;
+    const poll = async () => {
+      if (requesting) return;
+      requesting = true;
+      try {
+        if (!pair) {
+          pair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']);
+          if (active) setDmKeyPair(pair);
+        }
+        if (Date.now() - lastKeyPublish > 20000) {
+          const publicKey = await crypto.subtle.exportKey('jwk', pair.publicKey);
+          await socialService.publishDirectMessageKey(activeDm.civicId, publicKey);
+          lastKeyPublish = Date.now();
+          if (active) setDmKeyReady(true);
+        }
+        const result = await socialService.pollDirectMessages(activeDm.civicId, pair, user.civicId);
+        if (active) {
+          const now = Date.now();
+          setDmMessages(current => {
+            const byId = new Map(current.filter(message => message.displayUntil > now).map(message => [message.id, message]));
+            result.messages.forEach(message => byId.set(message.id, { ...message, displayUntil: now + 10000 }));
+            return Array.from(byId.values());
+          });
+          setDmError('');
+        }
+      } catch (pollError) {
+        if (active) setDmError(pollError instanceof Error ? pollError.message : 'Private messages are unavailable.');
+      } finally { requesting = false; }
+    };
+    void poll();
+    const timer = window.setInterval(() => {
+      void poll();
+      setDmMessages(current => current.filter(message => message.displayUntil > Date.now()));
+    }, 1500);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [activeDm, user?.civicId]);
+
+  const sendDirectMessage = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const text = dmDraft.trim();
+    if (!user || !activeDm || !text || text.length > 1000) return;
+    setDmDraft('');
+    try {
+      if (!dmKeyPair || !dmKeyReady) throw new Error('Secure conversation setup is still starting. Try again in a moment.');
+      await socialService.sendDirectMessage(activeDm.civicId, text, dmKeyPair, user.civicId);
+      const now = Date.now();
+      setDmMessages(current => [...current, {
+        id: crypto.randomUUID(), senderId: user.civicId, senderName: user.username,
+        content: text, createdAt: now, expiresAt: now + 60000, displayUntil: now + 10000
+      }]);
+      setDmError('');
+    } catch (sendError) {
+      setDmDraft(text);
+      setDmError(sendError instanceof Error ? sendError.message : 'Message could not be sent.');
+    }
+  };
 
   const refresh = useCallback(async () => {
     if (!targetId) return;
@@ -178,8 +246,8 @@ export default function SocialHub({ profileId }: SocialHubProps) {
 
   const addMedia = async (file?: File) => {
     if (!file) return;
-    if (file.size > 6 * 1024 * 1024) {
-      setError('Media must be smaller than 6 MB.');
+    if (file.size > 25 * 1024 * 1024) {
+      setError('Media must be smaller than 25 MB.');
       return;
     }
     const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -232,6 +300,8 @@ export default function SocialHub({ profileId }: SocialHubProps) {
                 className="rounded-lg border border-fuchsia-300/40 bg-fuchsia-500/15 px-4 py-2 text-sm font-bold text-fuchsia-100 disabled:opacity-50">
                 {isFriend ? 'Remove friend' : outgoingRequest ? 'Cancel friend request' : incomingTargetRequest ? 'Accept friend request' : 'Add friend'}
               </button>
+              {isFriend && <button type="button" onClick={() => { setDmMessages([]); setDmError(''); setDmKeyPair(null); setDmKeyReady(false); setActiveDm({ civicId: targetId, username: profile?.username || targetId }); }}
+                className="rounded-lg border border-emerald-300/40 bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-100">Private message</button>}
             </div>
           )}
         </div>
@@ -306,6 +376,15 @@ export default function SocialHub({ profileId }: SocialHubProps) {
                 <button disabled={busy} onClick={() => void runAction(() => socialService.follow(request.actorId, 'friend', 'accept'))} className="rounded bg-cyan-300 px-3 py-1 font-bold text-black">Accept</button>
               </div>)}
             </div>}
+            {isOwner && <div className="space-y-2 border-t border-white/10 pt-3">
+              <h4 className="text-sm font-bold">Friends · private messages</h4>
+              {relationships.filter(row => row.type === 'friend' && row.status === 'accepted').map(row => {
+                const friendId = row.actorId === user?.civicId ? row.targetId : row.actorId;
+                return <button key={friendId} type="button" onClick={() => { setDmMessages([]); setDmError(''); setDmKeyPair(null); setDmKeyReady(false); setActiveDm({ civicId: friendId, username: friendId }); }}
+                  className="block w-full truncate rounded-lg bg-white/5 p-2 text-left text-xs text-emerald-100 hover:bg-white/10">Message {friendId}</button>;
+              })}
+              {!relationships.some(row => row.type === 'friend' && row.status === 'accepted') && <p className="text-xs text-slate-500">Accept a friend request to enable private messages.</p>}
+            </div>}
           </div>
         </div>
       )}
@@ -366,6 +445,25 @@ export default function SocialHub({ profileId }: SocialHubProps) {
           </aside>}
         </div>
       )}
+      {activeDm && user && <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/75 p-3 sm:items-center" role="dialog" aria-modal="true" aria-label={`Private messages with ${activeDm.username}`}>
+        <section className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-emerald-300/30 bg-slate-950 shadow-2xl">
+          <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <div><h3 className="font-black text-emerald-100">Private · {activeDm.username}</h3><p className="text-[10px] text-slate-500">End-to-end encrypted · both friends open this chat · unread messages expire in 60 seconds</p></div>
+            <button type="button" onClick={() => { setActiveDm(null); setDmKeyPair(null); setDmKeyReady(false); setDmMessages([]); }} className="rounded-lg p-2 text-slate-400 hover:bg-white/10" aria-label="Close private messages">×</button>
+          </header>
+          <div className="min-h-40 flex-1 space-y-2 overflow-y-auto p-4" aria-live="polite">
+            {dmMessages.map(message => <article key={message.id} className={`max-w-[85%] rounded-xl p-3 text-sm ${message.senderId === user.civicId ? 'ml-auto bg-cyan-500/20 text-cyan-50' : 'bg-white/10 text-slate-100'}`}>
+              <p className="mb-1 text-[9px] text-slate-400">{message.senderName}</p><p className="whitespace-pre-wrap break-words">{message.content}</p>
+            </article>)}
+            {!dmMessages.length && <p className="text-center text-xs text-slate-500">No unread messages. Messages are held only briefly until opened.</p>}
+            {dmError && <p role="alert" className="text-xs text-rose-300">{dmError}</p>}
+          </div>
+          <form onSubmit={event => void sendDirectMessage(event)} className="flex gap-2 border-t border-white/10 p-3">
+            <input maxLength={1000} value={dmDraft} onChange={event => setDmDraft(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-white" placeholder="Private message…" />
+            <button disabled={!dmDraft.trim() || !dmKeyReady} className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 disabled:opacity-50">Send</button>
+          </form>
+        </section>
+      </div>}
       </div>
     </section>
   );

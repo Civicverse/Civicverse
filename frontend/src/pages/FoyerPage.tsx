@@ -3,42 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { GodotFoyer, CivicMediaPlayer } from '../components';
 import { CIVICVERSE_LOGO } from '../assets/logo';
-import { 
-  Shield, 
-  Search, 
-  Bell, 
-  Mail, 
-  Globe, 
-  Flower2, 
-  MapPin, 
-  TrendingUp, 
-  Zap, 
-  Star, 
-  MoreHorizontal, 
-  X, 
-  Heart, 
-  Play, 
-  Pause, 
-  SkipBack, 
-  SkipForward, 
-  Repeat, 
-  Shuffle, 
-  Volume2, 
-  VolumeX, 
-  Mic, 
-  MicOff, 
-  Settings, 
-  Maximize2, 
-  Share2, 
-  Repeat2, 
-  Wallet, 
-  Users, 
-  ShoppingBag, 
-  Map as MapIcon, 
-  Compass, 
-  HelpCircle,
-  ChevronDown
-} from 'lucide-react';
+import { ChevronDown, HelpCircle, X } from 'lucide-react';
 import { useMultiplayerStore } from '../services/multiplayer';
 
 export default function FoyerPage() {
@@ -51,13 +16,8 @@ export default function FoyerPage() {
     }
     nav('/vault');
   };
-  const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
-  
   const peerCount = useMultiplayerStore(state => state.peerCount);
-  const connectionMode = useMultiplayerStore(state => state.connectionMode);
-  const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
 
   return (
     <div className="w-screen h-screen bg-stainless-steel-dark text-white flex flex-col overflow-hidden select-none font-sans">
@@ -155,21 +115,31 @@ export default function FoyerPage() {
                   </div>
 
                   <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
-                    <span className="text-gray-300 font-medium">Camera Perspective</span>
+                    <span className="text-gray-300 font-medium">Toggle Camera Perspective</span>
                     <div className="flex items-center gap-1">
                       <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">V</kbd>
-                      <span className="text-gray-400 text-[10px]">1st / 3rd Person</span>
+                      <span className="text-gray-400 text-[10px]">First / Third Person</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
-                    <span className="text-gray-300 font-medium">Hotbar / Items</span>
+                    <span className="text-gray-300 font-medium">Weapon Select</span>
                     <span className="text-cyan-400 font-mono font-bold bg-[#141b27] px-1.5 py-0.5 rounded border border-[#323d4e]">Scroll Wheel</span>
                   </div>
 
                   <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
                     <span className="text-gray-300 font-medium">Jump</span>
                     <kbd className="px-2 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">Space</kbd>
+                  </div>
+
+                  <div className="flex items-center justify-between py-1 border-b border-[#1f2937]/50">
+                    <span className="text-gray-300 font-medium">Drive / Exit Vehicle</span>
+                    <span className="text-gray-300">
+                      <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">E</kbd>
+                      {' or '}
+                      <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/20 font-mono text-[10px] text-white">Z</kbd>
+                      {' near a car · WASD drive · Shift boost · Space brake'}
+                    </span>
                   </div>
 
                   <div className="pt-1.5 text-[11px] text-gray-400 border-t border-[#1f2937]/50 leading-relaxed">
@@ -210,67 +180,6 @@ export default function FoyerPage() {
         <CivicMediaPlayer />
       </div>
 
-      {/* ======================================================== */}
-      {/* 3. BOTTOM STATUS HUD (STAINLESS STEEL FINISH)            */}
-      {/* ======================================================== */}
-      <footer className="h-8 bg-stainless-steel border-t border-stainless-steel px-4 flex items-center justify-between shrink-0 z-30 shadow-[0_-5px_20px_rgba(0,0,0,0.4)]">
-        
-        {/* Left: Civicverse OS & Mesh Network */}
-        <div className="flex items-center gap-3">
-          <button 
-            type="button"
-            onClick={handleReturnToVault}
-            className="w-6 h-6 rounded-full overflow-hidden shadow-[0_0_10px_rgba(255,107,0,0.6)] border border-orange-500/50 hover:scale-105 transition-transform outline-none" 
-            title="Return to Civic Vault"
-          >
-            <img src={CIVICVERSE_LOGO} alt="CV" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = './Civicverselogo.png'; }} />
-          </button>
-          <span className="text-[11px] font-mono font-bold text-gray-300">CIVICVERSE OS v2.4</span>
-          <span className="text-gray-500">|</span>
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>P2P MESH ONLINE</span>
-          </div>
-        </div>
-
-        {/* Center: Subtle District Status */}
-        <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono text-gray-500">
-          <span className="text-cyan-500/70">HUD ACTIVE</span>
-        </div>
-
-        {/* Right: Performance & System Specs */}
-        <div className="flex items-center gap-3 text-xs font-mono font-bold text-gray-400">
-          <span className="text-emerald-400">60 FPS</span>
-          <span>45 MS</span>
-          <span className="text-gray-600">|</span>
-
-          <button onClick={() => setIsMicMuted(!isMicMuted)} className="hover:text-white p-1" title={isMicMuted ? "Unmute Mic" : "Mute Mic"}>
-            {isMicMuted ? <MicOff className="w-3.5 h-3.5 text-red-400" /> : <Mic className="w-3.5 h-3.5" />}
-          </button>
-
-          <button onClick={() => setIsMuted(!isMuted)} className="hover:text-white p-1" title={isMuted ? "Unmute Audio" : "Mute Audio"}>
-            {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5" />}
-          </button>
-
-          <button className="hover:text-white p-1" title="Settings">
-            <Settings className="w-3.5 h-3.5" />
-          </button>
-
-          <button 
-            className="hover:text-white p-1" 
-            title="Fullscreen"
-            onClick={() => {
-              if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
-              } else {
-                document.exitFullscreen().catch(() => {});
-              }
-            }}
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </footer>
     </div>
   );
 }
