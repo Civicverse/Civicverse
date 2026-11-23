@@ -486,7 +486,7 @@ export const CivicMediaPlayer: React.FC = () => {
           }}
         >
           {/* Main 430px Circular Chassis Container */}
-          <div className="relative w-[430px] h-[430px] flex items-center justify-center drop-shadow-[0_18px_36px_rgba(0,0,0,0.6)]">
+          <div className="relative w-[430px] h-[430px] flex items-center justify-center drop-shadow-[0_18px_36px_rgba(0,0,0,0.6)] max-sm:scale-[0.8] max-sm:origin-bottom-right">
             
             {/* ---------------------------------------------------- */}
             {/* LAYER A: OUTER SEGMENTED CHAMFERED WHITE ARMOR RING  */}
@@ -777,7 +777,7 @@ export const CivicMediaPlayer: React.FC = () => {
 
                   {/* 6. SETTINGS HUD (SCALE ADJUSTER + AUTO-SCROLL SPEED SELECTOR) */}
                   {activeTab === 'settings' && (
-                    <div className="flex-1 flex flex-col justify-between p-5 text-xs font-mono overflow-y-auto scrollbar-thin">
+                    <div className="flex-1 flex flex-col justify-between px-10 py-14 text-xs font-mono overflow-y-auto scrollbar-thin">
                       <div className="space-y-1.5">
                         
                         {/* Setting 1: HUD SCALE % */}
