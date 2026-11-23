@@ -458,17 +458,17 @@ export const CivicMediaPlayer: React.FC = () => {
       {isMinimized ? (
         <div 
           onClick={() => setIsMinimized(false)}
-          className="fixed bottom-9 right-6 z-40 bg-gradient-to-r from-[#091524] via-[#10243b] to-[#091524] border-2 border-cyan-400/80 rounded-full px-3.5 py-1.5 flex items-center gap-2.5 shadow-[0_0_25px_rgba(0,217,255,0.5),0_8px_20px_rgba(0,0,0,0.8)] cursor-pointer hover:scale-105 transition-transform"
+          className="fixed bottom-9 right-6 z-40 bg-gradient-to-b from-[#f2f4f5] to-[#aeb4b9] border border-[#5a6066] rounded-full px-3.5 py-1.5 flex items-center gap-2.5 shadow-[0_8px_20px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.9)] cursor-pointer hover:scale-105 transition-transform"
           title="Restore Godot Mixmaster (Foyer FM Console)"
         >
-          <div className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center">
-            <Radio className="w-3 h-3 text-cyan-300 animate-pulse" />
+          <div className="w-5 h-5 rounded-full bg-[#0b1a1f] border border-[#5a6066] flex items-center justify-center">
+            <Radio className={`w-3 h-3 ${isPlaying ? 'text-[#6ee8e9] animate-pulse' : 'text-[#c9d0d6]'}`} />
           </div>
-          <span className="font-mono text-xs font-black text-cyan-200 tracking-wider">
+          <span className="font-mono text-xs font-black text-[#14181c] tracking-wider">
             FOYER FM
           </span>
-          <span className="text-[10px] text-gray-400 font-mono">[{liveClock}]</span>
-          <ChevronUp className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="text-[10px] text-[#3a3f44] font-mono">[{liveClock}]</span>
+          <ChevronUp className="w-3.5 h-3.5 text-[#3a3f44]" />
         </div>
       ) : (
 
@@ -486,56 +486,56 @@ export const CivicMediaPlayer: React.FC = () => {
           }}
         >
           {/* Main 430px Circular Chassis Container */}
-          <div className="relative w-[430px] h-[430px] flex items-center justify-center drop-shadow-[0_24px_50px_rgba(0,0,0,0.92)]">
+          <div className="relative w-[430px] h-[430px] flex items-center justify-center drop-shadow-[0_18px_36px_rgba(0,0,0,0.6)] max-sm:scale-[0.8] max-sm:origin-bottom-right">
             
             {/* ---------------------------------------------------- */}
             {/* LAYER A: OUTER SEGMENTED CHAMFERED WHITE ARMOR RING  */}
             {/* ---------------------------------------------------- */}
             <div 
-              className="absolute inset-0 rounded-full border-[3px] border-[#93a8c0] shadow-[0_20px_45px_rgba(0,0,0,0.95),inset_0_2px_4px_rgba(255,255,255,0.95),inset_0_-4px_8px_rgba(0,0,0,0.45)]"
+              className="absolute inset-0 rounded-full border border-[#5a6066] shadow-[0_12px_30px_rgba(0,0,0,0.55),inset_0_2px_3px_rgba(255,255,255,0.85),inset_0_-4px_8px_rgba(0,0,0,0.35)]"
               style={{
-                background: 'radial-gradient(circle at 45% 35%, #ffffff 0%, #edf3f8 45%, #d1dde8 75%, #a8bccd 100%)'
+                background: 'conic-gradient(from 210deg at 50% 50%, #8b9197 0%, #e9ecee 12%, #b4babf 24%, #f4f6f7 38%, #9aa0a6 52%, #dfe3e6 66%, #858b91 80%, #d5d9dc 92%, #8b9197 100%)'
               }}
             />
 
             {/* Futuristic Panel Seams / Hard-Surface Radial Grooves */}
             <div className="absolute inset-0 rounded-full pointer-events-none overflow-hidden">
               {/* Radial panel seam notches matching render */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-[#637d96] shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
-              <div className="absolute top-10 right-16 w-0.5 h-6 bg-[#637d96] transform rotate-35 shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
-              <div className="absolute top-24 right-5 w-0.5 h-6 bg-[#637d96] transform rotate-65 shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
-              <div className="absolute bottom-24 right-5 w-0.5 h-6 bg-[#637d96] transform -rotate-65 shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
-              <div className="absolute bottom-10 right-16 w-0.5 h-6 bg-[#637d96] transform -rotate-35 shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-[#637d96] shadow-[0_0_2px_rgba(255,255,255,0.8)]" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-[#4d5359]/70" />
+              <div className="absolute top-10 right-16 w-0.5 h-6 bg-[#4d5359]/70 transform rotate-35" />
+              <div className="absolute top-24 right-5 w-0.5 h-6 bg-[#4d5359]/70 transform rotate-65" />
+              <div className="absolute bottom-24 right-5 w-0.5 h-6 bg-[#4d5359]/70 transform -rotate-65" />
+              <div className="absolute bottom-10 right-16 w-0.5 h-6 bg-[#4d5359]/70 transform -rotate-35" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-[#4d5359]/70" />
 
               {/* Top visor seam */}
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-[#768c9f] to-transparent opacity-60" />
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-[#4d5359]/60 to-transparent opacity-60" />
               {/* Bottom intake vent seam with horizontal notches */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-40 h-2 bg-gradient-to-r from-transparent via-[#5a7288] to-transparent opacity-80 flex items-center justify-center gap-1">
-                <span className="w-4 h-0.5 bg-slate-800/80 rounded" />
-                <span className="w-4 h-0.5 bg-slate-800/80 rounded" />
-                <span className="w-4 h-0.5 bg-slate-800/80 rounded" />
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-40 h-2 bg-gradient-to-r from-transparent via-[#4d5359]/60 to-transparent opacity-60 flex items-center justify-center gap-1">
+                <span className="w-4 h-0.5 bg-[#4d5359]/70 rounded" />
+                <span className="w-4 h-0.5 bg-[#4d5359]/70 rounded" />
+                <span className="w-4 h-0.5 bg-[#4d5359]/70 rounded" />
               </div>
             </div>
 
             {/* Bottom-Left Pod Docking Clamp */}
-            <div className="absolute -bottom-1 left-9 w-20 h-6 rounded bg-gradient-to-b from-white via-slate-100 to-slate-300 border border-slate-400 shadow-[0_4px_12px_rgba(0,0,0,0.7),inset_0_1px_2px_rgba(255,255,255,0.9)] transform -rotate-25 z-10 flex items-center justify-between px-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-400 shadow-inner flex items-center justify-center text-[5px] text-white font-mono">+</span>
-              <div className="h-3 w-8 border-x border-slate-400/80 bg-slate-200/60 shadow-inner" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-600 border border-slate-400 shadow-inner flex items-center justify-center text-[5px] text-white font-mono">+</span>
+            <div className="absolute -bottom-1 left-9 w-20 h-6 rounded bg-gradient-to-b from-[#f2f4f5] to-[#aeb4b9] border border-[#5a6066] shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.9)] transform -rotate-25 z-10 flex items-center justify-between px-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3a3f44] border border-[#7c838a] flex items-center justify-center text-[5px] text-[#e9ecee] font-mono">+</span>
+              <div className="h-3 w-8 border-x border-[#7c838a] bg-black/[0.08]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3a3f44] border border-[#7c838a] flex items-center justify-center text-[5px] text-[#e9ecee] font-mono">+</span>
             </div>
 
             {/* ---------------------------------------------------- */}
             {/* LAYER B: RADIAL BLUE-STEEL ROTOR SEGMENTS            */}
             {/* Raised alternating alloy vanes from the reference    */}
             {/* ---------------------------------------------------- */}
-            <div className="absolute inset-5 rounded-full border-2 border-[#122e50] bg-gradient-to-b from-[#0a1e36] to-[#040e1c] flex items-center justify-center overflow-hidden shadow-[inset_0_0_30px_rgba(0,217,255,0.45)]">
+            <div className="absolute inset-5 rounded-full border border-[#2a2e32] bg-gradient-to-b from-[#3a3f44] to-[#1d2024] shadow-[inset_0_2px_6px_rgba(0,0,0,0.6)] flex items-center justify-center overflow-hidden">
               {[...Array(24)].map((_, i) => (
                 <div
                   key={i}
-                  className={`absolute w-3 h-8 rounded-[3px] border border-white/40 bg-gradient-to-b ${i % 6 === 0 ? 'from-[#f6fbfd] via-[#b9cedc] to-[#637f99]' : 'from-[#b9d8e8] via-[#467da3] to-[#173c5f]'} shadow-[inset_0_1px_2px_rgba(255,255,255,0.75),0_2px_3px_rgba(0,0,0,0.7)]`}
+                  className={`absolute w-3 h-8 rounded-[3px] shadow-[0_1px_2px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.8)] ${i % 6 === 0 ? 'bg-gradient-to-b from-[#f7f8f9] to-[#9aa0a6]' : 'bg-gradient-to-b from-[#c3c8cc] to-[#6c7278]'}`}
                   style={{
-                    transform: `rotate(${i * 15}deg) translateY(-166px)`,
+                    transform: `rotate(${i * 15}deg) translateY(-187px)`,
                     opacity: isPlaying ? 1 : 0.82
                   }}
                 />
@@ -547,31 +547,31 @@ export const CivicMediaPlayer: React.FC = () => {
             {/* Multi-stop anisotropic conic gradient reflections    */}
             {/* ---------------------------------------------------- */}
             <div 
-              className="absolute inset-9 rounded-full border-[3px] border-[#526b82] shadow-[inset_0_4px_10px_rgba(0,0,0,0.7),inset_0_-3px_5px_rgba(255,255,255,0.8),0_0_18px_rgba(0,0,0,0.85)]"
+              className="absolute inset-9 rounded-full border border-[#4d5359] shadow-[inset_0_3px_8px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(255,255,255,0.7),0_0_18px_rgba(0,0,0,0.5)]"
               style={{
-                background: 'conic-gradient(from 45deg at 50% 50%, #53738b 0%, #dce8ee 14%, #fafcfc 25%, #7a9ab0 39%, #dce8ee 52%, #6d8da5 67%, #f4f8fa 82%, #6b899f 100%)'
+                background: 'linear-gradient(180deg, #0f2a30, #081014)'
               }}
             >
               {/* Four Cardinal Alignment Rivets / Indents */}
-              <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-slate-800 border border-white/60 shadow-inner" />
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-slate-800 border border-white/60 shadow-inner" />
-              <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-slate-800 border border-white/60 shadow-inner" />
-              <div className="absolute right-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-slate-800 border border-white/60 shadow-inner" />
+              <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#2a2e32]" />
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#2a2e32]" />
+              <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#2a2e32]" />
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#2a2e32]" />
             </div>
 
             {/* ---------------------------------------------------- */}
             {/* LAYER D: CENTRAL DIGITAL LCD SCREEN MONITOR          */}
             {/* ---------------------------------------------------- */}
-            <div className="absolute inset-10 rounded-full bg-gradient-to-b from-[#102c48] via-[#091a2c] to-[#050e18] border-[3px] border-[#b9cfde] shadow-[inset_0_0_24px_rgba(0,217,255,0.24),inset_0_2px_8px_rgba(0,0,0,0.95),0_1px_2px_rgba(255,255,255,0.65)] flex items-center justify-center p-2 text-white overflow-hidden z-10 font-sans">
+            <div className="absolute inset-10 rounded-full bg-gradient-to-b from-[#0b1a1f] to-[#060a0e] border border-[#2a2e32] shadow-[inset_0_3px_10px_rgba(0,0,0,0.8)] flex items-center justify-center p-2 text-white overflow-hidden z-10 font-sans">
               
               {/* Glass Glare & Scanline Texture Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/12 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute inset-0 bg-[linear-gradient(rgba(0,217,255,0.035)_1px,transparent_1px)] bg-[size:100%_3px] pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_3px] pointer-events-none" />
 
               {/* ---------------------------------------------------- */}
               {/* Full circular display. Controls stay on the outside. */}
               {/* ---------------------------------------------------- */}
-              <div className="absolute inset-2 z-10 flex overflow-hidden rounded-full bg-[#05111e]/90">
+              <div className="absolute inset-2 z-10 flex overflow-hidden rounded-full bg-[#060a0e]/90">
                 
                 {/* Main Content Pane */}
                 <div className="flex-1 flex flex-col overflow-hidden">
@@ -579,16 +579,16 @@ export const CivicMediaPlayer: React.FC = () => {
                   {activeTab === 'music' && (
                     <div className="h-full w-full overflow-y-auto px-5 py-6 scrollbar-thin">
                       <div className="mb-4 text-center">
-                        <p className="truncate text-lg font-black text-cyan-100">{isPlaying ? metadata.title : currentStation.name}</p>
-                        <p className="mt-1 truncate text-xs text-cyan-300/70">{isPlaying ? metadata.artist : 'Choose a station to start listening'}</p>
+                        <p className="truncate text-lg font-black text-white">{isPlaying ? metadata.title : currentStation.name}</p>
+                        <p className={`mt-1 truncate text-xs ${isPlaying ? 'text-[#6ee8e9]' : 'text-[#8d959c]'}`}>{isPlaying ? metadata.artist : 'Choose a station to start listening'}</p>
                         <canvas ref={canvasRef} width={320} height={32} className="mx-auto mt-3 h-8 w-full max-w-sm opacity-90" />
                       </div>
-                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2 rounded-xl border border-cyan-400/20 bg-black/30 px-4 py-3 text-center">
-                        <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-cyan-300/70">Station preset</span>
+                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-4 py-3 text-center">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.24em] text-[#8d959c]">Station preset</span>
                         <span className="text-sm font-black tracking-widest text-white">
                           {activePresetIndex >= 0 ? STATION_PRESETS[activePresetIndex].label : 'LIVE DIRECTORY'}
                         </span>
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-[10px] text-[#8d959c]">
                           {activePresetIndex >= 0
                             ? `${activePresetIndex + 1} / ${STATION_PRESETS.length} · Use previous / next to switch presets`
                             : 'Custom station · Use previous / next to browse presets'}
@@ -596,7 +596,7 @@ export const CivicMediaPlayer: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowStationDrawer(true)}
-                          className="mt-1 flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-100 transition hover:bg-cyan-400/20"
+                          className="mt-1 flex items-center gap-1.5 rounded-lg border border-white/[0.16] bg-white/[0.06] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-white/[0.12] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9]"
                         >
                           <Search className="h-3 w-3" />
                           Browse live radio
@@ -607,33 +607,33 @@ export const CivicMediaPlayer: React.FC = () => {
                   
                   {/* 1. TACTICAL RADAR MINIMAP */}
                   {activeTab === 'minimap' && (
-                    <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#040e1a]">
+                    <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#060a0e]">
                       {/* Concentric distance rings */}
-                      <div className="absolute inset-2 border border-cyan-500/25 rounded-full" />
-                      <div className="absolute inset-5 border border-cyan-500/20 rounded-full" />
-                      <div className="absolute inset-8 border border-cyan-500/15 rounded-full" />
+                      <div className="absolute inset-2 border border-white/[0.12] rounded-full" />
+                      <div className="absolute inset-5 border border-white/[0.09] rounded-full" />
+                      <div className="absolute inset-8 border border-white/[0.06] rounded-full" />
                       
                       {/* Compass Axis Lines */}
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-full h-[1px] bg-cyan-500/20" />
+                        <div className="w-full h-[1px] bg-white/[0.08]" />
                       </div>
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="h-full w-[1px] bg-cyan-500/20" />
+                        <div className="h-full w-[1px] bg-white/[0.08]" />
                       </div>
 
                       {/* Rotating Radar Sweep Cone */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/25 via-transparent to-transparent rounded-full animate-spin duration-3000 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-tr from-[#6ee8e9]/15 via-transparent to-transparent rounded-full animate-spin duration-3000 pointer-events-none" />
 
                       {/* Player Center Blip */}
                       <div className="relative z-10 flex flex-col items-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 border-2 border-white shadow-[0_0_8px_#00e1ff]" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#6ee8e9] border-2 border-white" />
                       </div>
 
                       {/* Live citizen positions relative to this player */}
                       {Array.from(players.values()).map((p) => (
                         <div
                           key={p.id}
-                          className="absolute h-3 w-3 rounded-full border border-white bg-emerald-400 shadow-[0_0_8px_#10b981]"
+                          className="absolute h-3 w-3 rounded-full border border-white bg-[#7ae2a7]"
                           style={{
                             top: `${Math.max(4, Math.min(96, 50 + ((p.position?.z ?? localPosition.z) - localPosition.z) * 0.4))}%`,
                             left: `${Math.max(4, Math.min(96, 50 + ((p.position?.x ?? localPosition.x) - localPosition.x) * 0.4))}%`
@@ -648,16 +648,16 @@ export const CivicMediaPlayer: React.FC = () => {
                     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-5 text-white scrollbar-thin">
                       <section>
                         <div className="mb-2 flex items-center justify-between">
-                          <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-cyan-200">
+                          <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#c9d0d6]">
                             <Users className="h-4 w-4" /> Citizens
                           </h2>
-                          <span className="text-[10px] font-mono text-cyan-300">{1 + peerCount}/20</span>
+                          <span className="text-[10px] font-mono text-[#c9d0d6]">{1 + peerCount}/20</span>
                         </div>
                         <input
                           value={playerSearch}
                           onChange={event => setPlayerSearch(event.target.value)}
                           placeholder="Search username or Civic ID"
-                          className="w-full rounded-lg border border-cyan-500/30 bg-black/35 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none"
+                          className="w-full rounded-lg border border-white/[0.16] bg-black/35 px-3 py-2 text-xs text-white placeholder:text-[#8d959c] focus:border-[#6ee8e9] focus:outline-none"
                         />
                         <div className="mt-2 max-h-32 space-y-1 overflow-y-auto">
                           {visibleCitizens.map(player => (
@@ -666,10 +666,10 @@ export const CivicMediaPlayer: React.FC = () => {
                               type="button"
                               disabled={!player.civicId}
                               onClick={() => player.civicId && navigate(`/profile/${encodeURIComponent(player.civicId)}`)}
-                              className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-left text-xs hover:bg-cyan-500/10 disabled:cursor-default disabled:opacity-70"
+                              className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-left text-xs hover:bg-white/[0.1] disabled:cursor-default disabled:opacity-70"
                             >
                               <span className="truncate font-bold">{player.username}</span>
-                              <span className="shrink-0 text-[9px] text-cyan-300">{player.civicId ? 'PROFILE' : 'GUEST'}</span>
+                              <span className="shrink-0 text-[9px] text-[#8d959c]">{player.civicId ? 'PROFILE' : 'GUEST'}</span>
                             </button>
                           ))}
                           {!visibleCitizens.length && (
@@ -680,9 +680,9 @@ export const CivicMediaPlayer: React.FC = () => {
                         </div>
                       </section>
 
-                      <section className="border-t border-cyan-500/20 pt-3">
+                      <section className="border-t border-white/[0.12] pt-3">
                         <div className="mb-2 flex items-center justify-between">
-                          <h3 className="text-[10px] font-black uppercase tracking-widest text-cyan-200">Lobby</h3>
+                          <h3 className="text-[10px] font-black uppercase tracking-widest text-[#c9d0d6]">Lobby</h3>
                           <span className="truncate text-[9px] text-slate-400">{currentLobbyName}</span>
                         </div>
                         <div className="space-y-1">
@@ -690,13 +690,13 @@ export const CivicMediaPlayer: React.FC = () => {
                             <div key={lobby.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
                               <span className="truncate text-[10px] text-slate-200">{lobby.name}</span>
                               {lobby.id === currentLobbyId ? (
-                                <span className="shrink-0 text-[9px] font-bold text-emerald-300">CURRENT</span>
+                                <span className="shrink-0 text-[9px] font-bold text-[#7ae2a7]">CURRENT</span>
                               ) : (
                                 <button
                                   type="button"
                                   disabled={lobby.isFull}
                                   onClick={() => switchLobby(lobby.id)}
-                                  className="shrink-0 rounded border border-cyan-400/40 px-2 py-1 text-[9px] font-bold text-cyan-200 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                  className="shrink-0 rounded border border-white/[0.16] px-2 py-1 text-[9px] font-bold text-white hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   {lobby.isFull ? 'FULL' : 'JOIN'}
                                 </button>
@@ -724,8 +724,8 @@ export const CivicMediaPlayer: React.FC = () => {
                             onClick={() => setChatAudience(audience)}
                             className={`rounded-md border px-2 py-1 text-[8px] font-bold uppercase ${
                               chatAudience === audience
-                                ? 'border-cyan-300 bg-cyan-400/20 text-cyan-100'
-                                : 'border-white/10 text-slate-400 hover:text-white'
+                                ? 'border-[#6ee8e9]/70 bg-[#6ee8e9]/15 text-[#6ee8e9]'
+                                : 'border-white/10 text-[#8d959c] hover:text-white'
                             }`}
                           >
                             {audience}
@@ -735,7 +735,7 @@ export const CivicMediaPlayer: React.FC = () => {
                       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg bg-black/25 p-3 text-[10px] scrollbar-thin">
                         {chatHistory.filter(message => !message.isSystem).slice(-20).map(message => (
                           <p key={message.id} className="break-words leading-snug">
-                            <span className={`mr-1 font-bold ${message.color || 'text-cyan-300'}`}>{message.username}:</span>
+                            <span className={`mr-1 font-bold ${message.color || 'text-[#c9d0d6]'}`}>{message.username}:</span>
                             <span className="text-slate-200">{message.text}</span>
                           </p>
                         ))}
@@ -743,16 +743,16 @@ export const CivicMediaPlayer: React.FC = () => {
                           <p className="text-center text-slate-500">No messages yet.</p>
                         )}
                       </div>
-                      <form onSubmit={handleSendProximityChat} className="flex w-full gap-1 border-t border-cyan-500/20 pt-2">
+                      <form onSubmit={handleSendProximityChat} className="flex w-full gap-1 border-t border-white/[0.12] pt-2">
                         <input
                           type="text"
                           value={chatMessage}
                           disabled={chatAudience === 'off'}
                           onChange={e => setChatMessage(e.target.value)}
                           placeholder={chatAudience === 'off' ? 'Chat is off' : `Say to ${chatAudience === 'nearby' ? 'nearby citizens' : chatAudience === 'friends' ? 'friends' : 'the lobby'}...`}
-                          className="min-w-0 flex-1 rounded-lg border border-cyan-500/40 bg-[#081524] px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                          className="min-w-0 flex-1 rounded-lg border border-white/[0.16] bg-[#081014] px-3 py-2 text-xs text-white focus:border-[#6ee8e9] focus:outline-none"
                         />
-                        <button type="submit" disabled={chatAudience === 'off'} className="rounded-lg border border-cyan-400 bg-cyan-500/30 px-3 text-cyan-100 hover:bg-cyan-500/50 disabled:opacity-50">
+                        <button type="submit" disabled={chatAudience === 'off'} className="rounded-lg border border-white/[0.16] bg-white/[0.06] px-3 text-white hover:bg-white/[0.12] disabled:opacity-50">
                           <Send className="h-4 w-4" />
                         </button>
                       </form>
@@ -766,7 +766,7 @@ export const CivicMediaPlayer: React.FC = () => {
                         <button
                           key={emoji}
                           onClick={() => handleTriggerEmoji(emoji)}
-                          className="text-4xl p-2 rounded-xl hover:bg-cyan-500/20 hover:scale-125 transition-transform cursor-pointer"
+                          className="text-4xl p-2 rounded-xl hover:bg-white/[0.1] hover:scale-125 transition-transform cursor-pointer"
                           title="Broadcast reaction"
                         >
                           {emoji}
@@ -777,14 +777,14 @@ export const CivicMediaPlayer: React.FC = () => {
 
                   {/* 6. SETTINGS HUD (SCALE ADJUSTER + AUTO-SCROLL SPEED SELECTOR) */}
                   {activeTab === 'settings' && (
-                    <div className="flex-1 flex flex-col justify-between p-5 text-xs font-mono overflow-y-auto scrollbar-thin">
+                    <div className="flex-1 flex flex-col justify-between px-10 py-14 text-xs font-mono overflow-y-auto scrollbar-thin">
                       <div className="space-y-1.5">
                         
                         {/* Setting 1: HUD SCALE % */}
                         <div>
-                          <div className="flex items-center justify-between text-cyan-300 font-bold border-b border-cyan-500/25 pb-0.5">
+                          <div className="flex items-center justify-between text-[#c9d0d6] font-bold border-b border-white/[0.12] pb-0.5">
                             <span>HUD SCALE</span>
-                            <span className="text-white bg-cyan-500/30 px-1 py-0.2 rounded border border-cyan-400 font-bold">
+                            <span className="text-white bg-white/[0.06] px-1 py-0.2 rounded border border-white/[0.16] font-bold">
                               {scalePercent}%
                             </span>
                           </div>
@@ -797,7 +797,7 @@ export const CivicMediaPlayer: React.FC = () => {
                               step="5"
                               value={scalePercent}
                               onChange={e => handleUpdateScale(parseInt(e.target.value, 10))}
-                              className="w-full h-1.5 bg-[#0a1829] rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                              className="w-full h-1.5 bg-white/[0.12] rounded-lg appearance-none cursor-pointer accent-[#6ee8e9]"
                             />
                             <div className="grid grid-cols-4 gap-1 mt-1">
                               {[
@@ -811,8 +811,8 @@ export const CivicMediaPlayer: React.FC = () => {
                                   onClick={() => handleUpdateScale(p.val)}
                                   className={`py-0.5 rounded border text-[7px] transition-all cursor-pointer ${
                                     scalePercent === p.val
-                                      ? 'bg-cyan-500/40 border-cyan-400 text-white font-bold shadow-[0_0_8px_rgba(0,217,255,0.4)]'
-                                      : 'bg-[#0a1829] border-white/10 text-gray-400 hover:text-white'
+                                      ? 'bg-[#6ee8e9]/15 border-[#6ee8e9]/70 text-[#6ee8e9] font-bold'
+                                      : 'bg-transparent border-white/10 text-[#8d959c] hover:text-white'
                                   }`}
                                 >
                                   {p.label}
@@ -823,13 +823,13 @@ export const CivicMediaPlayer: React.FC = () => {
                         </div>
 
                         {/* Setting 2: AUTO-SCROLL SPEED SELECTOR (User Requirement!) */}
-                        <div className="pt-1 border-t border-cyan-500/25">
-                          <div className="flex items-center justify-between text-cyan-300 font-bold pb-0.5">
+                        <div className="pt-1 border-t border-white/[0.12]">
+                          <div className="flex items-center justify-between text-[#c9d0d6] font-bold pb-0.5">
                             <div className="flex items-center gap-1">
-                              <span className={`w-1.5 h-1.5 rounded-full ${scrollSpeed > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                              <span className={`w-1.5 h-1.5 rounded-full ${scrollSpeed > 0 ? 'bg-[#7ae2a7]' : 'bg-[#8d959c]'}`} />
                               <span>AUTO-SCROLL SPEED</span>
                             </div>
-                            <span className={`px-1 py-0.2 rounded border font-bold ${scrollSpeed > 0 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>
+                            <span className={`px-1 py-0.2 rounded border font-bold ${scrollSpeed > 0 ? 'bg-[#7ae2a7]/15 text-[#7ae2a7] border-[#7ae2a7]/40' : 'bg-transparent text-[#8d959c] border-white/10'}`}>
                               {scrollSpeed > 0 ? `${scrollSpeed} px/s` : 'OFF'}
                             </span>
                           </div>
@@ -842,7 +842,7 @@ export const CivicMediaPlayer: React.FC = () => {
                               step="5"
                               value={scrollSpeed}
                               onChange={e => handleUpdateScrollSpeed(parseInt(e.target.value, 10))}
-                              className="w-full h-1.5 bg-[#0a1829] rounded-lg appearance-none cursor-pointer accent-emerald-400"
+                              className="w-full h-1.5 bg-white/[0.12] rounded-lg appearance-none cursor-pointer accent-[#6ee8e9]"
                             />
                             
                             {/* Quick speed preset buttons */}
@@ -859,8 +859,8 @@ export const CivicMediaPlayer: React.FC = () => {
                                   onClick={() => handleUpdateScrollSpeed(s.val)}
                                   className={`py-0.5 rounded border text-[6.5px] transition-all cursor-pointer ${
                                     scrollSpeed === s.val
-                                      ? 'bg-emerald-500/40 border-emerald-400 text-emerald-200 font-bold shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-                                      : 'bg-[#0a1829] border-white/10 text-gray-400 hover:text-white'
+                                      ? 'bg-[#6ee8e9]/15 border-[#6ee8e9]/70 text-[#6ee8e9] font-bold'
+                                      : 'bg-transparent border-white/10 text-[#8d959c] hover:text-white'
                                   }`}
                                 >
                                   {s.label}
@@ -886,15 +886,15 @@ export const CivicMediaPlayer: React.FC = () => {
             {/* Exactly matches controller docked to circular bezel */}
             {/* ---------------------------------------------------- */}
             <div 
-              className="absolute -left-12 top-1/2 -translate-y-1/2 w-26 h-52 border-2 border-[#3b5575] rounded-xl shadow-[0_12px_28px_rgba(0,0,0,0.9),inset_0_1px_3px_rgba(255,255,255,0.4)] p-1.5 flex flex-col justify-between z-20 font-mono text-[8px]"
+              className="absolute -left-12 top-1/2 -translate-y-1/2 w-26 h-52 border border-[#5a6066] rounded-2xl shadow-[0_12px_28px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.9),inset_0_-2px_4px_rgba(0,0,0,0.25)] p-1.5 flex flex-col justify-between z-20 font-mono text-[8px]"
               style={{
-                background: 'linear-gradient(135deg, #182e47 0%, #0d1a29 50%, #060e17 100%)'
+                background: 'linear-gradient(180deg, #e9ecee 0%, #c3c8cc 45%, #9aa0a6 100%)'
               }}
             >
               {/* ▲ OPEN (STATION SELECTOR / EXPANDER - Item 24 in render) */}
               <button
                 onClick={() => { setActiveTab('music'); setShowStationDrawer(true); }}
-                className="w-full py-1 bg-gradient-to-r from-cyan-600/60 to-blue-600/60 hover:from-cyan-500/80 hover:to-blue-500/80 border border-cyan-400/80 rounded text-cyan-100 font-black text-center tracking-wider shadow-[0_0_8px_rgba(0,217,255,0.5)] cursor-pointer flex items-center justify-center gap-1 active:scale-95 transition-all"
+                className="w-full py-1 bg-gradient-to-b from-[#f7f8f9] to-[#c3c8cc] hover:from-white hover:to-[#d9dde0] border border-[#7c838a] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.35)] rounded text-[#14181c] font-black text-center tracking-wider focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0b1a1f] cursor-pointer flex items-center justify-center gap-1 active:scale-95 transition-all"
                 title="Open Foyer FM Station Selector (Curated & 60,000+)"
               >
                 <Music className="w-2.5 h-2.5" />
@@ -906,7 +906,7 @@ export const CivicMediaPlayer: React.FC = () => {
                 <button
                   onClick={() => setIsRepeat(!isRepeat)}
                   className={`py-0.5 rounded border text-[7px] text-center transition-all cursor-pointer ${
-                    isRepeat ? 'bg-cyan-500/35 border-cyan-400 text-cyan-300 font-bold shadow-[0_0_6px_rgba(0,217,255,0.3)]' : 'bg-[#0a1420] border-white/10 text-gray-500'
+                    isRepeat ? 'bg-[#0b1a1f] border-[#0b1a1f] text-[#6ee8e9] font-bold' : 'bg-transparent border-[#7c838a] text-[#3a3f44]'
                   }`}
                 >
                   REP
@@ -914,7 +914,7 @@ export const CivicMediaPlayer: React.FC = () => {
                 <button
                   onClick={() => setIsRandom(!isRandom)}
                   className={`py-0.5 rounded border text-[7px] text-center transition-all cursor-pointer ${
-                    isRandom ? 'bg-cyan-500/35 border-cyan-400 text-cyan-300 font-bold shadow-[0_0_6px_rgba(0,217,255,0.3)]' : 'bg-[#0a1420] border-white/10 text-gray-500'
+                    isRandom ? 'bg-[#0b1a1f] border-[#0b1a1f] text-[#6ee8e9] font-bold' : 'bg-transparent border-[#7c838a] text-[#3a3f44]'
                   }`}
                 >
                   SHUF
@@ -926,7 +926,7 @@ export const CivicMediaPlayer: React.FC = () => {
                 {/* ■ STOP button (Item 2 in render) */}
                 <button
                   onClick={handleStop}
-                  className="w-full py-1 bg-[#0b1624] hover:bg-red-500/25 border border-red-500/50 rounded flex items-center justify-center text-red-400 font-bold active:scale-95 cursor-pointer transition-all shadow-[0_0_6px_rgba(239,68,68,0.2)]"
+                  className="w-full py-1 bg-gradient-to-b from-[#f7f8f9] to-[#c3c8cc] hover:from-white hover:to-[#d9dde0] border border-[#7c838a] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.35)] rounded flex items-center justify-center text-[#14181c] font-bold active:scale-95 cursor-pointer transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0b1a1f]"
                 >
                   <Square className="w-2.5 h-2.5 fill-current" />
                   <span className="ml-1 text-[7px]">STOP</span>
@@ -936,18 +936,18 @@ export const CivicMediaPlayer: React.FC = () => {
                 <div className="relative py-1 flex items-center justify-center">
                   <button
                     onClick={handleTogglePlay}
-                    className="w-12 h-12 rounded-full border-2 border-cyan-400 shadow-[0_0_12px_rgba(0,217,255,0.5),inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-2px_4px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center active:scale-95 cursor-pointer transition-all"
+                    className={`w-12 h-12 rounded-full border-2 ${isPlaying ? 'border-[#6ee8e9] shadow-[0_0_18px_rgba(110,232,233,0.35)]' : 'border-[#f7f8f9] shadow-[0_1px_3px_rgba(0,0,0,0.55)]'} flex flex-col items-center justify-center active:scale-95 cursor-pointer transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0b1a1f] focus-visible:outline-offset-2`}
                     style={{
-                      background: 'radial-gradient(circle at 40% 35%, #1e4570 0%, #0d223a 65%, #050d17 100%)'
+                      background: 'linear-gradient(180deg, #0f2a30, #081014)'
                     }}
                     title={isPlaying ? 'Pause' : 'Play / Stream'}
                   >
                     {isPlaying ? (
-                      <Pause className="w-4 h-4 text-cyan-300 fill-current" />
+                      <Pause className="w-4 h-4 text-[#6ee8e9] fill-current" />
                     ) : (
-                      <Play className="w-4 h-4 text-cyan-300 fill-current ml-0.5" />
+                      <Play className="w-4 h-4 text-white fill-current ml-0.5" />
                     )}
-                    <span className="text-[6.5px] font-black text-cyan-200 mt-0.5 tracking-tighter">
+                    <span className={`text-[6.5px] font-black ${isPlaying ? 'text-[#6ee8e9]' : 'text-[#c9d0d6]'} mt-0.5 tracking-tighter`}>
                       {isPlaying ? 'PAUSE' : 'PLAY'}
                     </span>
                   </button>
@@ -958,7 +958,7 @@ export const CivicMediaPlayer: React.FC = () => {
               <div className="grid grid-cols-2 gap-1">
                 <button
                   onClick={() => stepPreset(-1)}
-                  className="py-1 bg-[#0b1624] hover:bg-white/15 border border-white/20 rounded flex items-center justify-center text-gray-300 active:scale-95 cursor-pointer transition-all"
+                  className="py-1 bg-gradient-to-b from-[#f7f8f9] to-[#c3c8cc] hover:from-white hover:to-[#d9dde0] border border-[#7c838a] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.35)] rounded flex items-center justify-center text-[#14181c] active:scale-95 cursor-pointer transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0b1a1f]"
                   title="Previous preset"
                   aria-label="Previous station preset"
                 >
@@ -966,7 +966,7 @@ export const CivicMediaPlayer: React.FC = () => {
                 </button>
                 <button
                   onClick={() => stepPreset(1)}
-                  className="py-1 bg-[#0b1624] hover:bg-white/15 border border-white/20 rounded flex items-center justify-center text-gray-300 active:scale-95 cursor-pointer transition-all"
+                  className="py-1 bg-gradient-to-b from-[#f7f8f9] to-[#c3c8cc] hover:from-white hover:to-[#d9dde0] border border-[#7c838a] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.35)] rounded flex items-center justify-center text-[#14181c] active:scale-95 cursor-pointer transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0b1a1f]"
                   title="Next preset"
                   aria-label="Next station preset"
                 >
@@ -984,10 +984,10 @@ export const CivicMediaPlayer: React.FC = () => {
               {/* Tab 1: 🗺️ MINIMAP */}
               <button
                 onClick={() => setActiveTab('minimap')}
-                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9] ${
                   activeTab === 'minimap'
-                    ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
-                    : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                    ? 'bg-[#0b1a1f] border-[#6ee8e9]/70 text-[#6ee8e9] translate-x-1'
+                    : 'bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border-[#5a6066] text-[#14181c] hover:from-white hover:to-[#d9dde0]'
                 }`}
               >
                 <span>🗺️ MINIMAP</span>
@@ -995,10 +995,10 @@ export const CivicMediaPlayer: React.FC = () => {
 
               <button
                 onClick={() => setActiveTab('citizens')}
-                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9] ${
                   activeTab === 'citizens'
-                    ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
-                    : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                    ? 'bg-[#0b1a1f] border-[#6ee8e9]/70 text-[#6ee8e9] translate-x-1'
+                    : 'bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border-[#5a6066] text-[#14181c] hover:from-white hover:to-[#d9dde0]'
                 }`}
                 title="Search citizens and switch lobbies"
               >
@@ -1009,10 +1009,10 @@ export const CivicMediaPlayer: React.FC = () => {
               {/* Live social, trending and civic feeds */}
               <button
                 onClick={() => setActiveTab('feeds')}
-                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9] ${
                   activeTab === 'feeds'
-                    ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
-                    : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                    ? 'bg-[#0b1a1f] border-[#6ee8e9]/70 text-[#6ee8e9] translate-x-1'
+                    : 'bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border-[#5a6066] text-[#14181c] hover:from-white hover:to-[#d9dde0]'
                 }`}
               >
                 <span>📰 FEEDS</span>
@@ -1020,10 +1020,10 @@ export const CivicMediaPlayer: React.FC = () => {
 
               <button
                 onClick={() => setActiveTab('civicwatch')}
-                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9] ${
                   activeTab === 'civicwatch'
-                    ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
-                    : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                    ? 'bg-[#0b1a1f] border-[#6ee8e9]/70 text-[#6ee8e9] translate-x-1'
+                    : 'bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border-[#5a6066] text-[#14181c] hover:from-white hover:to-[#d9dde0]'
                 }`}
                 title="CivicWatch community video feed"
               >
@@ -1033,10 +1033,10 @@ export const CivicMediaPlayer: React.FC = () => {
               {/* Tab 4: 💬 PROX CHAT */}
               <button
                 onClick={() => setActiveTab('proximity')}
-                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9] ${
                   activeTab === 'proximity'
-                    ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
-                    : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                    ? 'bg-[#0b1a1f] border-[#6ee8e9]/70 text-[#6ee8e9] translate-x-1'
+                    : 'bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border-[#5a6066] text-[#14181c] hover:from-white hover:to-[#d9dde0]'
                 }`}
               >
                 <span>💬 CHAT</span>
@@ -1045,10 +1045,10 @@ export const CivicMediaPlayer: React.FC = () => {
               {/* Tab 5: ✨ EMOJIS */}
               <button
                 onClick={() => setActiveTab('emojis')}
-                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9] ${
                   activeTab === 'emojis'
-                    ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
-                    : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                    ? 'bg-[#0b1a1f] border-[#6ee8e9]/70 text-[#6ee8e9] translate-x-1'
+                    : 'bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border-[#5a6066] text-[#14181c] hover:from-white hover:to-[#d9dde0]'
                 }`}
               >
                 <span>✨ EMOJIS</span>
@@ -1057,10 +1057,10 @@ export const CivicMediaPlayer: React.FC = () => {
               {/* Tab 6: ⚙️ SETTINGS (Scale % and Auto-Scroll Speed Selector) */}
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9] ${
                   activeTab === 'settings'
-                    ? 'bg-cyan-500/40 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(0,217,255,0.5)] translate-x-1'
-                    : 'bg-[#101e30]/95 border-white/20 text-gray-300 hover:text-white hover:bg-[#182b42]'
+                    ? 'bg-[#0b1a1f] border-[#6ee8e9]/70 text-[#6ee8e9] translate-x-1'
+                    : 'bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border-[#5a6066] text-[#14181c] hover:from-white hover:to-[#d9dde0]'
                 }`}
                 title="Adjust Console Scale % & Auto-Scroll Speed"
               >
@@ -1068,16 +1068,16 @@ export const CivicMediaPlayer: React.FC = () => {
               </button>
 
               {/* VOLUME ROCKER (- / +) (Item 16 in render) */}
-              <div className="flex items-center justify-between bg-[#0b1624] border border-cyan-500/50 rounded px-1.5 py-0.5 text-cyan-300 shadow-md">
-                <button onClick={handleVolumeDown} className="p-0.5 hover:text-white cursor-pointer"><Minus className="w-2.5 h-2.5" /></button>
+              <div className="flex items-center justify-between bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border border-[#5a6066] rounded px-1.5 py-0.5 text-[#14181c] shadow-md">
+                <button onClick={handleVolumeDown} className="p-0.5 hover:text-black cursor-pointer"><Minus className="w-2.5 h-2.5" /></button>
                 <span className="text-[7px] font-bold">{Math.round(volume * 100)}%</span>
-                <button onClick={handleVolumeUp} className="p-0.5 hover:text-white cursor-pointer"><Plus className="w-2.5 h-2.5" /></button>
+                <button onClick={handleVolumeUp} className="p-0.5 hover:text-black cursor-pointer"><Plus className="w-2.5 h-2.5" /></button>
               </div>
 
               {/* MINIMIZE HUD BUTTON (Item 20 in render) */}
               <button
                 onClick={() => setIsMinimized(true)}
-                className="px-2.5 py-0.5 rounded-r-lg bg-white/5 hover:bg-white/15 border-y border-r border-white/15 text-gray-400 hover:text-white text-left transition-all cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-0.5 rounded-r-lg bg-gradient-to-b from-[#e9ecee] to-[#aeb4b9] hover:from-white hover:to-[#d9dde0] border-y border-r border-[#5a6066] text-[#3a3f44] hover:text-black text-left transition-all cursor-pointer flex items-center gap-1"
                 title="Minimize Console to Dock"
               >
                 <ChevronDown className="w-2.5 h-2.5" />
@@ -1094,32 +1094,32 @@ export const CivicMediaPlayer: React.FC = () => {
       {/* ======================================================== */}
       {showStationDrawer && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-[#091422] border-2 border-cyan-500/60 rounded-2xl shadow-[0_0_50px_rgba(0,217,255,0.45)] overflow-hidden flex flex-col max-h-[82vh] animate-in fade-in zoom-in-95">
+          <div className="w-full max-w-lg bg-gradient-to-b from-[#0f2a30]/95 to-[#081014]/95 border border-white/[0.12] rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col max-h-[82vh] animate-in fade-in zoom-in-95">
             
             {/* Modal Header */}
-            <div className="p-3.5 bg-gradient-to-r from-[#0d2238] to-[#163656] border-b border-cyan-500/40 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-cyan-400">
-                <Radio className="w-4 h-4 animate-pulse" />
+            <div className="p-3.5 border-b border-white/[0.12] flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[#c9d0d6]">
+                <Radio className="w-4 h-4" />
                 <span className="font-black text-xs tracking-widest text-white uppercase">
                   FOYER FM • OPEN STATION DIRECTORY
                 </span>
-                <span className="text-[9px] bg-cyan-500/20 px-1.5 py-0.5 rounded text-cyan-300 font-mono">60,000+ STATIONS</span>
+                <span className="text-[9px] bg-white/[0.06] px-1.5 py-0.5 rounded text-[#c9d0d6] font-mono">60,000+ STATIONS</span>
               </div>
-              <button onClick={() => setShowStationDrawer(false)} className="text-gray-400 hover:text-white p-1 cursor-pointer">
+              <button onClick={() => setShowStationDrawer(false)} className="text-[#8d959c] hover:text-white p-1 cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Search Input */}
-            <div className="p-2.5 bg-[#06101c] border-b border-cyan-500/20">
+            <div className="p-2.5 border-b border-white/[0.08]">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-[#8d959c] absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => handleSearchStations(e.target.value)}
                   placeholder="Search 60,000+ stations by name, genre, city, or country..."
-                  className="w-full bg-[#0a1829] border border-cyan-500/40 rounded-lg py-1.5 pl-8 pr-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-black/30 border border-white/[0.16] rounded-lg py-1.5 pl-8 pr-3 text-xs text-white placeholder-[#8d959c] focus:outline-none focus:border-[#6ee8e9]"
                 />
               </div>
 
@@ -1134,8 +1134,8 @@ export const CivicMediaPlayer: React.FC = () => {
                     }}
                     className={`px-2 py-0.5 rounded-full border transition-all ${
                       selectedGenre === genre.id
-                        ? 'bg-cyan-500/30 border-cyan-400 text-cyan-300 font-bold'
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                        ? 'bg-[#6ee8e9]/15 border-[#6ee8e9]/70 text-[#6ee8e9] font-bold'
+                        : 'bg-transparent border-white/10 text-[#8d959c] hover:text-white'
                     }`}
                   >
                     {genre.label}
@@ -1147,17 +1147,17 @@ export const CivicMediaPlayer: React.FC = () => {
             {/* Stations Result List */}
             <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 max-h-[48vh] scrollbar-thin">
               {isSearching && (
-                <div className="py-6 text-center text-xs text-cyan-300">
+                <div className="py-6 text-center text-xs text-[#c9d0d6]">
                   Searching the live station directory...
                 </div>
               )}
               {!isSearching && stationSearchError && (
-                <div role="alert" className="py-6 text-center text-xs text-rose-300">
+                <div role="alert" className="py-6 text-center text-xs text-[#ff5ad9]">
                   {stationSearchError}
                 </div>
               )}
               {!isSearching && !stationSearchError && searchResults.length === 0 && (
-                <div className="py-6 text-center text-xs text-gray-400">
+                <div className="py-6 text-center text-xs text-[#8d959c]">
                   No stations found. Try another name or genre.
                 </div>
               )}
@@ -1170,25 +1170,25 @@ export const CivicMediaPlayer: React.FC = () => {
                   }}
                   className={`p-2 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
                     currentStation.id === station.id && isPlaying
-                      ? 'bg-cyan-500/25 border-cyan-400 text-white shadow-[0_0_12px_rgba(0,217,255,0.25)]'
-                      : 'bg-[#0a1829]/70 border-[#23354d] text-gray-300 hover:bg-[#10243b] hover:border-cyan-500/50'
+                      ? 'bg-[#6ee8e9]/10 border-[#6ee8e9]/70 text-white shadow-[0_0_18px_rgba(110,232,233,0.35)]'
+                      : 'bg-white/[0.03] border-white/[0.08] text-[#c9d0d6] hover:bg-white/[0.08] hover:border-white/25'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-md bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
+                    <div className="w-7 h-7 rounded-lg bg-white/[0.06] border border-white/[0.12] flex items-center justify-center text-[#c9d0d6]">
                       <Music className="w-3.5 h-3.5" />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-white">{station.name}</h4>
-                      <p className="text-[9px] text-gray-400">{station.description || station.tags?.slice(0, 3).join(' • ')}</p>
+                      <p className="text-[9px] text-[#8d959c]">{station.description || station.tags?.slice(0, 3).join(' • ')}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-mono text-cyan-400/80 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                    <span className="text-[9px] font-mono text-[#8d959c] bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.08]">
                       {station.bitrate ? `${station.bitrate}k` : '320k'}
                     </span>
-                    <Play className="w-3.5 h-3.5 text-cyan-400" />
+                    <Play className="w-3.5 h-3.5 text-[#c9d0d6]" />
                   </div>
                 </div>
               ))}
