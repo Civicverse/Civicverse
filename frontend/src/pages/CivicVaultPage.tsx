@@ -1500,25 +1500,12 @@ export default function CivicVaultPage() {
           {/* LEFT COLUMN: User Header, 3D AVATAR (ONLY Wardrobe link at bottom), Tools */}
           {/* ----------------------------------------------------------------------- */}
           <div className="lg:col-span-5 space-y-4">
-            {/* Player1 Header Box - Nice & Big with Sweet Typography */}
-            <div className="myspace-box p-6 rounded-xl text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-orange-500/10 pointer-events-none" />
-              <div className="relative z-10">
-                <span className="text-[9px] font-mono uppercase tracking-[0.35em] text-cyan-400 font-extrabold block mb-1">
-                  CITIZEN VAULT
-                </span>
-                <h1 className="cv-vault-username-banner text-4xl sm:text-5xl font-black tracking-wider uppercase font-mono text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-white drop-shadow-[0_2px_15px_rgba(0,217,255,0.45)]">
-                  {user.username}
-                </h1>
-              </div>
-            </div>
-
             {/* 3D AVATAR DIRECTLY RENDERED (NO EXTRA EDIT AT TOP, NO EXPORT IN STRIP) */}
             <div className="myspace-box rounded-lg overflow-hidden border border-stainless-steel shadow-[0_0_20px_rgba(0,0,0,0.5)]">
               <div className="myspace-table-header flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
+                <span className="cv-vault-username-banner flex items-center gap-1.5 font-black uppercase">
                   <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                  3D AVATAR RIG
+                  {user.username}
                 </span>
               </div>
 
@@ -1526,7 +1513,6 @@ export default function CivicVaultPage() {
               <div className="relative w-full h-80 bg-gradient-to-b from-[#161d28] via-[#0d121a] to-black">
                 <div className={`vault-storefront-sign vault-storefront-sign--${storefrontStyle} absolute left-1/2 top-2 z-20 w-[88%] max-w-[470px] -translate-x-1/2 px-3 py-2`}>
                   <div className="vault-sign-content relative z-10 flex items-center gap-3">
-                    <span className="shrink-0 rounded border border-cyan-300/40 bg-cyan-300/10 px-1.5 py-1 text-[8px] font-black uppercase tracking-widest text-cyan-100">Storefront</span>
                     <div className="w-full overflow-hidden">
                       <span className="vault-storefront-sign-copy">{storefrontBanner}</span>
                     </div>
@@ -1565,7 +1551,7 @@ export default function CivicVaultPage() {
                 </button>
               </div>
               <details className="border-t border-[#2e3b4e] bg-[#0b1018]/90 p-3">
-                <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-cyan-200">Customize storefront sign</summary>
+                <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-cyan-200">Customize sign</summary>
                 <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_170px_auto] sm:items-end">
                   <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400">
                     Guest welcome banner
