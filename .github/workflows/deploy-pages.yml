@@ -5,22 +5,15 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  actions: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -52,29 +45,23 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
+          name: github-pages
           path: './frontend/dist'
 
-      - name: Wait for Pages Artifact Registration
-        uses: actions/github-script@v7
-        with:
-          script: |
-            for (let attempt = 0; attempt < 12; attempt += 1) {
-              const { data } = await github.rest.actions.listWorkflowRunArtifacts({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: context.runId
-              });
-              if (data.artifacts.some(artifact => artifact.name === 'github-pages' && !artifact.expired)) {
-                core.info('GitHub Pages artifact is registered and ready to deploy.');
-                return;
-              }
-              core.info(`Waiting for GitHub Pages artifact registration (${attempt + 1}/12)...`);
-              await new Promise(resolve => setTimeout(resolve, 5000));
-            }
-            throw new Error('GitHub Pages artifact was uploaded but did not become available for deployment.');
-
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
