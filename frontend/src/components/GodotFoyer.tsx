@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useMultiplayerStore } from '../services/multiplayer';
 import { createCharacterMesh, createPlayerNametag } from '../lib/characterFactory';
+import { getUserBroadcastVideos } from '../services/mediaService';
 import {
   buildDetailedCity,
   updateCityAnimation,
@@ -382,9 +383,38 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         }
       }
 
+      // Inject Citizen Billboard Broadcasts from the Vault
+      try {
+        const citizenVideos = getUserBroadcastVideos().filter(v => v.shareToBillboards && v.url);
+        const citizenStories: BillboardStory[] = citizenVideos.map(v => ({
+          id: `citizen-billboard-${v.id}`,
+          title: v.title || 'Citizen Broadcast',
+          author: v.creatorUsername || 'Citizen Creator',
+          authorId: v.creatorCivicId,
+          category: 'VIDEO REPORT',
+          tag: 'CITIZEN BROADCAST',
+          color: '#00f3ff',
+          sourceUrl: v.creatorCivicId ? `/profile/${encodeURIComponent(v.creatorCivicId)}` : '/vault',
+          profileUrl: v.creatorCivicId ? `/profile/${encodeURIComponent(v.creatorCivicId)}` : undefined,
+          videoUrl: v.url,
+          mimeType: 'video/mp4'
+        }));
+        stories.unshift(...citizenStories);
+      } catch (err) {
+        console.warn('[GodotFoyer] Could not load citizen billboard videos:', err);
+      }
+
       if (!sceneDisposed) updateCityBillboardStories(cityAnimationHandles, stories);
     };
     void refreshCivicWatchMedia();
+
+    const handleBillboardBroadcast = () => {
+      if (!sceneDisposed) void refreshCivicWatchMedia();
+    };
+    window.addEventListener('billboard_broadcast_changed', handleBillboardBroadcast);
+    window.addEventListener('civicverse_videos_changed', handleBillboardBroadcast);
+    window.addEventListener('civicverse_sharing_changed', handleBillboardBroadcast);
+
     civicWatchMediaTimer = window.setInterval(() => void refreshCivicWatchMedia(), 30000);
 
     const playerGroup = new THREE.Group();
@@ -1347,6 +1377,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     return () => {
       sceneDisposed = true;
+      window.removeEventListener('billboard_broadcast_changed', handleBillboardBroadcast);
+      window.removeEventListener('civicverse_videos_changed', handleBillboardBroadcast);
       if (civicWatchMediaTimer !== undefined) window.clearInterval(civicWatchMediaTimer);
       if (billboardRotationTimer !== undefined) window.clearInterval(billboardRotationTimer);
       cancelAnimationFrame(frameId);

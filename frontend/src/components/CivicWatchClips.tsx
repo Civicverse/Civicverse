@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, RefreshCw, UserRound } from 'lucide-react';
+import { getUserBroadcastVideos } from '../services/mediaService';
 
 interface Clip {
   id: string;
@@ -50,8 +51,21 @@ export const CivicWatchClips: React.FC = () => {
             image: item.image,
             mimeType: 'image/jpeg'
           }));
+
+        // Load local citizen videos broadcasted from the Vault
+        const userBroadcasts = getUserBroadcastVideos()
+          .filter(v => v.shareToCivicWatch && v.url)
+          .map(v => ({
+            id: `user-broadcast-${v.id}`,
+            title: v.title || 'Citizen Community Report',
+            author: v.creatorUsername || 'Citizen Creator',
+            authorId: v.creatorCivicId,
+            url: v.url,
+            mimeType: 'video/mp4'
+          }));
+
         if (!cancelled) {
-          setClips([...socialClips, ...watchClips]);
+          setClips([...userBroadcasts, ...socialClips, ...watchClips]);
           setError('');
         }
       } catch {
@@ -61,8 +75,20 @@ export const CivicWatchClips: React.FC = () => {
       }
     };
     void load();
+
+    const handleBroadcastUpdate = () => void load();
+    window.addEventListener('civicwatch_broadcast_changed', handleBroadcastUpdate);
+    window.addEventListener('civicverse_videos_changed', handleBroadcastUpdate);
+    window.addEventListener('civicverse_sharing_changed', handleBroadcastUpdate);
+
     const timer = window.setInterval(() => void load(), 30000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener('civicwatch_broadcast_changed', handleBroadcastUpdate);
+      window.removeEventListener('civicverse_videos_changed', handleBroadcastUpdate);
+      window.removeEventListener('civicverse_sharing_changed', handleBroadcastUpdate);
+    };
   }, []);
 
   if (loading) return <div className="flex h-full items-center justify-center text-cyan-300"><RefreshCw className="h-5 w-5 animate-spin" /></div>;

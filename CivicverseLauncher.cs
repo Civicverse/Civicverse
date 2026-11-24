@@ -271,11 +271,13 @@ namespace CivicverseLauncher
         {
             // Locate Repo Dir
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string preferredLifeLabDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop", "Life-Lab-v2", "Civicverse");
             List<string> potentialDirs = new List<string>
             {
+                preferredLifeLabDir,
+                baseDir,
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Civicverse"),
                 @"C:\Users\frybo\Civicverse",
-                baseDir,
                 Path.Combine(baseDir, "Civicverse"),
                 Path.Combine(baseDir, "..", "Civicverse"),
                 @"C:\Users\frybo\Desktop\DEV OPS\Civicverse",

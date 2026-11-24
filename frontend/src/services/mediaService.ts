@@ -25,6 +25,124 @@ export interface TrackMetadata {
   album?: string;
   artwork?: string;
   stationName: string;
+  creatorCivicId?: string;
+  creatorUsername?: string;
+  priceRights?: number;
+  priceOutright?: number;
+  songUrl?: string;
+}
+
+export interface FoyerBroadcastTrack {
+  id: string;
+  title: string;
+  artist: string;
+  url: string;
+  artwork?: string;
+  creatorUsername: string;
+  creatorCivicId: string;
+  priceRights: number;
+  priceOutright: number;
+  timestamp: number;
+}
+
+export function isFoyerFmSharingEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem('civicverse:foyer_fm_sharing');
+    if (raw === null) return true;
+    return raw === 'true';
+  } catch {
+    return true;
+  }
+}
+
+export function setFoyerFmSharingEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem('civicverse:foyer_fm_sharing', String(enabled));
+    if (!enabled) {
+      localStorage.removeItem('civicverse:foyer_fm_broadcast');
+    }
+    window.dispatchEvent(new Event('foyer_fm_broadcast_changed'));
+    window.dispatchEvent(new Event('civicverse_music_changed'));
+  } catch {}
+}
+
+export function getFoyerBroadcast(): FoyerBroadcastTrack | null {
+  try {
+    if (!isFoyerFmSharingEnabled()) return null;
+    const raw = localStorage.getItem('civicverse:foyer_fm_broadcast');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed.id === 'song_1' || parsed.title?.toLowerCase().includes('neo tokyo')) {
+      localStorage.removeItem('civicverse:foyer_fm_broadcast');
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function setFoyerBroadcast(track: FoyerBroadcastTrack | null): void {
+  try {
+    if (track && isFoyerFmSharingEnabled()) {
+      localStorage.setItem('civicverse:foyer_fm_broadcast', JSON.stringify(track));
+    } else {
+      localStorage.removeItem('civicverse:foyer_fm_broadcast');
+    }
+    window.dispatchEvent(new Event('foyer_fm_broadcast_changed'));
+  } catch {}
+}
+
+export interface UserVideo {
+  id: string;
+  title: string;
+  description?: string;
+  url: string; // Video URL or base64 data URL
+  creatorUsername: string;
+  creatorCivicId: string;
+  uploadedAt: number;
+  shareToCivicWatch: boolean;
+  shareToBillboards: boolean;
+}
+
+export function isGlobalSharingEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem('civicverse:global_sharing');
+    if (raw === null) return true;
+    return raw === 'true';
+  } catch {
+    return true;
+  }
+}
+
+export function setGlobalSharingEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem('civicverse:global_sharing', String(enabled));
+    window.dispatchEvent(new Event('civicverse_videos_changed'));
+    window.dispatchEvent(new Event('civicwatch_broadcast_changed'));
+    window.dispatchEvent(new Event('billboard_broadcast_changed'));
+    window.dispatchEvent(new Event('civicverse_sharing_changed'));
+  } catch {}
+}
+
+export function getUserBroadcastVideos(): UserVideo[] {
+  try {
+    if (!isGlobalSharingEnabled()) return [];
+    const raw = localStorage.getItem('civicverse:my_videos');
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function setUserBroadcastVideos(videos: UserVideo[]): void {
+  try {
+    localStorage.setItem('civicverse:my_videos', JSON.stringify(videos));
+    window.dispatchEvent(new Event('civicverse_videos_changed'));
+    window.dispatchEvent(new Event('civicwatch_broadcast_changed'));
+    window.dispatchEvent(new Event('billboard_broadcast_changed'));
+  } catch {}
 }
 
 export interface PodcastEpisode {
@@ -46,6 +164,32 @@ export async function fetchLiveTrackMetadata(station: MediaStation): Promise<Tra
     return {
       title: 'Civicverse Broadcast',
       artist: 'Foyer FM',
+      stationName: 'Foyer FM'
+    };
+  }
+
+  // 0. Check for Foyer FM Community Broadcast
+  if (station.id === 'foyer-fm') {
+    const broadcast = getFoyerBroadcast();
+    if (broadcast) {
+      return {
+        title: broadcast.title,
+        artist: broadcast.artist || broadcast.creatorUsername,
+        album: `Media Rights: ${broadcast.priceRights} XMR • Outright: ${broadcast.priceOutright} XMR`,
+        artwork: broadcast.artwork || './Civicverselogo.png',
+        stationName: 'Foyer FM',
+        creatorCivicId: broadcast.creatorCivicId,
+        creatorUsername: broadcast.creatorUsername,
+        priceRights: broadcast.priceRights,
+        priceOutright: broadcast.priceOutright,
+        songUrl: broadcast.url
+      };
+    }
+    return {
+      title: 'Foyer Community Stream',
+      artist: 'Share your music from your Vault page',
+      album: 'Foyer FM Preset 1',
+      artwork: './Civicverselogo.png',
       stationName: 'Foyer FM'
     };
   }
@@ -144,6 +288,21 @@ export async function fetchLiveTrackMetadata(station: MediaStation): Promise<Tra
 
 // Verified 100% High-Uptime Curated Stations for Instant Fallback & Seamless Playback
 export const CURATED_STATIONS: MediaStation[] = [
+  // --- 📻 FOYER FM COMMUNITY RADIO ---
+  {
+    id: 'foyer-fm',
+    name: 'Foyer FM',
+    url: 'https://ice2.somafm.com/defcon-128-mp3',
+    homepage: 'https://civicverse.io/foyer',
+    favicon: './Civicverselogo.png',
+    tags: ['foyer', 'community', 'creator', 'p2p', 'music'],
+    country: 'Civicverse',
+    codec: 'MP3',
+    bitrate: 192,
+    category: 'radio',
+    isLive: true,
+    description: 'Live Foyer FM community broadcast featuring music submitted by citizens.'
+  },
   // --- 🎙️ LIVE PODCASTS & CYBER TALK ---
   {
     id: 'defcon-radio',
