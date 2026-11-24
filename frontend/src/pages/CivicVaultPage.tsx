@@ -126,6 +126,11 @@ function normalizePimpMarkup(markup: string) {
     .replace(/&#39;/gi, "'")
 }
 
+function isPimpLayoutMarkup(markup: string) {
+  const normalized = normalizePimpMarkup(markup)
+  return /<style\b|<iframe\b|@import|(?:^|\n)\s*[.#\w-][^{}]*\{[^}]*:[^}]*\}/i.test(normalized)
+}
+
 function buildScopedPimpStyles(markup: string) {
   const normalizedMarkup = normalizePimpMarkup(markup)
   const source = (normalizedMarkup.match(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi) || [])
@@ -721,9 +726,10 @@ export default function CivicVaultPage() {
   }
 
   // Handle saving embedded PimpMyProfile code & About Me
-  const handleSaveEmbedCode = () => {
-    setCustomEmbedCode(embedCodeDraft)
-    localStorage.setItem('civicverse:myspace:embed_code', embedCodeDraft)
+  const handleSaveEmbedCode = (code = embedCodeDraft) => {
+    setCustomEmbedCode(code)
+    setEmbedCodeDraft(code)
+    localStorage.setItem('civicverse:myspace:embed_code', code)
     setAboutMeSaveStatus('Layout applied and saved.')
     setTimeout(() => setAboutMeSaveStatus(''), 4000)
   }
@@ -1993,8 +1999,8 @@ export default function CivicVaultPage() {
                 <div className="space-y-4 bg-[#111620] p-4">
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400">
                     About Me
-                    <textarea rows={4} maxLength={1200} value={aboutMeDraft} onChange={event => setAboutMeDraft(event.target.value)}
-                      placeholder="Write a few lines about yourself..." className="mt-2 w-full rounded-xl border border-[#2e3b4e] bg-[#0c1017] p-3 text-sm leading-relaxed text-white focus:border-cyan-400 focus:outline-none" />
+                    <textarea rows={4} maxLength={20000} value={aboutMeDraft} onChange={event => setAboutMeDraft(event.target.value)}
+                      placeholder="Write about yourself, or paste your Pimp My Profile layout code here..." className="mt-2 w-full rounded-xl border border-[#2e3b4e] bg-[#0c1017] p-3 text-sm leading-relaxed text-white focus:border-cyan-400 focus:outline-none" />
                   </label>
                   <details className="rounded-lg border border-white/10 bg-black/20 p-3">
                     <summary className="cursor-pointer text-xs font-bold text-cyan-200">MySpace layout code</summary>
@@ -2015,10 +2021,12 @@ export default function CivicVaultPage() {
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setIsEditingAboutMe(false)} className="rounded px-4 py-2 text-xs font-bold text-gray-300 hover:bg-white/10">Cancel</button>
                       <button type="button" onClick={() => {
-                        const cleanAboutMe = extractAboutMeText(aboutMeDraft)
+                        const pastedLayout = isPimpLayoutMarkup(aboutMeDraft) ? aboutMeDraft : ''
+                        const layoutCode = pastedLayout || embedCodeDraft
+                        const cleanAboutMe = pastedLayout ? extractAboutMeText(pastedLayout) : extractAboutMeText(aboutMeDraft)
                         setAboutMe(cleanAboutMe)
                         localStorage.setItem('civicverse:myspace:about_me', cleanAboutMe)
-                        handleSaveEmbedCode()
+                        handleSaveEmbedCode(layoutCode)
                         setIsEditingAboutMe(false)
                         setAboutMeSaveStatus('About Me and layout saved.')
                       }} className="flex items-center gap-1.5 rounded bg-cyan-500 px-5 py-2 text-xs font-black uppercase text-black shadow hover:bg-cyan-400"><Check className="h-4 w-4" /> Save</button>
