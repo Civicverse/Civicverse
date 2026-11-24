@@ -102,6 +102,16 @@ export interface UserFriend {
   avatar: string
 }
 
+type VaultSignStyle = 'neon' | 'marquee' | 'scanline' | 'rainbow' | 'glitch'
+
+const VAULT_SIGN_STYLES: { id: VaultSignStyle; label: string }[] = [
+  { id: 'neon', label: 'Neon pulse' },
+  { id: 'marquee', label: 'Marquee scroll' },
+  { id: 'scanline', label: 'Retro scanline' },
+  { id: 'rainbow', label: 'Color wave' },
+  { id: 'glitch', label: 'Digital glitch' }
+]
+
 function extractAboutMeText(markup: string) {
   if (!markup) return ''
   const looksLikeLayout = /<\s*(style|script|iframe|html|body|table|div|section)\b|@import|(?:^|\n)\s*[.#\w-]+\s*\{[^}]*\}/i.test(markup)
@@ -131,6 +141,26 @@ function isPimpLayoutMarkup(markup: string) {
   return /<style\b|<iframe\b|@import|(?:^|\n)\s*[.#\w-][^{}]*\{[^}]*:[^}]*\}/i.test(normalized)
 }
 
+function mapPimpSelector(selector: string) {
+  const trimmed = selector.trim()
+  if (/^span\.blacktext12$/i.test(trimmed)) return '.cv-vault-username-banner'
+  if (/\.contactTable/i.test(trimmed)) {
+    return trimmed
+      .replace(/table\.contactTable|\.contactTable/gi, '.cv-vault-contact-actions')
+      .replace(/\s+(?:table|tr|td)\b/gi, '')
+      .replace(/\s+a\s+img\b/gi, ' button svg')
+      .replace(/\s+a(?=[:.#\s]|$)/gi, ' button')
+      .replace(/\s+\.text\b/gi, ' span')
+      .replace(/\s+\.whitetext12\b/gi, ' span')
+  }
+  if (/^(?:(?:table|tr|td)\s*)+$/i.test(trimmed)) return '.myspace-box'
+  return trimmed
+    .replace(/\b(?:table|tr|td)(?:\s+(?:table|tr|td))*\b/gi, '.myspace-box')
+    .replace(/\.bodyContent\b/gi, '')
+    .replace(/\.nametext\b/gi, '.cv-vault-username-banner')
+    .replace(/\.(?:blacktext12|whitetext12|orangetext15|lightbluetext8|blacktext10|redbtext|btext)\b/gi, '.myspace-table-header')
+}
+
 function buildScopedPimpStyles(markup: string) {
   const normalizedMarkup = normalizePimpMarkup(markup)
   const source = (normalizedMarkup.match(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi) || [])
@@ -155,7 +185,7 @@ function buildScopedPimpStyles(markup: string) {
     const declarations = match[2].trim()
     if (!rawSelector || rawSelector.startsWith('@') || !declarations) continue
     const scopedSelectors = rawSelector.split(',').map(selector => {
-      const trimmed = selector.trim()
+      const trimmed = mapPimpSelector(selector)
       if (!trimmed) return ''
       if (/^(html|body|:root)(?=$|[\s.#:[>+~])/i.test(trimmed)) {
         const rest = trimmed.replace(/^(html|body|:root)/i, '')
@@ -164,6 +194,13 @@ function buildScopedPimpStyles(markup: string) {
       return `${scope} ${trimmed}`
     }).filter(Boolean)
     if (scopedSelectors.length) safeRules.push(`${scopedSelectors.join(', ')} { ${declarations} }`)
+
+    const isLegacyTextRule = /^(?:div|p|li|\.text|\.redtext|\.blacktext12)$/i.test(rawSelector)
+    if (isLegacyTextRule && /(?:color|font-family|font-size|font-weight)\s*:/i.test(declarations)) {
+      const textDeclarations = declarations.split(';').map(rule => rule.trim()).filter(rule => /^(?:color|font-family|font-size|font-weight)\s*:/i.test(rule))
+        .map(rule => `${rule.replace(/\s*!important\s*$/i, '')} !important`).join('; ')
+      if (textDeclarations) safeRules.push(`${scope} :is(h1,h2,h3,h4,p,span,a,button,label,strong,small) { ${textDeclarations} }`)
+    }
   }
   return safeRules.join('\n')
 }
@@ -230,6 +267,40 @@ export default function CivicVaultPage() {
   const [aboutMeSaveStatus, setAboutMeSaveStatus] = useState<string>('')
   const visibleAboutMe = extractAboutMeText(aboutMe) || extractAboutMeText(customEmbedCode)
 
+  const storefrontStorageKey = `civicverse:vault:storefront:${isGuestMode ? 'preview' : (user.civicId || user.username)}`
+  const defaultStorefrontBanner = `WELCOME TO ${user.username.toUpperCase()}'S VAULT`
+  const [storefrontBanner, setStorefrontBanner] = useState(defaultStorefrontBanner)
+  const [storefrontBannerDraft, setStorefrontBannerDraft] = useState(defaultStorefrontBanner)
+  const [storefrontStyle, setStorefrontStyle] = useState<VaultSignStyle>('neon')
+  const [storefrontStyleDraft, setStorefrontStyleDraft] = useState<VaultSignStyle>('neon')
+  const [storefrontSaveStatus, setStorefrontSaveStatus] = useState('')
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(storefrontStorageKey) || '{}') as { banner?: string; style?: VaultSignStyle }
+      const banner = typeof stored.banner === 'string' ? stored.banner : defaultStorefrontBanner
+      const style = VAULT_SIGN_STYLES.some(option => option.id === stored.style) ? stored.style as VaultSignStyle : 'neon'
+      setStorefrontBanner(banner)
+      setStorefrontBannerDraft(banner)
+      setStorefrontStyle(style)
+      setStorefrontStyleDraft(style)
+    } catch {
+      setStorefrontBanner(defaultStorefrontBanner)
+      setStorefrontBannerDraft(defaultStorefrontBanner)
+      setStorefrontStyle('neon')
+      setStorefrontStyleDraft('neon')
+    }
+  }, [storefrontStorageKey, defaultStorefrontBanner])
+
+  const saveStorefrontSign = () => {
+    const banner = storefrontBannerDraft.trim().slice(0, 90) || defaultStorefrontBanner
+    setStorefrontBanner(banner)
+    setStorefrontStyle(storefrontStyleDraft)
+    localStorage.setItem(storefrontStorageKey, JSON.stringify({ banner, style: storefrontStyleDraft }))
+    setStorefrontSaveStatus('Storefront sign saved.')
+    window.setTimeout(() => setStorefrontSaveStatus(''), 3500)
+  }
+
   useEffect(() => {
     const styleId = 'civicverse-pimp-my-profile-theme'
     document.getElementById(styleId)?.remove()
@@ -238,7 +309,9 @@ export default function CivicVaultPage() {
     const style = document.createElement('style')
     style.id = styleId
     style.textContent = css
-    document.head.appendChild(style)
+    // The page has its own inline theme stylesheet. Append after the Vault tree
+    // so layout rules can override its glass-card defaults where intended.
+    document.body.appendChild(style)
     return () => style.remove()
   }, [customEmbedCode])
 
@@ -1019,6 +1092,35 @@ export default function CivicVaultPage() {
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
         }
+        .vault-storefront-sign {
+          isolation: isolate;
+          overflow: hidden;
+          border: 1px solid rgba(103, 232, 249, 0.7);
+          border-radius: 10px;
+          background: linear-gradient(115deg, rgba(4, 10, 26, 0.96), rgba(16, 26, 54, 0.94));
+          box-shadow: 0 0 18px rgba(34, 211, 238, 0.38), inset 0 0 18px rgba(34, 211, 238, 0.12);
+          backdrop-filter: blur(8px);
+        }
+        .vault-storefront-sign-copy {
+          display: block;
+          width: 100%;
+          overflow: hidden;
+          color: #cffafe;
+          font: 900 14px/1.25 ui-monospace, SFMono-Regular, Menlo, monospace;
+          letter-spacing: 0.12em;
+          text-align: center;
+          text-shadow: 0 0 7px currentColor, 0 0 18px currentColor;
+        }
+        .vault-storefront-sign--neon { animation: vault-sign-neon 2.4s ease-in-out infinite; }
+        .vault-storefront-sign--marquee .vault-storefront-sign-copy { width: max-content; min-width: 100%; animation: vault-sign-marquee 12s linear infinite; }
+        .vault-storefront-sign--scanline::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: repeating-linear-gradient(0deg, transparent 0 4px, rgba(103,232,249,.13) 5px, transparent 6px); animation: vault-sign-scan 5s linear infinite; }
+        .vault-storefront-sign--rainbow .vault-storefront-sign-copy { animation: vault-sign-hue 6s linear infinite; }
+        .vault-storefront-sign--glitch .vault-storefront-sign-copy { animation: vault-sign-glitch 2.8s steps(1,end) infinite; }
+        @keyframes vault-sign-neon { 0%,100% { box-shadow: 0 0 14px rgba(34,211,238,.3), inset 0 0 12px rgba(34,211,238,.1); } 50% { box-shadow: 0 0 28px rgba(34,211,238,.78), inset 0 0 22px rgba(34,211,238,.22); } }
+        @keyframes vault-sign-marquee { from { transform: translateX(0); } to { transform: translateX(-22%); } }
+        @keyframes vault-sign-scan { from { transform: translateY(-45%); } to { transform: translateY(45%); } }
+        @keyframes vault-sign-hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+        @keyframes vault-sign-glitch { 0%,92%,100% { transform: none; text-shadow: 0 0 7px currentColor; } 93% { transform: translateX(2px); text-shadow: -2px 0 #fb7185, 2px 0 #67e8f9; } 95% { transform: translateX(-2px); text-shadow: 2px 0 #fb7185, -2px 0 #67e8f9; } }
       `}</style>
 
       {/* Dynamic Theme Background: Custom Theme transforms the page, otherwise Background GIF shines through */}
@@ -1380,7 +1482,7 @@ export default function CivicVaultPage() {
                 <span className="text-[9px] font-mono uppercase tracking-[0.35em] text-cyan-400 font-extrabold block mb-1">
                   CITIZEN VAULT
                 </span>
-                <h1 className="text-4xl sm:text-5xl font-black tracking-wider uppercase font-mono text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-white drop-shadow-[0_2px_15px_rgba(0,217,255,0.45)]">
+                <h1 className="cv-vault-username-banner text-4xl sm:text-5xl font-black tracking-wider uppercase font-mono text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-white drop-shadow-[0_2px_15px_rgba(0,217,255,0.45)]">
                   {user.username}
                 </h1>
               </div>
@@ -1397,6 +1499,14 @@ export default function CivicVaultPage() {
 
               {/* 3D Character Canvas */}
               <div className="relative w-full h-80 bg-gradient-to-b from-[#161d28] via-[#0d121a] to-black">
+                <div className={`vault-storefront-sign vault-storefront-sign--${storefrontStyle} absolute left-1/2 top-2 z-20 w-[88%] max-w-[470px] -translate-x-1/2 px-3 py-2`}>
+                  <div className="vault-sign-content relative z-10 flex items-center gap-3">
+                    <span className="shrink-0 rounded border border-cyan-300/40 bg-cyan-300/10 px-1.5 py-1 text-[8px] font-black uppercase tracking-widest text-cyan-100">Storefront</span>
+                    <div className="w-full overflow-hidden">
+                      <span className="vault-storefront-sign-copy">{storefrontBanner}</span>
+                    </div>
+                  </div>
+                </div>
                 <CharacterViewer
                   config={
                     user.character || {
@@ -1429,10 +1539,29 @@ export default function CivicVaultPage() {
                   <span>↗</span>
                 </button>
               </div>
+              <details className="border-t border-[#2e3b4e] bg-[#0b1018]/90 p-3">
+                <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-cyan-200">Customize storefront sign</summary>
+                <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_170px_auto] sm:items-end">
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                    Guest welcome banner
+                    <input value={storefrontBannerDraft} maxLength={90} onChange={event => setStorefrontBannerDraft(event.target.value)} placeholder="Welcome to my Vault!"
+                      className="mt-1.5 w-full rounded-lg border border-[#2e3b4e] bg-[#070b12] px-3 py-2 text-xs font-mono text-white focus:border-cyan-400 focus:outline-none" />
+                  </label>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                    Animation
+                    <select value={storefrontStyleDraft} onChange={event => setStorefrontStyleDraft(event.target.value as VaultSignStyle)}
+                      className="mt-1.5 w-full rounded-lg border border-[#2e3b4e] bg-[#070b12] px-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none">
+                      {VAULT_SIGN_STYLES.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <button type="button" onClick={saveStorefrontSign} className="rounded-lg bg-cyan-400 px-3 py-2 text-[10px] font-black uppercase text-slate-950 hover:bg-cyan-300">Save sign</button>
+                </div>
+                {storefrontSaveStatus && <p role="status" className="mt-2 text-[10px] font-bold text-emerald-300">{storefrontSaveStatus}</p>}
+              </details>
             </div>
 
             {/* CONTACTING BOX */}
-            <div className="myspace-box rounded-lg overflow-hidden">
+            <div className="myspace-box cv-vault-contact-actions rounded-lg overflow-hidden">
               <div className="myspace-table-header">Contacting {user.username}</div>
               <div className="p-3 bg-[#111620] grid grid-cols-2 gap-2 text-xs">
                 <button
