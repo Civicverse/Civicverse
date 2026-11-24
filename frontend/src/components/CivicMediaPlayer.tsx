@@ -118,8 +118,12 @@ export const CivicMediaPlayer: React.FC = () => {
   const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
   const availableLobbies = useMultiplayerStore(state => state.availableLobbies);
   const switchLobby = useMultiplayerStore(state => state.switchLobby);
+  const friendCivicIds = useMultiplayerStore(state => state.friendCivicIds);
+  const onlineFriends = useMultiplayerStore(state => state.onlineFriends);
+  const incomingLobbyInvites = useMultiplayerStore(state => state.incomingLobbyInvites);
   const [localPosition, setLocalPosition] = useState(getLocalPlayerPosition);
   const [playerSearch, setPlayerSearch] = useState('');
+  const chatComposerRef = useRef<HTMLInputElement>(null);
 
   // Playback state
   const [currentStation, setCurrentStation] = useState<MediaStation>(getInitialStation);
@@ -153,6 +157,17 @@ export const CivicMediaPlayer: React.FC = () => {
       localStorage.setItem('civicverse_foyer_fm_scale_v2', val.toString());
     } catch {}
   };
+
+  useEffect(() => {
+    const openChat = () => {
+      setActiveTab('proximity');
+      setIsMinimized(false);
+      if (document.pointerLockElement) document.exitPointerLock();
+      window.setTimeout(() => chatComposerRef.current?.focus(), 40);
+    };
+    window.addEventListener('civicverse:open-hud-chat', openChat);
+    return () => window.removeEventListener('civicverse:open-hud-chat', openChat);
+  }, []);
 
   // Auto-Scroll Speed State (px/second, defaults to 30 px/s)
   const [scrollSpeed, setScrollSpeed] = useState<number>(() => {
@@ -716,6 +731,19 @@ export const CivicMediaPlayer: React.FC = () => {
                   {/* 4. REAL MULTIPLAYER PROXIMITY CHAT & INPUT (WITH WORKING AUTO-SCROLL) */}
                   {activeTab === 'proximity' && (
                     <div className="flex min-h-0 flex-1 flex-col gap-2 p-4 text-white">
+                      {incomingLobbyInvites.length > 0 && <section className="max-h-24 shrink-0 space-y-1 overflow-y-auto rounded-lg border border-fuchsia-400/30 bg-fuchsia-950/25 p-2" aria-label="Lobby invitations">
+                        {incomingLobbyInvites.map(invite => <div key={invite.id} className="flex items-center justify-between gap-2 text-[10px]">
+                          <span className="min-w-0 truncate text-fuchsia-100">{invite.senderUsername} invited you · {invite.lobbyName}</span>
+                          <button type="button" onClick={() => useMultiplayerStore.getState().acceptLobbyInvite(invite.id)} className="shrink-0 rounded bg-fuchsia-300 px-2 py-1 font-black text-slate-950">JOIN</button>
+                          <button type="button" onClick={() => useMultiplayerStore.getState().dismissLobbyInvite(invite.id)} className="shrink-0 px-1 text-slate-400" aria-label="Dismiss lobby invitation">×</button>
+                        </div>)}
+                      </section>}
+                      {onlineFriends.some(friend => friendCivicIds.includes(friend.civicId)) && <section className="max-h-20 shrink-0 space-y-1 overflow-y-auto rounded-lg border border-emerald-400/20 bg-emerald-950/15 p-2" aria-label="Online friends">
+                        {onlineFriends.filter(friend => friendCivicIds.includes(friend.civicId)).map(friend => <div key={friend.civicId} className="flex items-center justify-between gap-2 text-[10px]">
+                          <span className="min-w-0 truncate text-emerald-100">{friend.username} · {friend.lobbyName}</span>
+                          <button type="button" onClick={() => useMultiplayerStore.getState().inviteFriendToLobby(friend.civicId)} className="shrink-0 rounded border border-cyan-300/30 px-2 py-1 font-bold text-cyan-200 hover:bg-cyan-300/10">INVITE</button>
+                        </div>)}
+                      </section>}
                       <div className="flex flex-wrap gap-1">
                         {(['nearby', 'friends', 'lobby', 'off'] as const).map(audience => (
                           <button
@@ -745,10 +773,12 @@ export const CivicMediaPlayer: React.FC = () => {
                       </div>
                       <form onSubmit={handleSendProximityChat} className="flex w-full gap-1 border-t border-white/[0.12] pt-2">
                         <input
+                          ref={chatComposerRef}
                           type="text"
                           value={chatMessage}
                           disabled={chatAudience === 'off'}
                           onChange={e => setChatMessage(e.target.value)}
+                          onFocus={() => { if (document.pointerLockElement) document.exitPointerLock(); }}
                           placeholder={chatAudience === 'off' ? 'Chat is off' : `Say to ${chatAudience === 'nearby' ? 'nearby citizens' : chatAudience === 'friends' ? 'friends' : 'the lobby'}...`}
                           className="min-w-0 flex-1 rounded-lg border border-white/[0.16] bg-[#081014] px-3 py-2 text-xs text-white focus:border-[#6ee8e9] focus:outline-none"
                         />

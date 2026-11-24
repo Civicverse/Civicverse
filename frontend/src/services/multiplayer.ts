@@ -33,6 +33,7 @@ export interface RemotePlayer {
   character?: CharacterConfig;
   weaponSlot?: number;
   weaponFiredAt?: number;
+  weaponShot?: { id: string; firedAt: number; slot: number; origin: { x: number; y: number; z: number }; end: { x: number; y: number; z: number }; impact: boolean };
   lastSeen: number;
   lobbyId?: string;
 }
@@ -104,7 +105,7 @@ export interface MultiplayerState {
   dismissLobbyInvite: (inviteId: string) => void;
   updatePosition: (position: { x: number; y: number; z: number }, rotation: { x: number; y: number; z: number }, isMoving?: boolean) => void;
   setIdentity: (username: string, character?: CharacterConfig, civicId?: string) => void;
-  fireWeapon: (slot: number, targetPlayerId?: string) => void;
+  fireWeapon: (slot: number, targetPlayerId?: string, shot?: { origin: { x: number; y: number; z: number }; end: { x: number; y: number; z: number }; impact: boolean }) => void;
   respawn: () => void;
   switchLobby: (lobbyId: string) => void;
   sendMicrotransaction: (amount: number, memo?: string) => void;
@@ -424,7 +425,7 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     });
   },
 
-  fireWeapon: (slot, targetPlayerId) => {
+  fireWeapon: (slot, targetPlayerId, shot) => {
     const safeSlot = Math.min(8, Math.max(1, Math.round(slot)));
     const firedAt = Date.now();
     if (targetPlayerId) {
@@ -437,7 +438,8 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
         useMultiplayerStore.setState({ players });
       }
     }
-    broadcastPacket({ type: 'player_shot', playerId: LOCAL_ID, lobbyId: activeLobbyId, slot: safeSlot, targetPlayerId, firedAt, id: `shot_${LOCAL_ID}_${firedAt}_${Math.random().toString(36).slice(2, 7)}` });
+    const id = `shot_${LOCAL_ID}_${firedAt}_${Math.random().toString(36).slice(2, 7)}`;
+    broadcastPacket({ type: 'player_shot', playerId: LOCAL_ID, lobbyId: activeLobbyId, slot: safeSlot, targetPlayerId, firedAt, id, shot });
   },
 
   respawn: () => {
@@ -669,6 +671,13 @@ function handleIncomingNetworkMessage(data: any, source: string) {
       if (shooter) {
         shooter.weaponSlot = Math.min(8, Math.max(1, Math.round(data.slot)));
         shooter.weaponFiredAt = Number(data.firedAt) || Date.now();
+        if (data.shot?.origin && data.shot?.end && [data.shot.origin.x, data.shot.origin.y, data.shot.origin.z, data.shot.end.x, data.shot.end.y, data.shot.end.z].every(Number.isFinite)) {
+          shooter.weaponShot = {
+            id: String(data.id || `shot_${shooter.weaponFiredAt}`), firedAt: shooter.weaponFiredAt, slot: shooter.weaponSlot,
+            origin: { x: data.shot.origin.x, y: data.shot.origin.y, z: data.shot.origin.z },
+            end: { x: data.shot.end.x, y: data.shot.end.y, z: data.shot.end.z }, impact: data.shot.impact === true
+          };
+        }
         shooter.lastSeen = Date.now();
       }
       if (data.targetPlayerId === LOCAL_ID) {

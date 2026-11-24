@@ -14,10 +14,8 @@ import {
   X, 
   MapPin, 
   Zap, 
-  MessageSquare,
   Crosshair,
   Volume2,
-  Send,
   Coins,
   Users
 } from 'lucide-react';
@@ -71,21 +69,14 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const currentLobbyId = useMultiplayerStore(state => state.currentLobbyId);
   const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
   const availableLobbies = useMultiplayerStore(state => state.availableLobbies);
-  const friendCivicIds = useMultiplayerStore(state => state.friendCivicIds);
-  const onlineFriends = useMultiplayerStore(state => state.onlineFriends);
-  const incomingLobbyInvites = useMultiplayerStore(state => state.incomingLobbyInvites);
   const switchLobby = useMultiplayerStore(state => state.switchLobby);
   const ubiStatus = useMultiplayerStore(state => state.ubiStatus);
-  const [hudChatInput, setHudChatInput] = useState('');
-  const [nearbyChat, setNearbyChat] = useState(true);
   const [playerSearch, setPlayerSearch] = useState('');
   const [showLobbyModal, setShowLobbyModal] = useState(false);
   const [showTipModal, setShowTipModal] = useState(false);
   const [tipAmount, setTipAmount] = useState('5.0');
   const [tipSuccess, setTipSuccess] = useState('');
   const [selectedBillboardStory, setSelectedBillboardStory] = useState<BillboardStory | null>(null);
-  const isChatFocusedRef = useRef(false);
-  const chatInputRef = useRef<HTMLInputElement>(null);
   const activeSlotRef = useRef<number>(4);
 
   useEffect(() => {
@@ -118,13 +109,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   useEffect(() => {
     useMultiplayerStore.getState().setIdentity(user?.username || 'Citizen', user?.character, user?.civicId);
   }, [user?.username, user?.character, user?.civicId]);
-
-  const handleSendHudChat = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hudChatInput.trim()) return;
-    useMultiplayerStore.getState().sendMessage(hudChatInput.trim(), 'text-cyan-400', nearbyChat, undefined, nearbyChat ? 'nearby' : 'lobby');
-    setHudChatInput('');
-  };
 
   const openBillboardSource = () => {
     if (!selectedBillboardStory) return;
@@ -496,7 +480,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       part(new THREE.BoxGeometry(0.1, 0.18, 0.12), trim, 0, -0.12, 0.22);
       const muzzle = new THREE.PointLight(0x00d9ff, 0, 4, 2);
       muzzle.position.set(0, 0, -0.72); weapon.add(muzzle);
-      weapon.position.set(0.24, 1.2, 0.12);
+      weapon.position.set(0.4, 1.3, -0.4);
       return { weapon, muzzle };
     };
 
@@ -596,8 +580,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // Attach weapon to player hands
     weaponGroup.position.set(0.4, 1.3, -0.4);
     playerGroup.add(weaponGroup);
-    // Ensure weapon faces forward (fix mirrored/backwards appearance)
-    weaponGroup.rotation.y = Math.PI;
+    // The rifle barrel points down local -Z, matching the player and aim ray.
+    weaponGroup.rotation.y = 0;
 
     // ========================================================
     // FULL 360° PITCH & YAW MOUSE LOOK CONTROLS & CAMERA SYSTEM
@@ -681,7 +665,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      if (isChatFocusedRef.current) return;
       if (document.pointerLockElement === canvasElement) {
         // Horizontal look: use natural movement (positive movementX -> look right)
         yaw -= e.movementX * 0.0022;
@@ -696,13 +679,12 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       // If typing in chat or any form input, do not trigger game controls
       const activeEl = document.activeElement as HTMLElement | null;
       if (
-        isChatFocusedRef.current || 
         activeEl?.tagName === 'INPUT' || 
         activeEl?.tagName === 'TEXTAREA' || 
         activeEl?.isContentEditable
       ) {
         if (e.code === 'Escape') {
-          chatInputRef.current?.blur();
+          (document.activeElement as HTMLElement | null)?.blur();
         }
         return;
       }
@@ -713,9 +695,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         if (document.pointerLockElement) {
           document.exitPointerLock();
         }
-        setTimeout(() => {
-          chatInputRef.current?.focus();
-        }, 50);
+        window.dispatchEvent(new CustomEvent('civicverse:open-hud-chat'));
         return;
       }
 
@@ -816,26 +796,49 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         const ctx = audioCtxRef.current;
         if (ctx.state === 'suspended') ctx.resume();
 
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
         const sounds: Record<number, [OscillatorType, number, number, number]> = {
-          1: ['sawtooth', 720, 110, 0.13], 2: ['square', 150, 55, 0.24], 3: ['sawtooth', 95, 38, 0.38], 4: ['triangle', 1250, 180, 0.2],
-          5: ['sine', 260, 70, 0.28], 6: ['square', 980, 330, 0.1], 7: ['sawtooth', 540, 220, 0.075], 8: ['triangle', 180, 45, 0.3]
+          1: ['sawtooth', 920, 120, 0.18], 2: ['square', 210, 48, 0.32], 3: ['sawtooth', 120, 32, 0.48], 4: ['triangle', 1700, 110, 0.24],
+          5: ['sine', 390, 45, 0.38], 6: ['square', 1250, 260, 0.16], 7: ['sawtooth', 760, 180, 0.11], 8: ['triangle', 240, 38, 0.42]
         };
         const [wave, startHz, endHz, duration] = sounds[slot] || sounds[1];
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.type = wave;
         osc.frequency.setValueAtTime(startHz, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(endHz, ctx.currentTime + duration);
-
-        gain.gain.setValueAtTime(slot === 2 || slot === 3 ? 0.36 : 0.24, ctx.currentTime);
+        gain.gain.setValueAtTime(slot === 3 || slot === 8 ? 0.46 : slot === 2 || slot === 5 ? 0.34 : 0.28, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-
         osc.connect(gain);
         gain.connect(ctx.destination);
-
         osc.start();
         osc.stop(ctx.currentTime + duration);
+
+        // Layer a low impact and a short filtered energy burst over each weapon's tone.
+        if ([2, 3, 5, 8].includes(slot)) {
+          const bass = ctx.createOscillator();
+          const bassGain = ctx.createGain();
+          bass.type = 'sine';
+          bass.frequency.setValueAtTime(slot === 3 || slot === 8 ? 72 : 115, ctx.currentTime);
+          bass.frequency.exponentialRampToValueAtTime(28, ctx.currentTime + duration * 0.9);
+          bassGain.gain.setValueAtTime(0.3, ctx.currentTime);
+          bassGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+          bass.connect(bassGain); bassGain.connect(ctx.destination);
+          bass.start(); bass.stop(ctx.currentTime + duration);
+        }
+        const noiseBuffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.12), ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let index = 0; index < noiseData.length; index += 1) noiseData[index] = (Math.random() * 2 - 1) * (1 - index / noiseData.length);
+        const noise = ctx.createBufferSource();
+        const filter = ctx.createBiquadFilter();
+        const noiseGain = ctx.createGain();
+        noise.buffer = noiseBuffer;
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(slot === 4 ? 3800 : 1800, ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.12);
+        noiseGain.gain.setValueAtTime([3, 8].includes(slot) ? 0.34 : 0.2, ctx.currentTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(ctx.destination);
+        noise.start(); noise.stop(ctx.currentTime + 0.12);
       } catch (err) {
         // Audio fallback
       }
@@ -877,8 +880,67 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       7: 0xec4899, // Pink Starlight
       8: 0xf97316, // Solar Flare
     };
+    const activeShotEffects: Array<{
+      group: THREE.Group; distance: number; bornAt: number; flightTime: number; impact: boolean;
+      bolt: THREE.Group; flash: THREE.Mesh; impactGroup: THREE.Group; beamMaterials: THREE.MeshBasicMaterial[];
+      impactMaterials: THREE.Material[]; sparks: Array<{ mesh: THREE.Mesh; velocity: THREE.Vector3 }>;
+    }> = [];
+    const spawnShotEffect = (origin: THREE.Vector3, end: THREE.Vector3, slot: number, impact: boolean) => {
+      const color = slotPlasmaColors[slot] || slotPlasmaColors[1];
+      const delta = end.clone().sub(origin);
+      const distance = THREE.MathUtils.clamp(delta.length(), 1, 180);
+      const direction = delta.normalize();
+      const group = new THREE.Group();
+      group.position.copy(origin);
+      group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+      const beamMaterials = [
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false })
+      ];
+      const beamRadius = slot === 4 ? 0.042 : slot === 7 ? 0.058 : slot === 3 || slot === 8 ? 0.15 : slot === 2 ? 0.105 : slot === 5 ? 0.12 : 0.08;
+      const outerBeam = new THREE.Mesh(new THREE.CylinderGeometry(beamRadius, beamRadius, 1, 10), beamMaterials[0]);
+      outerBeam.position.y = distance / 2;
+      outerBeam.scale.y = distance;
+      group.add(outerBeam);
+      const coreRadius = slot === 4 ? 0.018 : slot === 7 ? 0.026 : slot === 3 || slot === 8 ? 0.052 : 0.03;
+      const coreBeam = new THREE.Mesh(new THREE.CylinderGeometry(coreRadius, coreRadius, 1, 8), beamMaterials[1]);
+      coreBeam.position.y = distance / 2;
+      coreBeam.scale.y = distance;
+      group.add(coreBeam);
+      const bolt = new THREE.Group();
+      bolt.add(new THREE.Mesh(new THREE.SphereGeometry(slot === 3 || slot === 8 ? 0.18 : 0.11, 12, 10), new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.AdditiveBlending })));
+      bolt.add(new THREE.Mesh(new THREE.SphereGeometry(slot === 3 || slot === 8 ? 0.34 : 0.23, 12, 10), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.68, blending: THREE.AdditiveBlending, depthWrite: false })));
+      bolt.add(new THREE.PointLight(color, slot === 3 || slot === 8 ? 8 : 4, 14, 2));
+      group.add(bolt);
+      const flash = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+      group.add(flash);
+      const impactGroup = new THREE.Group();
+      impactGroup.position.y = distance;
+      const impactMaterials: THREE.Material[] = [
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+      ];
+      impactGroup.add(new THREE.Mesh(new THREE.SphereGeometry(slot === 3 || slot === 8 ? 0.5 : 0.24, 14, 12), impactMaterials[0]));
+      impactGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), impactMaterials[1]));
+      const impactRing = new THREE.Mesh(new THREE.TorusGeometry(slot === 3 || slot === 8 ? 0.85 : 0.45, 0.04, 8, 24), impactMaterials[0]);
+      impactRing.rotation.x = Math.PI / 2;
+      impactGroup.add(impactRing, new THREE.PointLight(color, 0, slot === 3 || slot === 8 ? 20 : 10, 2));
+      impactGroup.visible = false;
+      group.add(impactGroup);
+      const sparks: Array<{ mesh: THREE.Mesh; velocity: THREE.Vector3 }> = [];
+      for (let index = 0; index < 12; index += 1) {
+        const material = new THREE.MeshBasicMaterial({ color: index % 3 === 0 ? 0xffffff : color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+        const spark = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), material);
+        impactGroup.add(spark);
+        sparks.push({ mesh: spark, velocity: new THREE.Vector3((Math.random() - 0.5) * 18, (Math.random() - 0.5) * 18, (Math.random() - 0.5) * 18) });
+      }
+      scene.add(group);
+      const speed = slot === 4 ? 520 : slot === 3 || slot === 8 ? 78 : slot === 2 || slot === 5 ? 112 : 190;
+      activeShotEffects.push({ group, distance, bornAt: clock.getElapsedTime(), flightTime: Math.max(0.06, distance / speed), impact, bolt, flash, impactGroup, beamMaterials, impactMaterials, sparks });
+    };
     const fireIntervals: Record<number, number> = { 1: 280, 2: 820, 3: 1100, 4: 1050, 5: 480, 6: 150, 7: 90, 8: 900 };
     let lastShotAt = 0;
+    let weaponRecoil = 0;
 
     const updateWeaponSlot = (newSlot: number) => {
       activeSlotRef.current = newSlot;
@@ -935,17 +997,12 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       return undefined;
     };
     const onCanvasMouseDown = (e: MouseEvent) => {
-      if (isChatFocusedRef.current) return;
-
+      const bounds = canvasElement.getBoundingClientRect();
+      const aimPointer = document.pointerLockElement === canvasElement
+        ? new THREE.Vector2(0, 0)
+        : new THREE.Vector2(((e.clientX - bounds.left) / bounds.width) * 2 - 1, -((e.clientY - bounds.top) / bounds.height) * 2 + 1);
       if (e.button === 0) {
-        const bounds = canvasElement.getBoundingClientRect();
-        const pointer = document.pointerLockElement === canvasElement
-          ? new THREE.Vector2(0, 0)
-          : new THREE.Vector2(
-            ((e.clientX - bounds.left) / bounds.width) * 2 - 1,
-            -((e.clientY - bounds.top) / bounds.height) * 2 + 1
-          );
-        const billboardStory = findBillboardStory(pointer);
+        const billboardStory = findBillboardStory(aimPointer);
         if (billboardStory) {
           if (document.pointerLockElement) document.exitPointerLock();
           setSelectedBillboardStory(billboardStory);
@@ -971,30 +1028,27 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       if (document.pointerLockElement !== canvasElement) {
         try {
           const pointerLockRequest = canvasElement.requestPointerLock?.();
-          if (pointerLockRequest instanceof Promise) {
-            void pointerLockRequest.catch(error => {
-              console.warn('[GodotFoyer] pointer lock request failed', error);
-            });
-          }
+          void Promise.resolve(pointerLockRequest).catch(error => {
+            console.warn('[GodotFoyer] pointer lock request failed', error);
+          });
         } catch (error) {
           console.warn('[GodotFoyer] pointer lock request failed', error);
         }
-        return; // Do not fire weapon or initiate walking on the lock acquisition click
       }
 
-      // Pointer lock IS active strictly on canvas:
-      // Left Click: Shoot weapon
+      // Firing on the first canvas click avoids a dead click just to acquire pointer lock.
       if (e.button === 0) {
         const now = performance.now();
         const slot = activeSlotRef.current;
         if (now - lastShotAt < (fireIntervals[slot] || 250)) return;
         lastShotAt = now;
-        muzzleLight.intensity = 80;
+        weaponRecoil = slot === 3 || slot === 8 ? 0.34 : slot === 2 || slot === 5 ? 0.24 : 0.14;
+        muzzleLight.intensity = 110;
         weaponGroup.position.z = slot === 2 || slot === 3 ? -0.1 : -0.22;
         weaponGroup.rotation.x = slot === 2 || slot === 3 ? -0.2 : -0.12;
         playLaserSound(slot);
 
-        playerRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+        playerRaycaster.setFromCamera(aimPointer, camera);
         const shotHits = playerRaycaster.intersectObjects(Array.from(remoteMeshes.values(), remote => remote.group), true);
         let hitObject: THREE.Object3D | null = shotHits[0]?.object || null;
         while (hitObject && !hitObject.userData.playerId) hitObject = hitObject.parent;
@@ -1006,12 +1060,16 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             if (current) useGameStore.getState().updateUser({ stats: { kills: (current.stats?.kills || 0) + 1 } });
           }
         }
-        useMultiplayerStore.getState().fireWeapon(slot, targetId);
-        const beamEnd = shotHits[0]?.point || camera.position.clone().add(playerRaycaster.ray.direction.clone().multiplyScalar(slot === 4 ? 130 : slot === 2 ? 24 : 70));
-        const beamGeometry = new THREE.BufferGeometry().setFromPoints([camera.position.clone(), beamEnd]);
-        const beam = new THREE.Line(beamGeometry, new THREE.LineBasicMaterial({ color: slotPlasmaColors[slot], transparent: true, opacity: 0.92 }));
-        scene.add(beam);
-        window.setTimeout(() => { scene.remove(beam); beam.geometry.dispose(); (beam.material as THREE.Material).dispose(); }, slot === 3 || slot === 8 ? 240 : 95);
+        const range = slot === 4 ? 130 : slot === 2 ? 24 : 70;
+        const beamEnd = shotHits[0]?.point || camera.position.clone().add(playerRaycaster.ray.direction.clone().multiplyScalar(range));
+        weaponGroup.updateMatrixWorld(true);
+        const muzzlePosition = weaponGroup.localToWorld(new THREE.Vector3(0, 0, -0.9));
+        const shotEnd = beamEnd.clone();
+        spawnShotEffect(muzzlePosition, shotEnd, slot, shotHits.length > 0);
+        useMultiplayerStore.getState().fireWeapon(slot, targetId, {
+          origin: { x: muzzlePosition.x, y: muzzlePosition.y, z: muzzlePosition.z },
+          end: { x: shotEnd.x, y: shotEnd.y, z: shotEnd.z }, impact: shotHits.length > 0
+        });
 
         setTimeout(() => {
           muzzleLight.intensity = 0;
@@ -1043,7 +1101,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     // Scroll Wheel: Swap Weapons inside 3D viewport canvas or when locked
     const onCanvasWheel = (e: WheelEvent) => {
-      if (isChatFocusedRef.current) return;
       e.preventDefault();
       const dir = e.deltaY > 0 ? 1 : -1;
       const current = activeSlotRef.current;
@@ -1091,6 +1148,46 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       try {
         const delta = clock.getDelta();
         const elapsed = clock.getElapsedTime();
+        for (let index = activeShotEffects.length - 1; index >= 0; index -= 1) {
+          const effect = activeShotEffects[index];
+          const age = elapsed - effect.bornAt;
+          const travel = THREE.MathUtils.clamp(age / effect.flightTime, 0, 1);
+          effect.bolt.position.y = effect.distance * travel;
+          effect.flash.scale.setScalar(1 + Math.max(0, 1 - age / 0.1) * 2.2);
+          const beamFade = age <= effect.flightTime ? 1 : Math.max(0, 1 - (age - effect.flightTime) / 0.22);
+          effect.beamMaterials[0].opacity = beamFade * 0.92;
+          effect.beamMaterials[1].opacity = beamFade;
+          if (travel >= 1 && effect.impact) {
+            const impactAge = age - effect.flightTime;
+            effect.impactGroup.visible = true;
+            const burst = Math.min(1, impactAge / 0.28);
+            const ball = effect.impactGroup.children[0] as THREE.Mesh;
+            const core = effect.impactGroup.children[1] as THREE.Mesh;
+            const ring = effect.impactGroup.children[2] as THREE.Mesh;
+            const light = effect.impactGroup.children[3] as THREE.PointLight;
+            ball.scale.setScalar(0.25 + burst * 2.1);
+            core.scale.setScalar(1 + burst * 2.4);
+            ring.scale.setScalar(0.45 + burst * 1.8);
+            effect.impactMaterials[0].opacity = Math.max(0, 0.78 * (1 - burst));
+            effect.impactMaterials[1].opacity = Math.max(0, 1 - burst);
+            light.intensity = Math.max(0, 10 * (1 - burst));
+            effect.sparks.forEach(({ mesh, velocity }) => {
+              mesh.position.copy(velocity).multiplyScalar(Math.min(0.3, impactAge));
+              (mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 1 - impactAge / 0.3);
+            });
+          }
+          if (age > effect.flightTime + 0.32) {
+            scene.remove(effect.group);
+            effect.group.traverse(object => {
+              if (object instanceof THREE.Mesh) {
+                object.geometry.dispose();
+                if (Array.isArray(object.material)) object.material.forEach(material => material.dispose());
+                else object.material.dispose();
+              }
+            });
+            activeShotEffects.splice(index, 1);
+          }
+        }
         fpsSampleFrames += 1;
         if (elapsed - fpsSampleStart >= 2) {
           const sampleDuration = elapsed - fpsSampleStart;
@@ -1228,18 +1325,24 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             isJumping = false;
             jumpVelocity = 0;
           }
+          isMoving = velocity.lengthSq() > 0.16;
         }
 
         // Local player gait animation on custom decentralized avatar
-        const targetMeshY = isMoving ? Math.sin(elapsed * 8) * 0.04 : Math.sin(elapsed * 2) * 0.01;
+        const horizontalSpeed = Math.hypot(velocity.x, velocity.z);
+        const gaitRate = horizontalSpeed > 10 ? 13 : 9;
+        const gaitPhase = elapsed * gaitRate;
+        const targetMeshY = isMoving ? Math.max(0, Math.sin(gaitPhase * 2)) * 0.025 : Math.sin(elapsed * 2) * 0.006;
         localCharacterMesh.position.y = THREE.MathUtils.lerp(localCharacterMesh.position.y, targetMeshY, 0.1);
         const localLimbs = localCharacterMesh.userData.gaitLimbs;
         if (localLimbs) {
-          const runSwing = isMoving ? Math.sin(elapsed * 9) * 0.5 : 0;
-          localLimbs.leftLeg.rotation.z = THREE.MathUtils.lerp(localLimbs.leftLeg.rotation.z, runSwing, 0.25);
-          localLimbs.rightLeg.rotation.z = THREE.MathUtils.lerp(localLimbs.rightLeg.rotation.z, -runSwing, 0.25);
-          localLimbs.leftArm.rotation.z = THREE.MathUtils.lerp(localLimbs.leftArm.rotation.z, -runSwing * 0.62, 0.25);
-          localLimbs.rightArm.rotation.z = THREE.MathUtils.lerp(localLimbs.rightArm.rotation.z, runSwing * 0.62 - 0.12, 0.25);
+          const runSwing = isMoving ? Math.sin(gaitPhase) * 0.62 : 0;
+          localLimbs.leftLeg.rotation.x = THREE.MathUtils.lerp(localLimbs.leftLeg.rotation.x, runSwing, 0.25);
+          localLimbs.rightLeg.rotation.x = THREE.MathUtils.lerp(localLimbs.rightLeg.rotation.x, -runSwing, 0.25);
+          localLimbs.leftKnee.rotation.x = THREE.MathUtils.lerp(localLimbs.leftKnee.rotation.x, isMoving ? Math.max(0, -Math.sin(gaitPhase)) * 0.62 : 0, 0.25);
+          localLimbs.rightKnee.rotation.x = THREE.MathUtils.lerp(localLimbs.rightKnee.rotation.x, isMoving ? Math.max(0, Math.sin(gaitPhase)) * 0.62 : 0, 0.25);
+          localLimbs.leftArm.rotation.x = THREE.MathUtils.lerp(localLimbs.leftArm.rotation.x, -runSwing * 0.55, 0.25);
+          localLimbs.rightArm.rotation.x = THREE.MathUtils.lerp(localLimbs.rightArm.rotation.x, runSwing * 0.2 - 0.08, 0.25);
         }
 
         // Hide local character mesh & nametag in 1st person mode so it doesn't block camera
@@ -1299,7 +1402,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             m.rotation.y = Math.PI;
             grp.add(m);
             const remoteWeaponParts = makeRemoteWeapon();
-            m.add(remoteWeaponParts.weapon);
+            grp.add(remoteWeaponParts.weapon);
 
             const tag = createPlayerNametag(p.username || `Citizen_${pId.slice(0, 6)}`, '#a855f7');
             grp.add(tag);
@@ -1328,7 +1431,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
               remoteObj.group.remove(remoteObj.mesh);
               const newM = createCharacterMesh(p.character || defaultCharacter);
               newM.rotation.y = Math.PI;
-              newM.add(remoteObj.weapon);
               remoteObj.group.add(newM);
               remoteObj.mesh = newM;
               remoteObj.characterRef = p.character;
@@ -1354,29 +1456,49 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
               }
             });
             remoteObj.weapon.scale.set(p.weaponSlot === 2 ? 1.28 : p.weaponSlot === 4 ? 0.88 : 1, 1, p.weaponSlot === 3 || p.weaponSlot === 8 ? 1.28 : 1);
-            if (p.weaponFiredAt && p.weaponFiredAt !== remoteObj.lastShotAt && Date.now() - p.weaponFiredAt < 500) {
+            if (p.weaponShot && p.weaponShot.firedAt !== remoteObj.lastShotAt && Date.now() - p.weaponShot.firedAt < 1000) {
+              remoteObj.lastShotAt = p.weaponShot.firedAt;
+              remoteObj.muzzle.intensity = 16;
+              const firingMuzzle = remoteObj.muzzle;
+              const shotOrigin = new THREE.Vector3(p.weaponShot.origin.x, p.weaponShot.origin.y, p.weaponShot.origin.z);
+              const shotEnd = new THREE.Vector3(p.weaponShot.end.x, p.weaponShot.end.y, p.weaponShot.end.z);
+              spawnShotEffect(shotOrigin, shotEnd, p.weaponShot.slot, p.weaponShot.impact);
+              playLaserSound(p.weaponShot.slot);
+              window.setTimeout(() => { firingMuzzle.intensity = 0; }, 110);
+            } else if (p.weaponFiredAt && p.weaponFiredAt !== remoteObj.lastShotAt && Date.now() - p.weaponFiredAt < 500) {
               remoteObj.lastShotAt = p.weaponFiredAt;
-              remoteObj.muzzle.intensity = 5;
-              window.setTimeout(() => { remoteObj.muzzle.intensity = 0; }, 75);
+              remoteObj.muzzle.intensity = 12;
+              const firingMuzzle = remoteObj.muzzle;
+              window.setTimeout(() => { firingMuzzle.intensity = 0; }, 100);
             }
 
-            remoteObj.group.position.lerp(remoteObj.targetPos, Math.min(1, 14 * delta));
-            remoteObj.group.rotation.y = THREE.MathUtils.lerp(remoteObj.group.rotation.y, remoteObj.targetRotY, Math.min(1, 14 * delta));
+            remoteObj.group.position.lerp(remoteObj.targetPos, Math.min(1, 20 * delta));
+            remoteObj.group.rotation.y = THREE.MathUtils.lerp(remoteObj.group.rotation.y, remoteObj.targetRotY, Math.min(1, 18 * delta));
 
             if (remoteObj.isMoving) {
-              remoteObj.animTime += delta * 8;
-              remoteObj.group.position.y = remoteObj.targetPos.y + Math.abs(Math.sin(remoteObj.animTime)) * 0.05;
+              remoteObj.animTime += delta * 11;
+              remoteObj.group.position.y = remoteObj.targetPos.y + Math.max(0, Math.sin(remoteObj.animTime * 2)) * 0.025;
               const limbs = remoteObj.mesh.userData.gaitLimbs;
               if (limbs) {
-                limbs.leftLeg.rotation.z = Math.sin(remoteObj.animTime) * 0.48;
-                limbs.rightLeg.rotation.z = -Math.sin(remoteObj.animTime) * 0.48;
-                limbs.leftArm.rotation.z = -Math.sin(remoteObj.animTime) * 0.3;
-                limbs.rightArm.rotation.z = Math.sin(remoteObj.animTime) * 0.3 - 0.12;
+                const stride = Math.sin(remoteObj.animTime) * 0.62;
+                limbs.leftLeg.rotation.x = stride;
+                limbs.rightLeg.rotation.x = -stride;
+                limbs.leftKnee.rotation.x = Math.max(0, -Math.sin(remoteObj.animTime)) * 0.62;
+                limbs.rightKnee.rotation.x = Math.max(0, Math.sin(remoteObj.animTime)) * 0.62;
+                limbs.leftArm.rotation.x = -stride * 0.55;
+                limbs.rightArm.rotation.x = stride * 0.2 - 0.08;
               }
             } else {
               remoteObj.group.position.y = THREE.MathUtils.lerp(remoteObj.group.position.y, remoteObj.targetPos.y, 0.1);
               const limbs = remoteObj.mesh.userData.gaitLimbs;
-              if (limbs) { limbs.leftLeg.rotation.z = THREE.MathUtils.lerp(limbs.leftLeg.rotation.z, 0, 0.15); limbs.rightLeg.rotation.z = THREE.MathUtils.lerp(limbs.rightLeg.rotation.z, 0, 0.15); limbs.leftArm.rotation.z = THREE.MathUtils.lerp(limbs.leftArm.rotation.z, 0, 0.15); limbs.rightArm.rotation.z = THREE.MathUtils.lerp(limbs.rightArm.rotation.z, -0.12, 0.15); }
+              if (limbs) {
+                limbs.leftLeg.rotation.x = THREE.MathUtils.lerp(limbs.leftLeg.rotation.x, 0, 0.15);
+                limbs.rightLeg.rotation.x = THREE.MathUtils.lerp(limbs.rightLeg.rotation.x, 0, 0.15);
+                limbs.leftKnee.rotation.x = THREE.MathUtils.lerp(limbs.leftKnee.rotation.x, 0, 0.15);
+                limbs.rightKnee.rotation.x = THREE.MathUtils.lerp(limbs.rightKnee.rotation.x, 0, 0.15);
+                limbs.leftArm.rotation.x = THREE.MathUtils.lerp(limbs.leftArm.rotation.x, 0, 0.15);
+                limbs.rightArm.rotation.x = THREE.MathUtils.lerp(limbs.rightArm.rotation.x, 0, 0.15);
+              }
             }
           }
         });
@@ -1440,8 +1562,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           // Position weapon in front of 1ST person view (follow camera)
           weaponGroup.visible = !activeVehicle;
           if (!activeVehicle) {
-            weaponGroup.position.set(0.25, 2.1, -0.5);
-            weaponGroup.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+            weaponRecoil = THREE.MathUtils.lerp(weaponRecoil, 0, Math.min(1, 12 * delta));
+            weaponGroup.position.set(0.25, 2.1, -0.5 + weaponRecoil);
+            weaponGroup.rotation.set(pitch, 0, 0);
           }
         } else {
           weaponGroup.visible = true;
@@ -1458,7 +1581,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           );
 
           // Position weapon in player hands in 3RD person view
-          weaponGroup.position.set(0.4, 1.3, -0.4);
+          weaponRecoil = THREE.MathUtils.lerp(weaponRecoil, 0, Math.min(1, 12 * delta));
+          weaponGroup.position.set(0.4, 1.3, -0.4 + weaponRecoil);
+          weaponGroup.rotation.set(pitch, 0, 0);
         }
 
         // Use composer if available for postprocessing
@@ -1659,7 +1784,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       {/* Controls HUD Badge */}
       <div className="hidden absolute top-12 left-1/2 -translate-x-1/2 z-30 max-w-[min(760px,85vw)] rounded-xl border border-cyan-500/40 bg-[#090d16]/90 px-4 py-2 text-center font-mono text-[10px] leading-relaxed text-gray-200 shadow-[0_0_15px_rgba(0,0,0,0.6)] pointer-events-none">
         <div><span className="font-bold text-cyan-300">HOW TO USE</span><span className="text-white"> · Right-click walks · E near a car to drive or exit · Click a billboard/building or aim + E for links · V camera · Scroll hotbar</span></div>
-        <div className="text-gray-300">Chat below: type or tap an emoji to send · Nearby chat reaches citizens within 30 m; switch to Lobby for everyone</div>
+        <div className="text-gray-300">Open the HUD Chat tab to message nearby citizens, friends, or the lobby.</div>
       </div>
 
       {/* Quality Controls */}
@@ -1920,82 +2045,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         <div className="mt-1.5 text-center">
           <p className="text-white text-xs font-bold tracking-wide drop-shadow">New District</p>
           <p className="text-[10px] text-gray-400 font-mono">12:45 PM • 21°C</p>
-        </div>
-      </div>
-
-      {/* 3. BOTTOM-LEFT OVERLAY: REAL-TIME DISTRICT CHAT & MULTIPLAYER LOBBY */}
-      <div className="absolute bottom-20 left-4 z-20 w-80 max-w-sm bg-[#090d16]/95 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl pointer-events-auto">
-        <div className="flex items-center justify-between gap-1.5 mb-2 text-[10px] font-bold text-gray-300 border-b border-gray-800/60 pb-1.5">
-          <div className="flex items-center gap-1.5 text-cyan-400">
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span className="font-extrabold uppercase tracking-wider"># {nearbyChat ? 'Nearby Chat' : 'Lobby Chat'}</span>
-          </div>
-          <button type="button" onClick={() => setNearbyChat(value => !value)} className="rounded border border-cyan-400/30 px-2 py-1 text-[9px] font-bold text-cyan-200 hover:bg-cyan-400/10">
-            {nearbyChat ? 'NEARBY · 30M' : 'LOBBY-WIDE'}
-          </button>
-        </div>
-
-        {incomingLobbyInvites.length > 0 && <div className="my-2 space-y-1 rounded-lg border border-fuchsia-400/30 bg-fuchsia-950/30 p-2">
-          {incomingLobbyInvites.map(invite => <div key={invite.id} className="flex items-center justify-between gap-2 text-[10px]">
-            <span className="min-w-0 truncate text-fuchsia-100">{invite.senderUsername} invited you · {invite.lobbyName}</span>
-            <button type="button" onClick={() => useMultiplayerStore.getState().acceptLobbyInvite(invite.id)} className="shrink-0 rounded bg-fuchsia-300 px-2 py-1 font-black text-slate-950">JOIN</button>
-            <button type="button" onClick={() => useMultiplayerStore.getState().dismissLobbyInvite(invite.id)} className="shrink-0 px-1 text-slate-400" aria-label="Dismiss lobby invitation">×</button>
-          </div>)}
-        </div>}
-
-        {onlineFriends.some(friend => friendCivicIds.includes(friend.civicId)) && <div className="my-2 max-h-20 space-y-1 overflow-y-auto border-b border-white/10 pb-2">
-          {onlineFriends.filter(friend => friendCivicIds.includes(friend.civicId)).map(friend => <div key={friend.civicId} className="flex items-center justify-between gap-2 text-[10px]">
-            <span className="min-w-0 truncate text-emerald-100">{friend.username} · {friend.lobbyName}</span>
-            <button type="button" onClick={() => useMultiplayerStore.getState().inviteFriendToLobby(friend.civicId)} className="shrink-0 rounded border border-cyan-300/30 px-2 py-1 font-bold text-cyan-200 hover:bg-cyan-300/10">INVITE</button>
-          </div>)}
-        </div>}
-
-        {/* Live chat message feed */}
-        <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 mb-2.5 text-[11px] scrollbar-thin">
-          {chatHistory.filter(msg => !msg.isSystem && !msg.channelId).slice(-6).map((msg) => (
-            <div key={msg.id} className="leading-tight break-words">
-              <span className={`font-bold mr-1.5 ${msg.color || 'text-cyan-400'}`}>{msg.username}:</span>
-              <span className="text-gray-200">{msg.text}</span>
-              {msg.proximity && <span className="ml-1 text-[8px] uppercase text-fuchsia-300">Nearby</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* In-game HUD interactive chat input */}
-        <form onSubmit={handleSendHudChat} className="relative flex items-center">
-          <input
-            ref={chatInputRef}
-            type="text"
-            value={hudChatInput}
-            onChange={(e) => setHudChatInput(e.target.value)}
-            onFocus={() => {
-              isChatFocusedRef.current = true;
-              if (document.pointerLockElement) document.exitPointerLock();
-            }}
-            onBlur={() => {
-              isChatFocusedRef.current = false;
-            }}
-            placeholder="Type message & Enter to send..."
-            className="w-full bg-[#121824] border border-[#232f45] rounded-lg py-1.5 pl-2.5 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-          />
-          <button type="submit" className="absolute right-1.5 text-cyan-400 hover:text-cyan-300 p-1">
-            <Send className="w-3.5 h-3.5" />
-          </button>
-        </form>
-        <div className="mt-1.5 flex items-center gap-1" aria-label="Quick-send emojis">
-          {['👋', '😀', '❤️', '👍', '🎉', '😂'].map(emoji => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => useMultiplayerStore.getState().sendMessage(emoji, 'text-cyan-400', nearbyChat, undefined, nearbyChat ? 'nearby' : 'lobby')}
-              className="rounded px-1.5 py-0.5 text-sm hover:bg-cyan-400/15 focus:outline-none focus:ring-1 focus:ring-cyan-400"
-              aria-label={`Send ${emoji} to ${nearbyChat ? 'nearby chat' : 'lobby chat'}`}
-              title={`Send ${emoji}`}
-            >
-              {emoji}
-            </button>
-          ))}
-          <span className="ml-auto text-[9px] text-gray-500">{nearbyChat ? '30 m range' : 'lobby-wide'}</span>
         </div>
       </div>
 

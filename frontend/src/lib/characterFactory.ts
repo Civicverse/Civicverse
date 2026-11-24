@@ -247,71 +247,48 @@ export const createCharacterMesh = (config: CharacterConfig & { weapon?: string 
   logo.rotation.x = -0.1;
   group.add(logo);
 
-  // --- ARMS (Jointed) ---
+  // --- ARMS (shoulder pivots keep the run cycle attached to the torso) ---
   const armRadius = 0.045;
   const armLen = 0.28;
-
-  // Left Arm
   const shoulderOffset = isFeminine ? 0.18 : 0.2;
-  const lShoulder = createMesh(new THREE.SphereGeometry(0.06), jacketMat, -shoulderOffset, 1.5, 0);
-  group.add(lShoulder);
+  const makeArm = (side: -1 | 1) => {
+    const arm = new THREE.Group();
+    arm.position.set(side * shoulderOffset, 1.35, 0);
+    group.add(arm);
+    arm.add(createMesh(new THREE.SphereGeometry(0.06), jacketMat, 0, 0.15, 0));
+    arm.add(createMesh(new THREE.CylinderGeometry(armRadius, armRadius * 0.9, armLen), jacketMat));
+    const forearm = createMesh(new THREE.CylinderGeometry(armRadius * 0.9, armRadius * 0.7, armLen), jacketMat, 0, -0.25, 0.05);
+    forearm.rotation.x = -0.1;
+    arm.add(forearm);
+    arm.add(createMesh(new THREE.BoxGeometry(0.045, 0.08, 0.08), gloveMat, 0, -0.43, 0.08));
+    return arm;
+  };
+  const lArm = makeArm(-1);
+  const rArm = makeArm(1);
 
-  const lUpperArm = createMesh(new THREE.CylinderGeometry(armRadius, armRadius * 0.9, armLen), jacketMat, -0.22, 1.35, 0);
-  group.add(lUpperArm);
-
-  const lForearm = createMesh(new THREE.CylinderGeometry(armRadius * 0.9, armRadius * 0.7, armLen), jacketMat, -0.22, 1.1, 0.05);
-  lForearm.rotation.x = -0.1; // Slight bend
-  group.add(lForearm);
-
-  const lHand = createMesh(new THREE.BoxGeometry(0.045, 0.08, 0.08), gloveMat, -0.22, 0.92, 0.08);
-  group.add(lHand);
-
-  // Right Arm
-  const rShoulder = createMesh(new THREE.SphereGeometry(0.06), jacketMat, shoulderOffset, 1.5, 0);
-  group.add(rShoulder);
-
-  const rUpperArm = createMesh(new THREE.CylinderGeometry(armRadius, armRadius * 0.9, armLen), jacketMat, 0.22, 1.35, 0);
-  group.add(rUpperArm);
-
-  const rForearm = createMesh(new THREE.CylinderGeometry(armRadius * 0.9, armRadius * 0.7, armLen), jacketMat, 0.22, 1.1, 0.05);
-  rForearm.rotation.x = -0.1;
-  group.add(rForearm);
-
-  const rHand = createMesh(new THREE.BoxGeometry(0.045, 0.08, 0.08), gloveMat, 0.22, 0.92, 0.08);
-  group.add(rHand);
-
-  // --- LEGS (Jointed) ---
+  // --- LEGS (hip and knee pivots produce an actual stride, not a sideways swing) ---
   const legRadius = 0.065;
   const legLen = 0.4;
-
-  // Left Leg
-  const lThigh = createMesh(new THREE.CylinderGeometry(legRadius, legRadius * 0.8, legLen), pantsMat, -0.1, 0.75, 0);
-  group.add(lThigh);
-
-  const lKnee = createMesh(new THREE.SphereGeometry(legRadius * 0.85), pantsMat, -0.1, 0.55, 0.02);
-  group.add(lKnee);
-
-  const lShin = createMesh(new THREE.CylinderGeometry(legRadius * 0.8, legRadius * 0.6, legLen), pantsMat, -0.1, 0.35, 0);
-  group.add(lShin);
-
-  const lFoot = createMesh(new THREE.BoxGeometry(0.12, 0.08, 0.22), shoesMat, -0.1, 0.04, 0.05);
-  group.add(lFoot);
-
-  // Right Leg
-  const rThigh = createMesh(new THREE.CylinderGeometry(legRadius, legRadius * 0.8, legLen), pantsMat, 0.1, 0.75, 0);
-  group.add(rThigh);
-
-  const rKnee = createMesh(new THREE.SphereGeometry(legRadius * 0.85), pantsMat, 0.1, 0.55, 0.02);
-  group.add(rKnee);
-
-  const rShin = createMesh(new THREE.CylinderGeometry(legRadius * 0.8, legRadius * 0.6, legLen), pantsMat, 0.1, 0.35, 0);
-  group.add(rShin);
-
-  const rFoot = createMesh(new THREE.BoxGeometry(0.12, 0.08, 0.22), shoesMat, 0.1, 0.04, 0.05);
-  group.add(rFoot);
-
-  // Expose the articulated limbs so the foyer can animate a visible run cycle.
-  group.userData.gaitLimbs = { leftLeg: lThigh, rightLeg: rThigh, leftArm: lUpperArm, rightArm: rUpperArm };
+  const makeLeg = (side: -1 | 1) => {
+    const leg = new THREE.Group();
+    leg.position.set(side * 0.1, 0.75, 0);
+    group.add(leg);
+    leg.add(createMesh(new THREE.CylinderGeometry(legRadius, legRadius * 0.8, legLen), pantsMat, 0, -0.1, 0));
+    const knee = new THREE.Group();
+    knee.position.set(0, -0.2, 0.02);
+    leg.add(knee);
+    knee.add(createMesh(new THREE.SphereGeometry(legRadius * 0.85), pantsMat));
+    knee.add(createMesh(new THREE.CylinderGeometry(legRadius * 0.8, legRadius * 0.6, legLen), pantsMat, 0, -0.2, -0.02));
+    knee.add(createMesh(new THREE.BoxGeometry(0.12, 0.08, 0.22), shoesMat, 0, -0.51, 0.05));
+    return { leg, knee };
+  };
+  const leftLeg = makeLeg(-1);
+  const rightLeg = makeLeg(1);
+  group.userData.gaitLimbs = {
+    leftLeg: leftLeg.leg, rightLeg: rightLeg.leg,
+    leftKnee: leftLeg.knee, rightKnee: rightLeg.knee,
+    leftArm: lArm, rightArm: rArm
+  };
 
   // --- WEAPON (Conditional) ---
   if (config.weapon && config.weapon !== 'None') {
@@ -350,10 +327,10 @@ export const createCharacterMesh = (config: CharacterConfig & { weapon?: string 
     }
 
     // Attach to right hand
-    weaponGroup.position.set(0.22, 0.92, 0.08);
+    weaponGroup.position.set(0, -0.43, 0.08);
     weaponGroup.rotation.x = Math.PI / 2;
     weaponGroup.rotation.z = -Math.PI / 4;
-    group.add(weaponGroup);
+    rArm.add(weaponGroup);
   }
 
   return group;
