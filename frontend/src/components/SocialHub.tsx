@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CharacterViewer } from './3d/CharacterViewer';
 import { useGameStore } from '../store/gameStore';
 import { DirectMessage, SocialCursor, SocialEffect, SocialGroup, SocialPost, SocialProfile, SocialTheme, socialService } from '../services/social';
+import { useMultiplayerStore } from '../services/multiplayer';
 
 interface SocialHubProps {
   profileId?: string;
@@ -204,6 +205,18 @@ export default function SocialHub({ profileId }: SocialHubProps) {
     void refresh();
     return socialService.subscribe(() => { void refresh(); });
   }, [refresh]);
+
+  useEffect(() => {
+    if (!user) {
+      useMultiplayerStore.getState().setFriendCivicIds([]);
+      return;
+    }
+    const friends = relationships
+      .filter(row => row.type === 'friend' && row.status === 'accepted')
+      .map(row => row.actorId === user.civicId ? row.targetId : row.actorId)
+      .filter(civicId => civicId !== user.civicId);
+    useMultiplayerStore.getState().setFriendCivicIds(friends);
+  }, [relationships, user?.civicId]);
 
   useEffect(() => {
     if (search.trim().length < 2) {

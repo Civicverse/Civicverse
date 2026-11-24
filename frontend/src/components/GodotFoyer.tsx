@@ -66,6 +66,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const currentLobbyId = useMultiplayerStore(state => state.currentLobbyId);
   const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
   const availableLobbies = useMultiplayerStore(state => state.availableLobbies);
+  const friendCivicIds = useMultiplayerStore(state => state.friendCivicIds);
+  const onlineFriends = useMultiplayerStore(state => state.onlineFriends);
+  const incomingLobbyInvites = useMultiplayerStore(state => state.incomingLobbyInvites);
   const switchLobby = useMultiplayerStore(state => state.switchLobby);
   const ubiStatus = useMultiplayerStore(state => state.ubiStatus);
   const [hudChatInput, setHudChatInput] = useState('');
@@ -101,7 +104,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const handleSendHudChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!hudChatInput.trim()) return;
-    useMultiplayerStore.getState().sendMessage(hudChatInput.trim(), 'text-cyan-400', nearbyChat);
+    useMultiplayerStore.getState().sendMessage(hudChatInput.trim(), 'text-cyan-400', nearbyChat, undefined, nearbyChat ? 'nearby' : 'lobby');
     setHudChatInput('');
   };
 
@@ -1755,7 +1758,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       </div>
 
       {/* Lobby players are linked to public profiles by Civic ID. */}
-      <div className="hidden absolute top-4 left-4 z-20 w-64 max-w-[48vw] rounded-xl border border-fuchsia-500/30 bg-[#090d16]/90 p-3 shadow-2xl backdrop-blur-md pointer-events-auto">
+      <div className="absolute top-4 left-4 z-20 w-64 max-w-[48vw] rounded-xl border border-fuchsia-500/30 bg-[#090d16]/90 p-3 shadow-2xl backdrop-blur-md pointer-events-auto">
         <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-fuchsia-200">
           <span>Lobby citizens</span><span>{visiblePlayers.length}</span>
         </div>
@@ -1792,7 +1795,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       </div>
 
       {/* 3. BOTTOM-LEFT OVERLAY: REAL-TIME DISTRICT CHAT & MULTIPLAYER LOBBY */}
-      <div className="hidden absolute bottom-20 left-4 z-20 w-80 max-w-sm bg-[#090d16]/90 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl pointer-events-auto">
+      <div className="absolute bottom-20 left-4 z-20 w-80 max-w-sm bg-[#090d16]/95 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl pointer-events-auto">
         <div className="flex items-center justify-between gap-1.5 mb-2 text-[10px] font-bold text-gray-300 border-b border-gray-800/60 pb-1.5">
           <div className="flex items-center gap-1.5 text-cyan-400">
             <MessageSquare className="w-3.5 h-3.5" />
@@ -1802,6 +1805,21 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             {nearbyChat ? 'NEARBY · 30M' : 'LOBBY-WIDE'}
           </button>
         </div>
+
+        {incomingLobbyInvites.length > 0 && <div className="my-2 space-y-1 rounded-lg border border-fuchsia-400/30 bg-fuchsia-950/30 p-2">
+          {incomingLobbyInvites.map(invite => <div key={invite.id} className="flex items-center justify-between gap-2 text-[10px]">
+            <span className="min-w-0 truncate text-fuchsia-100">{invite.senderUsername} invited you · {invite.lobbyName}</span>
+            <button type="button" onClick={() => useMultiplayerStore.getState().acceptLobbyInvite(invite.id)} className="shrink-0 rounded bg-fuchsia-300 px-2 py-1 font-black text-slate-950">JOIN</button>
+            <button type="button" onClick={() => useMultiplayerStore.getState().dismissLobbyInvite(invite.id)} className="shrink-0 px-1 text-slate-400" aria-label="Dismiss lobby invitation">×</button>
+          </div>)}
+        </div>}
+
+        {onlineFriends.some(friend => friendCivicIds.includes(friend.civicId)) && <div className="my-2 max-h-20 space-y-1 overflow-y-auto border-b border-white/10 pb-2">
+          {onlineFriends.filter(friend => friendCivicIds.includes(friend.civicId)).map(friend => <div key={friend.civicId} className="flex items-center justify-between gap-2 text-[10px]">
+            <span className="min-w-0 truncate text-emerald-100">{friend.username} · {friend.lobbyName}</span>
+            <button type="button" onClick={() => useMultiplayerStore.getState().inviteFriendToLobby(friend.civicId)} className="shrink-0 rounded border border-cyan-300/30 px-2 py-1 font-bold text-cyan-200 hover:bg-cyan-300/10">INVITE</button>
+          </div>)}
+        </div>}
 
         {/* Live chat message feed */}
         <div className="max-h-32 overflow-y-auto space-y-1.5 pr-1 mb-2.5 text-[11px] scrollbar-thin">
@@ -1840,7 +1858,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             <button
               key={emoji}
               type="button"
-              onClick={() => useMultiplayerStore.getState().sendMessage(emoji, 'text-cyan-400', nearbyChat)}
+              onClick={() => useMultiplayerStore.getState().sendMessage(emoji, 'text-cyan-400', nearbyChat, undefined, nearbyChat ? 'nearby' : 'lobby')}
               className="rounded px-1.5 py-0.5 text-sm hover:bg-cyan-400/15 focus:outline-none focus:ring-1 focus:ring-cyan-400"
               aria-label={`Send ${emoji} to ${nearbyChat ? 'nearby chat' : 'lobby chat'}`}
               title={`Send ${emoji}`}

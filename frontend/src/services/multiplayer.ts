@@ -32,6 +32,23 @@ export interface RemotePlayer {
   isAlive: boolean;
   character?: CharacterConfig;
   lastSeen: number;
+  lobbyId?: string;
+}
+
+export interface LobbyInvite {
+  id: string;
+  senderCivicId: string;
+  senderUsername: string;
+  lobbyId: string;
+  lobbyName: string;
+  createdAt: number;
+}
+
+export interface OnlineFriend {
+  civicId: string;
+  username: string;
+  lobbyId: string;
+  lobbyName: string;
 }
 
 export interface LobbyInfo {
@@ -68,13 +85,19 @@ export interface MultiplayerState {
   chatHistory: ChatMessage[];
   chatAudience: ChatAudience;
   friendCivicIds: string[];
+  incomingLobbyInvites: LobbyInvite[];
+  onlineFriends: OnlineFriend[];
   ubiStatus: UbiStatus | null;
 
   // Methods
   initialize: (username: string, character?: CharacterConfig, civicId?: string) => () => void;
   disconnect: () => void;
-  sendMessage: (text: string, color?: string, proximity?: boolean, channelId?: string) => void;
+  sendMessage: (text: string, color?: string, proximity?: boolean, channelId?: string, audienceOverride?: ChatAudience) => void;
   setChatAudience: (audience: ChatAudience) => void;
+  setFriendCivicIds: (ids: string[]) => void;
+  inviteFriendToLobby: (civicId: string) => void;
+  acceptLobbyInvite: (inviteId: string) => void;
+  dismissLobbyInvite: (inviteId: string) => void;
   updatePosition: (position: { x: number; y: number; z: number }, rotation: { x: number; y: number; z: number }, isMoving?: boolean) => void;
   setIdentity: (username: string, character?: CharacterConfig, civicId?: string) => void;
   switchLobby: (lobbyId: string) => void;
@@ -90,8 +113,11 @@ let broadcastChannel: BroadcastChannel | null = null;
 
 // PeerJS instances
 let peerInstance: Peer | null = null;
+let hostElectionInProgress = false;
 const activeDataConnections = new Map<string, DataConnection>();
 const civicIdByPeerId = new Map<string, string>();
+const lobbyIdByPeerId = new Map<string, string>();
+const onlinePresenceByCivicId = new Map<string, OnlineFriend>();
 
 // WebSocket instance (for backend server)
 let wsClient: WebSocket | null = null;
@@ -154,6 +180,8 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
   chatHistory: [],
   chatAudience: loadChatAudience(),
   friendCivicIds: [],
+  incomingLobbyInvites: [],
+  onlineFriends: [],
   ubiStatus: null,
 
   initialize: (username: string, character?: CharacterConfig, civicId?: string) => {
@@ -164,21 +192,23 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     (window as any)._cv_username = localUsername;
     (window as any)._cv_character = character;
 
-    const localHost = typeof window !== 'undefined'
-      && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const multiplayerMode = (import.meta as any).env?.VITE_MULTIPLAYER_MODE;
-    localOnlyMode = localHost && multiplayerMode !== 'online';
+    // Peer-to-peer is enabled for desktop and web builds by default. Set
+    // VITE_MULTIPLAYER_MODE=local only when deliberately testing offline.
+    localOnlyMode = multiplayerMode === 'local';
+    try {
+      const savedFriends = JSON.parse(localStorage.getItem(`civicverse:friend_civic_ids:${localCivicId}`) || '[]');
+      if (Array.isArray(savedFriends)) set({ friendCivicIds: savedFriends.filter((id): id is string => typeof id === 'string').slice(0, 500) });
+    } catch {}
 
-    // Local sessions use the local relay as their single source of truth.
-    // BroadcastChannel plus WebSocket reported the same tab under two IDs.
+    // BroadcastChannel connects same-origin tabs; WebRTC carries the shared
+    // lobby between devices, with WebSocket as an optional local fallback.
     if (!localOnlyMode) setupBroadcastChannel(activeLobbyId);
 
     // 2. Initialize WebSocket relay
     initWebSocket(localUsername, localCharacter);
 
-    // Local testing uses only the localhost WebSocket relay. Joining the public
-    // PeerJS room here mixed hosted visitors into a developer's local session.
-    // Opt in to public P2P from localhost with VITE_MULTIPLAYER_MODE=online.
+    // Local-only testing can opt out with VITE_MULTIPLAYER_MODE=local.
     if (!localOnlyMode) {
       initPeerJS(localUsername, localCharacter, activeLobbyId);
     }
@@ -273,8 +303,36 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     set({ chatAudience: audience });
   },
 
-  sendMessage: (text: string, color = 'text-cyan-400', _proximity = false, channelId?: string) => {
-    const audience = get().chatAudience;
+  setFriendCivicIds: (ids) => {
+    const uniqueIds = [...new Set(ids.filter(id => typeof id === 'string' && id && id !== localCivicId))].slice(0, 500);
+    try { localStorage.setItem(`civicverse:friend_civic_ids:${localCivicId}`, JSON.stringify(uniqueIds)); } catch {}
+    set({ friendCivicIds: uniqueIds });
+  },
+
+  inviteFriendToLobby: (civicId) => {
+    if (!civicId || !get().friendCivicIds.includes(civicId)) return;
+    const invite: LobbyInvite = {
+      id: `invite_${LOCAL_ID}_${Date.now()}`,
+      senderCivicId: localCivicId,
+      senderUsername: localUsername,
+      lobbyId: activeLobbyId,
+      lobbyName: get().currentLobbyName,
+      createdAt: Date.now()
+    };
+    broadcastPacket({ type: 'lobby_invite', recipientCivicId: civicId, invite, lobbyId: activeLobbyId });
+  },
+
+  acceptLobbyInvite: (inviteId) => {
+    const invite = get().incomingLobbyInvites.find(item => item.id === inviteId);
+    if (!invite || !get().friendCivicIds.includes(invite.senderCivicId)) return;
+    set(state => ({ incomingLobbyInvites: state.incomingLobbyInvites.filter(item => item.id !== inviteId) }));
+    get().switchLobby(invite.lobbyId);
+  },
+
+  dismissLobbyInvite: (inviteId) => set(state => ({ incomingLobbyInvites: state.incomingLobbyInvites.filter(item => item.id !== inviteId) })),
+
+  sendMessage: (text: string, color = 'text-cyan-400', _proximity = false, channelId?: string, audienceOverride?: ChatAudience) => {
+    const audience = audienceOverride || get().chatAudience;
     if (!text.trim() || audience === 'off') return;
 
     const trimmed = text.trim().slice(0, 500);
@@ -364,6 +422,10 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     localCivicId = civicId || '';
     (window as any)._cv_username = localUsername;
     (window as any)._cv_character = character;
+    try {
+      const savedFriends = JSON.parse(localStorage.getItem(`civicverse:friend_civic_ids:${localCivicId}`) || '[]');
+      useMultiplayerStore.setState({ friendCivicIds: Array.isArray(savedFriends) ? savedFriends.filter((id): id is string => typeof id === 'string').slice(0, 500) : [] });
+    } catch { useMultiplayerStore.setState({ friendCivicIds: [] }); }
 
     broadcastPacket({
       type: 'player_identity',
@@ -373,6 +435,10 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       civicId: localCivicId,
       character: localCharacter,
       timestamp: Date.now()
+    });
+    broadcastPacket({
+      type: 'social_presence', civicId: localCivicId, username: localUsername,
+      lobbyId: activeLobbyId, lobbyName: get().currentLobbyName, timestamp: Date.now()
     });
   },
 
@@ -405,8 +471,11 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
       }));
     }
 
-    // Re-init the public WebRTC peer for this room when using hosted play.
-    if (!localOnlyMode) initPeerJS(localUsername, localCharacter, lobbyId);
+    // Keep the shared peer rendezvous alive so invites can cross game lobbies.
+    if (!localOnlyMode) broadcastPacket({
+      type: 'social_presence', civicId: localCivicId, username: localUsername,
+      lobbyId, lobbyName: get().currentLobbyName, timestamp: Date.now()
+    });
 
     // Send join packet to new lobby
     setTimeout(() => {
@@ -480,7 +549,7 @@ function handleIncomingNetworkMessage(data: any, source: string) {
   if (data.playerId === LOCAL_ID && data.type !== 'players_update') return;
 
   // Filter messages belonging to other lobby instances
-  if (data.lobbyId && data.lobbyId !== activeLobbyId) return;
+  if (data.lobbyId && data.lobbyId !== activeLobbyId && data.type !== 'social_presence' && data.type !== 'lobby_invite') return;
 
   // Deduplicate
   if (data.id && isDuplicate(data.id)) return;
@@ -574,7 +643,6 @@ function handleIncomingNetworkMessage(data: any, source: string) {
     }
 
     case 'chat_message': {
-      if (store.chatAudience === 'off') return;
       if (data.audience === 'friends' && (!Array.isArray(data.recipientIds) || !data.recipientIds.includes(localCivicId))) return;
       if (data.proximity && data.position) {
         const dx = data.position.x - localPosition.x;
@@ -612,6 +680,36 @@ function handleIncomingNetworkMessage(data: any, source: string) {
         currentLobbyName: data.lobbyName || `Lobby ${activeLobbyId}`,
         availableLobbies: data.availableLobbies || store.availableLobbies
       });
+      break;
+    }
+
+    case 'social_presence': {
+      if (typeof data.civicId !== 'string' || !data.civicId || data.civicId === localCivicId) return;
+      const presence: OnlineFriend = {
+        civicId: data.civicId,
+        username: typeof data.username === 'string' ? data.username : 'Citizen',
+        lobbyId: typeof data.lobbyId === 'string' ? data.lobbyId : 'district-lobby-1',
+        lobbyName: typeof data.lobbyName === 'string' ? data.lobbyName : 'Gathering Grounds'
+      };
+      onlinePresenceByCivicId.set(presence.civicId, presence);
+      useMultiplayerStore.setState({ onlineFriends: [...onlinePresenceByCivicId.values()] });
+      break;
+    }
+
+    case 'social_presence_leave': {
+      if (typeof data.civicId !== 'string') return;
+      onlinePresenceByCivicId.delete(data.civicId);
+      useMultiplayerStore.setState({ onlineFriends: [...onlinePresenceByCivicId.values()] });
+      break;
+    }
+
+    case 'lobby_invite': {
+      const invite = data.invite as LobbyInvite | undefined;
+      if (!invite || data.recipientCivicId !== localCivicId || !invite.id || !invite.lobbyId ||
+          invite.senderCivicId === localCivicId || !getIsFriend(invite.senderCivicId)) return;
+      useMultiplayerStore.setState(state => ({
+        incomingLobbyInvites: [...state.incomingLobbyInvites.filter(item => item.id !== invite.id), invite].slice(-10)
+      }));
       break;
     }
 
@@ -664,7 +762,22 @@ function handleIncomingNetworkMessage(data: any, source: string) {
 // ========================================================
 
 function getRoomHostId(lobbyId: string) {
-  return `civicverse-foyer-${lobbyId}-host`;
+  // A shared peer rendezvous carries presence and lobby invites across rooms.
+  return 'civicverse-foyer-global-host';
+}
+
+function getIsFriend(civicId: string) {
+  return useMultiplayerStore.getState().friendCivicIds.includes(civicId);
+}
+
+function keepPeerSignalingAlive(peer: Peer) {
+  peer.on('disconnected', () => {
+    window.setTimeout(() => {
+      if (peer.disconnected && !peer.destroyed) {
+        try { peer.reconnect(); } catch {}
+      }
+    }, 1200);
+  });
 }
 
 function initPeerJS(username: string, character?: CharacterConfig, lobbyId = 'district-lobby-1') {
@@ -680,6 +793,7 @@ function initPeerJS(username: string, character?: CharacterConfig, lobbyId = 'di
     });
 
     peerInstance = peer;
+    keepPeerSignalingAlive(peer);
 
     peer.on('open', (id) => {
       console.debug('[PeerJS] Signaling open ID:', id, 'for lobby:', lobbyId);
@@ -705,6 +819,8 @@ function initPeerJS(username: string, character?: CharacterConfig, lobbyId = 'di
 
 function becomeRoomHost(username: string, character?: CharacterConfig, lobbyId = 'district-lobby-1') {
   const hostId = getRoomHostId(lobbyId);
+  if (hostElectionInProgress || (peerInstance?.id === hostId && !peerInstance.destroyed)) return;
+  hostElectionInProgress = true;
   if (peerInstance && !peerInstance.destroyed) {
     peerInstance.destroy();
   }
@@ -712,8 +828,10 @@ function becomeRoomHost(username: string, character?: CharacterConfig, lobbyId =
   try {
     const hostPeer = new Peer(hostId, { debug: 0 });
     peerInstance = hostPeer;
+    keepPeerSignalingAlive(hostPeer);
 
     hostPeer.on('open', (id) => {
+      hostElectionInProgress = false;
       console.debug('[PeerJS] Registered as Room Host for:', hostId);
     });
 
@@ -721,12 +839,19 @@ function becomeRoomHost(username: string, character?: CharacterConfig, lobbyId =
       setupConnection(conn, username, character);
     });
 
-    hostPeer.on('error', () => {});
-  } catch (e) {}
+    hostPeer.on('error', (err: any) => {
+      hostElectionInProgress = false;
+      if (err?.type === 'unavailable-id') {
+        window.setTimeout(() => initPeerJS(localUsername, localCharacter, activeLobbyId), 1200);
+      }
+    });
+  } catch (e) { hostElectionInProgress = false; }
 }
 
 function connectToRemotePeer(peerId: string, username: string, character?: CharacterConfig) {
   if (!peerInstance || peerInstance.destroyed) return;
+  const existing = activeDataConnections.get(peerId);
+  if (existing?.open) return;
   try {
     const conn = peerInstance.connect(peerId, { reliable: true });
     setupConnection(conn, username, character);
@@ -749,6 +874,16 @@ function setupConnection(conn: DataConnection, username: string, character?: Cha
       rotation: { x: 0, y: Math.PI, z: 0 },
       timestamp: Date.now()
     });
+    conn.send({
+      type: 'social_presence', civicId: localCivicId, username,
+      lobbyId: activeLobbyId, lobbyName: useMultiplayerStore.getState().currentLobbyName,
+      timestamp: Date.now()
+    });
+    if (peerInstance?.id === getRoomHostId(activeLobbyId)) {
+      onlinePresenceByCivicId.forEach(presence => {
+        if (presence.civicId !== localCivicId) conn.send({ type: 'social_presence', ...presence });
+      });
+    }
   });
 
   conn.on('data', (data) => {
@@ -757,13 +892,36 @@ function setupConnection(conn: DataConnection, username: string, character?: Cha
     // do not echo it back to its sender. The message ID deduplicates the sender's
     // local copy and any duplicate WebSocket/PeerJS delivery.
     const isRoomHost = peerInstance?.id === getRoomHostId(activeLobbyId);
-    if (isRoomHost && data?.type === 'player_join' && data.lobbyId === activeLobbyId && typeof data.civicId === 'string') {
+    if (isRoomHost && ['player_join', 'player_identity', 'social_presence'].includes(data?.type) && typeof data.civicId === 'string') {
       civicIdByPeerId.set(conn.peer, data.civicId);
+      if (typeof data.lobbyId === 'string') lobbyIdByPeerId.set(conn.peer, data.lobbyId);
     }
-    if (isRoomHost && data?.type === 'chat_message' && data.lobbyId === activeLobbyId) {
+    if (isRoomHost && data?.type === 'player_leave') lobbyIdByPeerId.delete(conn.peer);
+    if (isRoomHost && ['chat_message', 'player_join', 'player_identity', 'player_move', 'player_leave'].includes(data?.type)) {
       activeDataConnections.forEach((otherConn, peerId) => {
-        const allowed = data.audience !== 'friends' || (Array.isArray(data.recipientIds) && data.recipientIds.includes(civicIdByPeerId.get(peerId) || ''));
+        const sameLobby = lobbyIdByPeerId.get(peerId) === data.lobbyId;
+        const allowed = data.audience === 'friends'
+          ? Array.isArray(data.recipientIds) && data.recipientIds.includes(civicIdByPeerId.get(peerId) || '')
+          : sameLobby;
         if (peerId !== conn.peer && otherConn.open && allowed) {
+          try { otherConn.send(data); } catch {}
+        }
+      });
+    }
+    if (isRoomHost && data?.type === 'lobby_invite') {
+      activeDataConnections.forEach((otherConn, peerId) => {
+        if (peerId !== conn.peer && otherConn.open && civicIdByPeerId.get(peerId) === data.recipientCivicId) {
+          try { otherConn.send(data); } catch {}
+        }
+      });
+    }
+    if (isRoomHost && data?.type === 'social_presence' && typeof data.civicId === 'string') {
+      onlinePresenceByCivicId.set(data.civicId, {
+        civicId: data.civicId, username: data.username || 'Citizen',
+        lobbyId: data.lobbyId || 'district-lobby-1', lobbyName: data.lobbyName || 'Gathering Grounds'
+      });
+      activeDataConnections.forEach((otherConn, peerId) => {
+        if (peerId !== conn.peer && otherConn.open) {
           try { otherConn.send(data); } catch {}
         }
       });
@@ -772,13 +930,38 @@ function setupConnection(conn: DataConnection, username: string, character?: Cha
   });
 
   conn.on('close', () => {
+    const departedCivicId = civicIdByPeerId.get(conn.peer);
+    const isRoomHost = peerInstance?.id === getRoomHostId(activeLobbyId);
+    if (isRoomHost && departedCivicId) {
+      onlinePresenceByCivicId.delete(departedCivicId);
+      activeDataConnections.forEach(otherConn => {
+        if (otherConn.open) {
+          try { otherConn.send({ type: 'social_presence_leave', civicId: departedCivicId }); } catch {}
+        }
+      });
+    }
     activeDataConnections.delete(conn.peer);
     civicIdByPeerId.delete(conn.peer);
+    lobbyIdByPeerId.delete(conn.peer);
+    if (departedCivicId) {
+      onlinePresenceByCivicId.delete(departedCivicId);
+      useMultiplayerStore.setState({ onlineFriends: [...onlinePresenceByCivicId.values()] });
+    }
+    if (conn.peer === getRoomHostId(activeLobbyId)) {
+      onlinePresenceByCivicId.clear();
+      useMultiplayerStore.setState({ onlineFriends: [] });
+    } else if (peerInstance && !peerInstance.destroyed && peerInstance.id !== getRoomHostId(activeLobbyId)) {
+      window.setTimeout(() => connectToRemotePeer(getRoomHostId(activeLobbyId), localUsername, localCharacter), 2500);
+    }
   });
 
-  conn.on('error', () => {
+  conn.on('error', (err: any) => {
     activeDataConnections.delete(conn.peer);
     civicIdByPeerId.delete(conn.peer);
+    lobbyIdByPeerId.delete(conn.peer);
+    if (err?.type === 'peer-unavailable' && peerInstance && !peerInstance.destroyed && peerInstance.id !== getRoomHostId(activeLobbyId)) {
+      window.setTimeout(() => becomeRoomHost(localUsername, localCharacter, activeLobbyId), 750);
+    }
   });
 }
 
