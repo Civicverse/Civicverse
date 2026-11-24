@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useGameStore } from '../store/gameStore'
 import { CharacterViewer } from '../components/3d/CharacterViewer'
 import { CIVICVERSE_LOGO } from '../assets/logo'
+import { socialService } from '../services/social'
 import {
   Shield,
   Check,
@@ -292,12 +293,36 @@ export default function CivicVaultPage() {
     }
   }, [storefrontStorageKey, defaultStorefrontBanner])
 
-  const saveStorefrontSign = () => {
+  useEffect(() => {
+    if (isGuestMode || !rawUser?.civicId) return
+    let active = true
+    socialService.storefront(rawUser.civicId).then(stored => {
+      if (!active || !stored) return
+      setStorefrontBanner(stored.banner)
+      setStorefrontBannerDraft(stored.banner)
+      setStorefrontStyle(stored.style)
+      setStorefrontStyleDraft(stored.style)
+      localStorage.setItem(storefrontStorageKey, JSON.stringify({ banner: stored.banner, style: stored.style }))
+    }).catch(() => {})
+    return () => { active = false }
+  }, [isGuestMode, rawUser?.civicId, storefrontStorageKey])
+
+  const saveStorefrontSign = async () => {
     const banner = storefrontBannerDraft.trim().slice(0, 90) || defaultStorefrontBanner
     setStorefrontBanner(banner)
     setStorefrontStyle(storefrontStyleDraft)
     localStorage.setItem(storefrontStorageKey, JSON.stringify({ banner, style: storefrontStyleDraft }))
-    setStorefrontSaveStatus('Storefront sign saved.')
+    setStorefrontSaveStatus('Saving sign…')
+    if (!isGuestMode && rawUser) {
+      try {
+        await socialService.saveStorefront(rawUser, banner, storefrontStyleDraft)
+        setStorefrontSaveStatus('Sign saved for everyone who visits your Vault.')
+      } catch {
+        setStorefrontSaveStatus('Saved on this device. Unlock your Civic identity to share it with visitors.')
+      }
+    } else {
+      setStorefrontSaveStatus('Preview saved on this device.')
+    }
     window.setTimeout(() => setStorefrontSaveStatus(''), 3500)
   }
 

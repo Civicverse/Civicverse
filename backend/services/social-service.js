@@ -22,13 +22,14 @@ const mediaExtensions = {
 }
 
 function readStore() {
-  if (!fs.existsSync(storePath)) return { profiles: {}, posts: [], relationships: [], groups: [] }
+  if (!fs.existsSync(storePath)) return { profiles: {}, posts: [], relationships: [], groups: [], storefronts: {} }
   const parsed = JSON.parse(fs.readFileSync(storePath, 'utf8'))
   return {
     profiles: parsed.profiles || {},
     posts: Array.isArray(parsed.posts) ? parsed.posts : [],
     relationships: Array.isArray(parsed.relationships) ? parsed.relationships : [],
-    groups: Array.isArray(parsed.groups) ? parsed.groups : []
+    groups: Array.isArray(parsed.groups) ? parsed.groups : [],
+    storefronts: parsed.storefronts && typeof parsed.storefronts === 'object' ? parsed.storefronts : {}
   }
 }
 
@@ -172,6 +173,27 @@ router.get('/profiles/:civicId', (req, res) => {
     followerCount: relationships.filter(row => row.type === 'follow' && row.targetId === profile.civicId).length,
     followingCount: relationships.filter(row => row.type === 'follow' && row.actorId === profile.civicId).length
   })
+})
+
+router.get('/storefront/:civicId', (req, res) => {
+  res.json(store.storefronts[req.params.civicId] || null)
+})
+
+router.put('/storefront/:civicId', verifySignedAction, (req, res) => {
+  const action = req.socialAction
+  if (action.actorId !== req.params.civicId || action.type !== 'storefront') {
+    return res.status(403).json({ error: 'profile_owner_required' })
+  }
+  const { banner, style } = action
+  if (typeof banner !== 'string' || banner.trim().length < 1 || banner.length > 90 ||
+      !['neon', 'marquee', 'scanline', 'rainbow', 'glitch'].includes(style)) {
+    return res.status(400).json({ error: 'invalid_storefront_sign' })
+  }
+  const storefront = { civicId: action.actorId, banner: banner.trim(), style, updatedAt: Date.now() }
+  store.storefronts[action.actorId] = storefront
+  saveStore()
+  publishUpdate()
+  res.json(storefront)
 })
 
 router.put('/profiles/:civicId', verifySignedAction, (req, res) => {

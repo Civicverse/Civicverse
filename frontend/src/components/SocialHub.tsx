@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CharacterViewer } from './3d/CharacterViewer';
 import { useGameStore } from '../store/gameStore';
-import { DirectMessage, SocialCursor, SocialEffect, SocialGroup, SocialPost, SocialProfile, SocialTheme, socialService } from '../services/social';
+import { DirectMessage, SocialCursor, SocialEffect, SocialGroup, SocialPost, SocialProfile, SocialTheme, StorefrontSign, socialService } from '../services/social';
 import { useMultiplayerStore } from '../services/multiplayer';
 
 interface SocialHubProps {
@@ -64,6 +64,7 @@ export default function SocialHub({ profileId }: SocialHubProps) {
   const targetId = profileId || user?.civicId || '';
   const isOwner = !!user && user.civicId === targetId;
   const [profile, setProfile] = useState<SocialProfile | null>(null);
+  const [storefrontSign, setStorefrontSign] = useState<StorefrontSign | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [groups, setGroups] = useState<SocialGroup[]>([]);
   const [relationships, setRelationships] = useState<Array<{ type: string; actorId: string; targetId: string; status: string }>>([]);
@@ -207,6 +208,13 @@ export default function SocialHub({ profileId }: SocialHubProps) {
   }, [refresh]);
 
   useEffect(() => {
+    if (!targetId) { setStorefrontSign(null); return; }
+    let active = true;
+    socialService.storefront(targetId).then(sign => { if (active) setStorefrontSign(sign); }).catch(() => { if (active) setStorefrontSign(null); });
+    return () => { active = false; };
+  }, [targetId]);
+
+  useEffect(() => {
     if (!user) {
       useMultiplayerStore.getState().setFriendCivicIds([]);
       return;
@@ -288,9 +296,13 @@ export default function SocialHub({ profileId }: SocialHubProps) {
       {profile?.effect === 'stars' && <div aria-hidden className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(1px 1px at 20px 30px, white 99%, transparent), radial-gradient(1px 1px at 70px 80px, white 99%, transparent), radial-gradient(1px 1px at 130px 40px, white 99%, transparent)', backgroundSize: '160px 120px' }} />}
       {profile?.effect === 'aurora' && <div aria-hidden className="pointer-events-none absolute -right-10 -top-20 h-56 w-3/4 rounded-full bg-cyan-300/10 blur-3xl animate-pulse" />}
       {profile?.effect === 'glow' && <div aria-hidden className="pointer-events-none absolute inset-0 bg-cyan-300/[0.04]" />}
+      <style>{`@keyframes cv-storefront-glow{0%,100%{box-shadow:0 0 8px #22d3ee55}50%{box-shadow:0 0 20px #22d3eecc}}@keyframes cv-storefront-marquee{from{transform:translateX(12%)}to{transform:translateX(-12%)}}@keyframes cv-storefront-scan{from{background-position:0 0}to{background-position:0 16px}}@keyframes cv-storefront-rainbow{to{filter:hue-rotate(360deg)}}@keyframes cv-storefront-glitch{0%,92%,100%{transform:none}94%{transform:translateX(2px)}96%{transform:translateX(-2px)}}.cv-storefront-sign--neon{animation:cv-storefront-glow 2.4s ease-in-out infinite}.cv-storefront-sign--marquee span{width:max-content;max-width:none;animation:cv-storefront-marquee 5s ease-in-out infinite alternate}.cv-storefront-sign--scanline{background-image:repeating-linear-gradient(0deg,transparent 0 3px,#67e8f922 4px,transparent 5px)}.cv-storefront-sign--scanline span{animation:cv-storefront-scan 1s linear infinite}.cv-storefront-sign--rainbow span{animation:cv-storefront-rainbow 5s linear infinite}.cv-storefront-sign--glitch span{animation:cv-storefront-glitch 2.8s steps(1,end) infinite}`}</style>
       <div className="relative z-10">
       <header className="flex flex-col gap-5 md:flex-row md:items-center">
-        <div className="h-52 w-40 shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-black/40">
+        <div className="relative h-52 w-40 shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-black/40">
+          {storefrontSign && <div className={`cv-storefront-sign--${storefrontSign.style} absolute left-1 right-1 top-2 z-20 flex overflow-hidden rounded-md border border-cyan-200/70 bg-slate-950/90 px-1.5 py-1 text-center text-cyan-100`}>
+            <span className="block truncate text-[8px] font-black uppercase tracking-[.12em]">{storefrontSign.banner}</span>
+          </div>}
           {viewerCharacter && <CharacterViewer config={viewerCharacter} className="h-full w-full" animate />}
         </div>
         <div className="min-w-0 flex-1">

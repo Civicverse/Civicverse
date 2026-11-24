@@ -21,6 +21,14 @@ export interface SocialProfile {
   updatedAt: number;
 }
 
+export type StorefrontSignStyle = 'neon' | 'marquee' | 'scanline' | 'rainbow' | 'glitch';
+export interface StorefrontSign {
+  civicId: string;
+  banner: string;
+  style: StorefrontSignStyle;
+  updatedAt: number;
+}
+
 export interface SocialPost {
   id: string;
   kind?: 'post' | 'status';
@@ -134,6 +142,9 @@ async function get<T>(path: string): Promise<T> {
 
 export const socialService = {
   profile: (civicId: string) => get<{ profile: SocialProfile; posts: SocialPost[]; followerCount: number; followingCount: number }>(`/profiles/${encodeURIComponent(civicId)}`),
+  storefront: (civicId: string) => get<StorefrontSign | null>(`/storefront/${encodeURIComponent(civicId)}`),
+  saveStorefront: (user: CivicUser, banner: string, style: StorefrontSignStyle) =>
+    signedRequest<StorefrontSign>(`/storefront/${encodeURIComponent(user.civicId)}`, 'PUT', { type: 'storefront', banner, style }),
   search: (query: string) => get<SocialProfile[]>(`/search?q=${encodeURIComponent(query)}`),
   feed: (viewerId: string) => get<SocialFeed>(`/feed?viewerId=${encodeURIComponent(viewerId)}`),
   saveProfile: (user: CivicUser, profile: Pick<SocialProfile, 'about' | 'status' | 'theme' | 'cursor' | 'effect' | 'backgroundColor'>) =>
