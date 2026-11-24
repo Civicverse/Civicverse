@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore'
 import { CharacterViewer } from '../components/3d/CharacterViewer'
 import { CIVICVERSE_LOGO } from '../assets/logo'
 import { socialService } from '../services/social'
+import { GRAPHICS_PRESETS, getGraphicsQuality, saveGraphicsQuality, type GraphicsQuality } from '../lib/gameGraphics'
 import {
   Shield,
   Check,
@@ -493,6 +494,12 @@ export default function CivicVaultPage() {
   const [foyerFmSharing, setFoyerFmSharing] = useState<boolean>(() => isFoyerFmSharingEnabled())
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false)
   const [showSettingsDropdown, setShowSettingsDropdown] = useState<boolean>(false)
+  const [graphicsQuality, setGraphicsQualityUI] = useState<GraphicsQuality>(() => getGraphicsQuality())
+
+  const handleGraphicsQualityChange = (quality: GraphicsQuality) => {
+    setGraphicsQualityUI(quality)
+    saveGraphicsQuality(quality)
+  }
 
   const handleToggleGlobalSharing = (targetState?: boolean) => {
     const next = targetState !== undefined ? targetState : !globalSharing
@@ -1189,7 +1196,7 @@ export default function CivicVaultPage() {
       {/* ========================================================================= */}
       <header className="relative z-40 bg-stainless-steel border-b border-stainless-steel text-white shadow-[0_12px_32px_rgba(0,0,0,0.6)]">
         <div className="container mx-auto max-w-6xl px-3 py-1.5 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-xs">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-self-start md:col-start-1 md:row-start-1">
             <div className="flex items-center gap-2.5">
               <img
                 src={CIVICVERSE_LOGO}
@@ -1208,10 +1215,10 @@ export default function CivicVaultPage() {
             </div>
           </div>
 
-          {/* Centered citizen search */}
+          {/* Citizen search takes the former PoP position at the top right */}
           <div className="contents">
-            <div className="flex items-center justify-self-center bg-[#141b27]/90 border border-stainless-steel rounded px-2.5 py-1 md:col-start-2 md:row-start-1">
-              <span className="text-gray-400 text-[11px] pr-2 font-mono">Search Citizens:</span>
+            <div className="flex items-center justify-self-end bg-[#141b27]/90 border border-stainless-steel rounded px-2.5 py-1 md:col-start-3 md:row-start-1">
+              <span className="text-gray-400 text-[11px] pr-2 font-mono">Citizen Search:</span>
               <input
                 type="text"
                 placeholder="Find username / DID..."
@@ -1222,110 +1229,6 @@ export default function CivicVaultPage() {
               </button>
             </div>
 
-            {/* Consolidated PoP Dropdown Menu */}
-            <div className="relative justify-self-end md:col-start-3 md:row-start-1" ref={popDropdownRef}>
-              <button
-                onClick={() => setShowPopDropdown(!showPopDropdown)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider border transition-all ${
-                  user.verificationLevel === 2
-                    ? 'bg-purple-950/80 border-purple-400 text-purple-300 shadow-[0_0_12px_rgba(191,0,255,0.4)]'
-                    : 'bg-[#1b2330] hover:bg-[#232c3d] border-[#3e4c62] text-gray-200 shadow-md'
-                }`}
-              >
-                <Shield className="w-3.5 h-3.5 text-cyan-400" />
-                <span>
-                  PoP STATUS: {user.verificationLevel === 2 ? 'PURPLE CHECK ✓' : `STEP ${user.attestationCount || 1}/3`}
-                </span>
-                {showPopDropdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-
-              {/* PoP Dropdown Panel */}
-              {showPopDropdown && (
-                <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1.5rem)] sm:w-96 max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain touch-pan-y bg-[#131923] border border-cyan-500/60 rounded-xl p-5 shadow-[0_15px_50px_rgba(0,0,0,0.85)] z-50 text-left animate-slide-up backdrop-blur-xl">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <Shield className="text-neon-cyan w-4 h-4" />
-                      <h4 className="text-xs font-black uppercase tracking-wider text-neon-cyan">
-                        Proof of Personhood (PoP)
-                      </h4>
-                    </div>
-                    <span className="text-[9px] font-mono text-gray-400">1_HUMAN_=_1_ID</span>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase text-gray-300 mb-1.5">
-                      <span>Physical Attestations:</span>
-                      <span className={user.verificationLevel === 2 ? 'text-neon-purple' : 'text-neon-cyan'}>
-                        {user.attestationCount || 0} of 3 Verified
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
-                      {[1, 2, 3].map(i => {
-                        const verified = user.attestationCount >= i
-                        const isFinal = i === 3
-                        return (
-                          <div
-                            key={i}
-                            className={`flex-1 py-1.5 rounded text-center text-[10px] font-black border transition-all ${
-                              verified
-                                ? isFinal
-                                  ? 'bg-purple-600/30 border-purple-400 text-purple-300'
-                                  : 'bg-green-600/30 border-green-400 text-green-300'
-                                : 'bg-black/50 border-white/10 text-gray-600'
-                            }`}
-                          >
-                            {isFinal ? (verified ? 'PURPLE CHECK ✓' : 'STEP 3') : verified ? 'GREEN X ✓' : `STEP ${i}`}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-[10px] text-gray-300 mb-4 bg-black/40 p-3 rounded-lg border border-white/5">
-                    <div className="flex items-start gap-2">
-                      <span className="font-mono text-neon-cyan font-black">1.</span>
-                      <span>Meet Person A physically to exchange a 6-digit challenge code.</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-mono text-neon-cyan font-black">2.</span>
-                      <span>Meet Person B to exchange the second peer handshake passcode.</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-mono text-neon-purple font-black">3.</span>
-                      <span>Complete attestation 3 to lock in permanent Purple Checkmark status.</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {user.verificationLevel === 2 ? (
-                      <div className="w-full bg-purple-950/60 border border-purple-500/50 p-2.5 rounded-lg text-center">
-                        <p className="text-[11px] font-black text-purple-300 flex items-center justify-center gap-1.5">
-                          <Check className="w-4 h-4 text-purple-400" /> PURPLE CHECK IDENTITY ACTIVE
-                        </p>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={startVerification}
-                        className="w-full bg-gradient-to-r from-neon-cyan to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-black text-xs py-2.5 rounded-lg uppercase tracking-wider transition shadow-md flex items-center justify-center gap-2"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        <span>{verifying ? 'VERIFYING...' : 'START PEER PoP HANDSHAKE'}</span>
-                      </button>
-                    )}
-
-                    <div className="flex items-center justify-between text-[9px] text-gray-400 pt-1 font-mono">
-                      <span>STATUS: READY</span>
-                      <button
-                        onClick={() => setShowPopDropdown(false)}
-                        className="text-gray-400 hover:text-white underline"
-                      >
-                        Close Menu
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -1390,6 +1293,30 @@ export default function CivicVaultPage() {
                     </div>
 
                     <div className="space-y-3 mb-3">
+                      <section className="rounded-lg border border-cyan-400/25 bg-[#0e131b]/80 p-2.5">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div>
+                            <div className="text-[11px] font-bold text-white flex items-center gap-1"><Monitor className="h-3 w-3 text-cyan-400" /> Game Graphics</div>
+                            <p className="text-[9px] text-gray-400">Choose the look and frame-rate budget for your device.</p>
+                          </div>
+                          <span className="shrink-0 rounded border border-cyan-300/20 px-1.5 py-0.5 text-[8px] font-black uppercase text-cyan-200">{GRAPHICS_PRESETS[graphicsQuality].label}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {(['low', 'medium', 'high'] as GraphicsQuality[]).map(quality => (
+                            <button
+                              key={quality}
+                              type="button"
+                              onClick={() => handleGraphicsQualityChange(quality)}
+                              aria-pressed={graphicsQuality === quality}
+                              className={`rounded-md border px-2 py-1.5 text-left transition ${graphicsQuality === quality ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100 shadow-[0_0_10px_rgba(34,211,238,.12)]' : 'border-white/10 bg-black/20 text-gray-300 hover:border-cyan-300/40'}`}
+                            >
+                              <span className="block text-[10px] font-black uppercase">{GRAPHICS_PRESETS[quality].label}</span>
+                              <span className="mt-0.5 block text-[8px] leading-tight text-gray-400">{GRAPHICS_PRESETS[quality].description}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </section>
+
                       {/* Master Public Media Sharing Toggle */}
                       <div className="bg-[#0e131b]/80 border border-[#2e3b4e] rounded-lg p-2.5 flex items-center justify-between gap-2.5">
                         <div className="min-w-0">
@@ -1439,6 +1366,34 @@ export default function CivicVaultPage() {
                       </div>
                     </div>
 
+                    <details className="rounded-lg border border-[#2e3b4e] bg-[#0e131b]/80 p-2.5">
+                      <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-cyan-200">Customize welcome sign</summary>
+                      <div className="mt-3 grid gap-2">
+                        <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                          Guest welcome banner
+                          <input value={storefrontBannerDraft} maxLength={90} onChange={event => setStorefrontBannerDraft(event.target.value)} placeholder="Welcome to my Vault!"
+                            className="mt-1.5 w-full rounded-lg border border-[#2e3b4e] bg-[#070b12] px-3 py-2 text-xs font-mono text-white focus:border-cyan-400 focus:outline-none" />
+                        </label>
+                        <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                          Animation
+                          <select value={storefrontStyleDraft} onChange={event => setStorefrontStyleDraft(event.target.value as VaultSignStyle)}
+                            className="mt-1.5 w-full rounded-lg border border-[#2e3b4e] bg-[#070b12] px-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none">
+                            {VAULT_SIGN_STYLES.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+                          </select>
+                        </label>
+                        <button type="button" onClick={saveStorefrontSign} className="rounded-lg bg-cyan-400 px-3 py-2 text-[10px] font-black uppercase text-slate-950 hover:bg-cyan-300">Save sign</button>
+                      </div>
+                      {storefrontSaveStatus && <p role="status" className="mt-2 text-[10px] font-bold text-emerald-300">{storefrontSaveStatus}</p>}
+                    </details>
+
+                    <button
+                      type="button"
+                      onClick={() => { logout(); nav('/signin'); }}
+                      className="w-full rounded-lg border border-red-400/30 bg-red-950/30 px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-red-300 hover:bg-red-900/40"
+                    >
+                      Sign Out
+                    </button>
+
                     {/* Status Pill Footer */}
                     <div className="text-[9px] font-mono text-gray-400 pt-2 border-t border-white/5 flex items-center justify-between">
                       <span>CivicWatch: <strong className={globalSharing ? 'text-cyan-300' : 'text-gray-500'}>{globalSharing ? 'Active' : 'Muted'}</strong></span>
@@ -1449,16 +1404,32 @@ export default function CivicVaultPage() {
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center space-x-2 shrink-0 pl-3">
+            <div className="relative shrink-0" ref={popDropdownRef}>
               <button
-                onClick={() => {
-                  logout()
-                  nav('/signin')
-                }}
-                className="text-red-400 hover:underline font-mono text-[10px]"
+                type="button"
+                onClick={() => setShowPopDropdown(!showPopDropdown)}
+                className={`flex items-center gap-2 rounded border px-3 py-1.5 text-[10px] font-black uppercase tracking-wider ${user.verificationLevel === 2 ? 'border-purple-400 bg-purple-950/80 text-purple-300' : 'border-[#3e4c62] bg-[#1b2330] text-gray-200 hover:bg-[#232c3d]'}`}
               >
-                Sign Out
+                <Shield className="h-3.5 w-3.5 text-cyan-400" />
+                PoP: {user.verificationLevel === 2 ? 'Verified ✓' : `${user.attestationCount || 0}/3`}
+                {showPopDropdown ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </button>
+              {showPopDropdown && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-1.5rem)] rounded-xl border border-cyan-500/60 bg-[#131923] p-4 text-left shadow-[0_15px_50px_rgba(0,0,0,0.85)] backdrop-blur-xl">
+                  <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-cyan-300">Proof of Personhood</span>
+                    <button type="button" onClick={() => setShowPopDropdown(false)} className="text-xs text-gray-400 hover:text-white">Close</button>
+                  </div>
+                  <p className="mb-3 text-[11px] text-gray-300">Physical attestations: {user.attestationCount || 0} of 3 verified</p>
+                  {user.verificationLevel === 2 ? (
+                    <p className="rounded-lg border border-purple-500/50 bg-purple-950/50 p-2 text-center text-[10px] font-black text-purple-300">PURPLE CHECK IDENTITY ACTIVE</p>
+                  ) : (
+                    <button type="button" onClick={startVerification} className="w-full rounded-lg bg-cyan-400 px-3 py-2 text-[10px] font-black uppercase text-slate-950 hover:bg-cyan-300">
+                      {verifying ? 'Verifying…' : 'Start peer verification'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </nav>
@@ -1550,25 +1521,6 @@ export default function CivicVaultPage() {
                   <span>↗</span>
                 </button>
               </div>
-              <details className="border-t border-[#2e3b4e] bg-[#0b1018]/90 p-3">
-                <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-cyan-200">Customize sign</summary>
-                <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_170px_auto] sm:items-end">
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400">
-                    Guest welcome banner
-                    <input value={storefrontBannerDraft} maxLength={90} onChange={event => setStorefrontBannerDraft(event.target.value)} placeholder="Welcome to my Vault!"
-                      className="mt-1.5 w-full rounded-lg border border-[#2e3b4e] bg-[#070b12] px-3 py-2 text-xs font-mono text-white focus:border-cyan-400 focus:outline-none" />
-                  </label>
-                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400">
-                    Animation
-                    <select value={storefrontStyleDraft} onChange={event => setStorefrontStyleDraft(event.target.value as VaultSignStyle)}
-                      className="mt-1.5 w-full rounded-lg border border-[#2e3b4e] bg-[#070b12] px-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none">
-                      {VAULT_SIGN_STYLES.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
-                    </select>
-                  </label>
-                  <button type="button" onClick={saveStorefrontSign} className="rounded-lg bg-cyan-400 px-3 py-2 text-[10px] font-black uppercase text-slate-950 hover:bg-cyan-300">Save sign</button>
-                </div>
-                {storefrontSaveStatus && <p role="status" className="mt-2 text-[10px] font-bold text-emerald-300">{storefrontSaveStatus}</p>}
-              </details>
             </div>
 
             {/* CONTACTING BOX */}

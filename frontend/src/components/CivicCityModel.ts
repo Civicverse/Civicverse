@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils';
+import { GRAPHICS_PRESETS, type GraphicsQuality } from '../lib/gameGraphics';
 
 export interface BillboardStory {
   id: string;
@@ -66,6 +67,8 @@ export interface CityAnimationHandles {
   trafficSignals: TrafficSignalMaterials;
   rain: THREE.LineSegments;
   rainGeometry: THREE.BufferGeometry;
+  rainLengths: Float32Array;
+  puddles: THREE.InstancedMesh;
   vehicles: DriveableVehicleHandle[];
   collisionObstacles: CollisionObstacle[];
   bridge: SkyBridgeHandle;
@@ -1338,8 +1341,8 @@ function createVolumetricFogTexture(): THREE.CanvasTexture {
     context.translate(Math.random() * canvas.width, Math.random() * canvas.height);
     context.scale(radiusX * canvas.width, radiusY * canvas.height);
     const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
-    gradient.addColorStop(0, `rgba(205, 217, 238, ${0.035 + Math.random() * 0.035})`);
-    gradient.addColorStop(0.52, 'rgba(190, 204, 229, 0.02)');
+    gradient.addColorStop(0, `rgba(205, 217, 238, ${0.18 + Math.random() * 0.08})`);
+    gradient.addColorStop(0.52, 'rgba(190, 204, 229, 0.075)');
     gradient.addColorStop(1, 'rgba(180, 196, 224, 0)');
     context.fillStyle = gradient;
     context.fillRect(-1, -1, 2, 2);
@@ -1416,7 +1419,7 @@ function createSkyCloudTexture(): THREE.CanvasTexture {
 // MAIN BUILDER: PRECISION PHOTOREALISTIC NEW CITY STREET GRID & ASSETS
 // =========================================================================
 
-export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
+export function buildDetailedCity(scene: THREE.Scene, quality: GraphicsQuality = 'medium'): CityAnimationHandles {
   console.log('[NewCity] Building connected photorealistic synthwave street grid & assets...');
 
   const cityGroup = new THREE.Group();
@@ -1444,8 +1447,8 @@ export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
     map: asphaltPBR.map,
     normalMap: asphaltPBR.normalMap,
     roughnessMap: asphaltPBR.roughnessMap,
-    roughness: 0.78,
-    metalness: 0.03
+    roughness: 0.54,
+    metalness: 0.08
   });
 
   const concretePBR = createConcretePBR();
@@ -3691,6 +3694,44 @@ export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
   };
 
   addMergedMesh(asphaltGeometries, asphaltMaterial, false, true);
+  const puddleCapacity = GRAPHICS_PRESETS.high.puddleCount;
+  const puddleGeometry = new THREE.CircleGeometry(1, 16);
+  puddleGeometry.rotateX(-Math.PI / 2);
+  const puddleMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x71849b,
+    roughness: 0.12,
+    metalness: 0.28,
+    clearcoat: 0.92,
+    clearcoatRoughness: 0.08,
+    transparent: true,
+    opacity: 0.42,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    polygonOffset: true,
+    polygonOffsetFactor: -1
+  });
+  const puddles = new THREE.InstancedMesh(puddleGeometry, puddleMaterial, puddleCapacity);
+  puddles.name = 'Rainwater_Street_Pooling';
+  puddles.frustumCulled = false;
+  puddles.receiveShadow = false;
+  const puddleTransform = new THREE.Object3D();
+  for (let index = 0; index < puddleCapacity; index += 1) {
+    const isUStreet = index < puddleCapacity / 2;
+    const streetIndex = index % gridStreets.length;
+    const streetCoordinate = gridStreets[streetIndex];
+    const along = (Math.random() - 0.5) * 450;
+    const across = (Math.random() - 0.5) * 7.8;
+    const position = isUStreet
+      ? uToWorld(streetCoordinate + across, along)
+      : uToWorld(along, streetCoordinate + across);
+    puddleTransform.position.set(position.x, (isUStreet ? GRID_U_ROAD_Y : GRID_V_ROAD_Y) + 0.035, position.z);
+    puddleTransform.rotation.set(0, (isUStreet ? -Math.PI / 4 : Math.PI / 4) + (Math.random() - 0.5) * 0.3, 0);
+    puddleTransform.scale.set(0.75 + Math.random() * 2.3, 1, 0.16 + Math.random() * 0.42);
+    puddleTransform.updateMatrix();
+    puddles.setMatrixAt(index, puddleTransform.matrix);
+  }
+  puddles.count = GRAPHICS_PRESETS[quality].puddleCount;
+  cityGroup.add(puddles);
   addMergedMesh(concreteGeometries, concreteMaterial, false, true);
   addMergedMesh(curbGeometries, curbMaterial, true, true);
   addMergedMesh(tactileGeometries, tactilePaverMaterial, false, true);
@@ -4148,14 +4189,17 @@ export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
   // 8. CELESTIAL SKY SYSTEM
   // -----------------------------------------------------------------------
   const celestial = buildCelestialSystem(scene);
-  const rainCount = 1100;
+  const rainCount = GRAPHICS_PRESETS.high.rainCount;
   const rainPositions = new Float32Array(rainCount * 6);
+  const rainLengths = new Float32Array(rainCount);
   for (let i = 0; i < rainCount; i += 1) {
     const offset = i * 6;
     const x = (Math.random() - 0.5) * 120;
     const y = Math.random() * 48 + 8;
     const z = (Math.random() - 0.5) * 120;
-    rainPositions.set([x, y, z, x + 0.16, y - 2.4, z + 0.08], offset);
+    const length = 1.15 + Math.random() * 1.8;
+    rainLengths[i] = length;
+    rainPositions.set([x, y, z, x + 0.16, y - length, z + 0.08], offset);
   }
   const rainGeometry = new THREE.BufferGeometry();
   rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
@@ -4165,10 +4209,11 @@ export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
     new THREE.LineBasicMaterial({
       color: 0xa8c6f4,
       transparent: true,
-      opacity: 0.16,
+      opacity: GRAPHICS_PRESETS[quality].rainOpacity,
       depthWrite: false
     })
   );
+  rainGeometry.setDrawRange(0, GRAPHICS_PRESETS[quality].rainCount * 2);
   rain.frustumCulled = false;
   scene.add(rain);
 
@@ -4177,13 +4222,13 @@ export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
   const fogTexture = createVolumetricFogTexture();
   const fogBanks: FogBankHandle[] = [];
   const fogColors = [0xc2cede, 0x9fafc9, 0xd1d4df];
-  for (let i = 0; i < 8; i += 1) {
+  for (let i = 0; i < 10; i += 1) {
     const angle = (i / 8) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
     const distance = 220 + Math.random() * 160;
     const originX = Math.cos(angle) * distance;
     const originY = 1.5 + Math.random() * 5;
     const originZ = Math.sin(angle) * distance;
-    const baseOpacity = 0.04 + Math.random() * 0.025;
+    const baseOpacity = 0.24 + Math.random() * 0.12;
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
       map: fogTexture,
       color: fogColors[i % fogColors.length],
@@ -4193,7 +4238,8 @@ export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
       fog: true
     }));
     sprite.position.set(originX, originY, originZ);
-    sprite.scale.set(65 + Math.random() * 55, 14 + Math.random() * 16, 1);
+    sprite.scale.set(76 + Math.random() * 64, 18 + Math.random() * 20, 1);
+    sprite.visible = i < GRAPHICS_PRESETS[quality].fogBankCount;
     sprite.renderOrder = 1;
     fogBankGroup.add(sprite);
     fogBanks.push({
@@ -4262,6 +4308,8 @@ export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
     trafficSignals,
     rain,
     rainGeometry,
+    rainLengths,
+    puddles,
     vehicles,
     collisionObstacles,
     bridge
@@ -4271,6 +4319,16 @@ export function buildDetailedCity(scene: THREE.Scene): CityAnimationHandles {
 // =========================================================================
 // REAL-TIME ANIMATION LOOP (Shooting Stars, Jumbotrons, Celestial Sky)
 // =========================================================================
+
+export function applyCityGraphicsQuality(handles: CityAnimationHandles, quality: GraphicsQuality): void {
+  const preset = GRAPHICS_PRESETS[quality];
+  handles.rainGeometry.setDrawRange(0, preset.rainCount * 2);
+  (handles.rain.material as THREE.LineBasicMaterial).opacity = preset.rainOpacity;
+  handles.puddles.count = preset.puddleCount;
+  handles.fogBanks.forEach((bank, index) => {
+    bank.sprite.visible = index < preset.fogBankCount;
+  });
+}
 
 export function updateCityAnimation(
   handles: CityAnimationHandles,
@@ -4324,8 +4382,9 @@ export function updateCityAnimation(
     handles.rain.position.set(playerPos.x, playerPos.y, playerPos.z);
     const rainAttribute = handles.rainGeometry.getAttribute('position') as THREE.BufferAttribute;
     const rainData = rainAttribute.array as Float32Array;
-    const rainStep = delta * 38;
-    for (let index = 0; index < rainData.length / 6; index += 1) {
+    const rainStep = delta * 46;
+    const activeRainCount = Math.min(handles.rainLengths.length, Math.floor(handles.rainGeometry.drawRange.count / 2));
+    for (let index = 0; index < activeRainCount; index += 1) {
       const offset = index * 6;
       rainData[offset + 1] -= rainStep;
       rainData[offset] += rainStep * 0.12;
@@ -4334,9 +4393,10 @@ export function updateCityAnimation(
         rainData[offset] = (Math.random() - 0.5) * 120;
         rainData[offset + 1] = 45 + Math.random() * 18;
         rainData[offset + 2] = (Math.random() - 0.5) * 120;
+        handles.rainLengths[index] = 1.15 + Math.random() * 1.8;
       }
       rainData[offset + 3] = rainData[offset] + 0.16;
-      rainData[offset + 4] = rainData[offset + 1] - 2.4;
+      rainData[offset + 4] = rainData[offset + 1] - handles.rainLengths[index];
       rainData[offset + 5] = rainData[offset + 2] + 0.08;
     }
     rainAttribute.needsUpdate = true;

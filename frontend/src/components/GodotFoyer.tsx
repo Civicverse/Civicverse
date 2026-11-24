@@ -21,8 +21,10 @@ import {
 import { useMultiplayerStore } from '../services/multiplayer';
 import { createCharacterMesh, createPlayerNametag } from '../lib/characterFactory';
 import { getUserBroadcastVideos } from '../services/mediaService';
+import { GRAPHICS_PRESETS, getGraphicsQuality, type GraphicsQuality } from '../lib/gameGraphics';
 import {
   buildDetailedCity,
+  applyCityGraphicsQuality,
   updateCityAnimation,
   updateCityBillboardStories,
   type BillboardStory
@@ -37,8 +39,27 @@ interface ChatBubble {
   messageId: string;
 }
 
+type LobbyLoadout = { cameraMode: '3RD' | '1ST'; weaponSlot: number; hudVisible: true };
+
+function readLobbyLoadout(storageKey: string): LobbyLoadout {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || 'null') as Partial<LobbyLoadout> | null;
+    return {
+      cameraMode: saved?.cameraMode === '1ST' ? '1ST' : '3RD',
+      weaponSlot: typeof saved?.weaponSlot === 'number' && saved.weaponSlot >= 1 && saved.weaponSlot <= 8
+        ? Math.floor(saved.weaponSlot)
+        : 4,
+      hudVisible: true
+    };
+  } catch {
+    return { cameraMode: '3RD', weaponSlot: 4, hudVisible: true };
+  }
+}
+
 const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const user = useGameStore(state => state.user);
+  const loadoutStorageKey = `civicverse:lobby-loadout:v1:${user?.civicId || user?.username || 'guest'}`;
+  const savedLoadout = readLobbyLoadout(loadoutStorageKey);
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,12 +68,13 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const smaaRef = useRef<any>(null);
   
   // React HUD states
-  const [cameraMode, setCameraMode] = useState<'3RD' | '1ST'>('3RD');
+  const [cameraMode, setCameraMode] = useState<'3RD' | '1ST'>(savedLoadout.cameraMode);
   const [sceneErrorMessage, setSceneErrorMessage] = useState('');
   const [isPointerLocked, setIsPointerLocked] = useState(false);
-  const [aaMode, setAaMode] = useState<'off' | 'smaa'>('smaa');
-  const [pixelCap, setPixelCap] = useState<number>(1.25);
+  const [aaMode, setAaMode] = useState<'off' | 'smaa'>(() => GRAPHICS_PRESETS[getGraphicsQuality()].antiAliasing ? 'smaa' : 'off');
+  const [pixelCap, setPixelCap] = useState<number>(() => GRAPHICS_PRESETS[getGraphicsQuality()].maxPixelRatio);
   const pixelCapRef = useRef(pixelCap);
+  const minPixelRatioRef = useRef(GRAPHICS_PRESETS[getGraphicsQuality()].minPixelRatio);
   const renderScaleRef = useRef(1);
 
   // Multiplayer state (20 per Lobby Instance)
@@ -60,7 +82,18 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const [tipAmount, setTipAmount] = useState('5.0');
   const [tipSuccess, setTipSuccess] = useState('');
   const [selectedBillboardStory, setSelectedBillboardStory] = useState<BillboardStory | null>(null);
-  const activeSlotRef = useRef<number>(4);
+  const activeSlotRef = useRef<number>(savedLoadout.weaponSlot);
+  const cameraModeRef = useRef<'3RD' | '1ST'>(savedLoadout.cameraMode);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(loadoutStorageKey, JSON.stringify({
+        cameraMode: cameraModeRef.current,
+        weaponSlot: activeSlotRef.current,
+        hudVisible: true
+      } satisfies LobbyLoadout));
+    } catch {}
+  }, [cameraMode, loadoutStorageKey]);
 
   useEffect(() => {
     let lastDeathEventId = '';
@@ -81,9 +114,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       if (respawnTimer !== undefined) window.clearTimeout(respawnTimer);
     };
   }, []);
-
-  // Store camera mode ref so event listeners don't re-mount the Three.js scene
-  const cameraModeRef = useRef<'3RD' | '1ST'>('3RD');
 
   // Audio context ref (must be a hook at component top-level)
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -169,7 +199,9 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b1024);
-    scene.fog = new THREE.FogExp2(0x252c43, 0.00065);
+    const initialQuality = getGraphicsQuality();
+    const initialPreset = GRAPHICS_PRESETS[initialQuality];
+    scene.fog = new THREE.FogExp2(0x252c43, 0.00072);
 
     const camera = new THREE.PerspectiveCamera(
       70, 
@@ -185,8 +217,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     const renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: false, powerPreference: 'high-performance' });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     // Set pixel ratio high enough for crisp visuals but capped for performance
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelCap));
-    renderer.shadowMap.enabled = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, initialPreset.maxPixelRatio));
+    renderer.shadowMap.enabled = initialPreset.shadows;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     // Reduce exposure to avoid HDR clipping and shimmering
@@ -204,7 +236,8 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     composer.addPass(renderPass);
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(containerRef.current.clientWidth, containerRef.current.clientHeight), 0.9, 0.4, 0.1);
     bloomPass.threshold = 0.7;
-    bloomPass.strength = 0.18;
+    bloomPass.enabled = initialPreset.bloom;
+    bloomPass.strength = 0.2;
     bloomPass.radius = 0.36;
     composer.addPass(bloomPass);
     // Use SMAA for superior AA with less blurring than FXAA
@@ -255,15 +288,15 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       renderer.setPixelRatio(pr);
       composer.setPixelRatio(pr);
       smaaPass.setSize(containerRef.current.clientWidth * pr, containerRef.current.clientHeight * pr);
-      smaaPass.enabled = aaMode === 'smaa';
+    smaaPass.enabled = initialPreset.antiAliasing;
     } catch (e) {}
 
     const moonLight = new THREE.DirectionalLight(0xdce6f4, 3.0);
     moonLight.position.set(-120, 240, 180);
     moonLight.castShadow = true;
     // Reduce shadow map size to reduce aliasing artifacts and improve stability
-    moonLight.shadow.mapSize.width = 2048;
-    moonLight.shadow.mapSize.height = 2048;
+    moonLight.shadow.mapSize.width = initialPreset.shadowMapSize;
+    moonLight.shadow.mapSize.height = initialPreset.shadowMapSize;
     // Small bias to reduce shadow acne and shimmering when moving
     moonLight.shadow.bias = -0.00015;
     moonLight.shadow.normalBias = 0.04;
@@ -289,7 +322,26 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     // HIGH-FIDELITY DETAILED HUMAN CHARACTER & 3D WEAPON
     // ========================================================
 
-    const cityAnimationHandles = buildDetailedCity(scene);
+    const cityAnimationHandles = buildDetailedCity(scene, initialQuality);
+    const onGraphicsQualityChange = (event: Event) => {
+      const quality = (event as CustomEvent<GraphicsQuality>).detail;
+      if (!quality || !GRAPHICS_PRESETS[quality]) return;
+      const preset = GRAPHICS_PRESETS[quality];
+      minPixelRatioRef.current = preset.minPixelRatio;
+      applyPixelCap(preset.maxPixelRatio);
+      applyAAMode(preset.antiAliasing ? 'smaa' : 'off');
+      bloomPass.enabled = preset.bloom;
+      renderer.shadowMap.enabled = preset.shadows;
+      moonLight.castShadow = preset.shadows;
+      if (moonLight.shadow.map) {
+        moonLight.shadow.map.dispose();
+        moonLight.shadow.map = null;
+      }
+      moonLight.shadow.mapSize.set(preset.shadowMapSize, preset.shadowMapSize);
+      moonLight.shadow.camera.updateProjectionMatrix();
+      applyCityGraphicsQuality(cityAnimationHandles, quality);
+    };
+    window.addEventListener('civicverse:graphics-quality-change', onGraphicsQualityChange);
     const refreshCivicWatchMedia = async () => {
       const endpoints = ['/api/social/explore?limit=50', '/api/civicwatch/media?limit=20'];
       const responses = await Promise.allSettled(endpoints.map(endpoint => fetch(endpoint)));
@@ -873,70 +925,92 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       8: 0xf97316, // Solar Flare
     };
     const activeShotEffects: Array<{
-      group: THREE.Group; distance: number; bornAt: number; flightTime: number; impact: boolean;
-      bolt: THREE.Group; flash: THREE.Mesh; impactGroup: THREE.Group; beamMaterials: THREE.MeshBasicMaterial[];
-      impactMaterials: THREE.Material[]; sparks: Array<{ mesh: THREE.Mesh; velocity: THREE.Vector3 }>;
+      group: THREE.Group; distance: number; bornAt: number; flightTime: number; impact: boolean; active: boolean;
+      bolt: THREE.Mesh; flash: THREE.Mesh; impactGroup: THREE.Group; beamMaterials: THREE.MeshBasicMaterial[];
+      impactMaterials: THREE.MeshBasicMaterial[]; impactLight: THREE.PointLight;
+      outerBeam: THREE.Mesh; coreBeam: THREE.Mesh; boltGlow: THREE.Mesh;
     }> = [];
+    const beamGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
+    const boltGeometry = new THREE.SphereGeometry(1, 10, 8);
+    const impactSphereGeometry = new THREE.SphereGeometry(1, 10, 8);
+    const impactRingGeometry = new THREE.TorusGeometry(1, 0.07, 6, 18);
+    const shotPoolSize = 18;
+    for (let index = 0; index < shotPoolSize; index += 1) {
+      const group = new THREE.Group();
+      const beamMaterials = [
+        new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+      ];
+      const outerBeam = new THREE.Mesh(beamGeometry, beamMaterials[0]);
+      const coreBeam = new THREE.Mesh(beamGeometry, beamMaterials[1]);
+      const bolt = new THREE.Mesh(boltGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.AdditiveBlending }));
+      const boltGlow = new THREE.Mesh(boltGeometry, new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.68, blending: THREE.AdditiveBlending, depthWrite: false }));
+      const flash = new THREE.Mesh(boltGeometry, new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+      const impactGroup = new THREE.Group();
+      const impactMaterials = [
+        new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }),
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+      ];
+      const impactBall = new THREE.Mesh(impactSphereGeometry, impactMaterials[0]);
+      const impactCore = new THREE.Mesh(impactSphereGeometry, impactMaterials[1]);
+      const impactRing = new THREE.Mesh(impactRingGeometry, impactMaterials[0]);
+      impactRing.rotation.x = Math.PI / 2;
+      const impactLight = new THREE.PointLight(0x00f3ff, 0, 12, 2);
+      impactGroup.add(impactBall, impactCore, impactRing, impactLight);
+      impactGroup.visible = false;
+      group.add(outerBeam, coreBeam, bolt, boltGlow, flash, impactGroup);
+      group.visible = false;
+      scene.add(group);
+      activeShotEffects.push({ group, distance: 0, bornAt: 0, flightTime: 0, impact: false, active: false, bolt, flash, impactGroup, beamMaterials, impactMaterials, impactLight, outerBeam, coreBeam, boltGlow });
+    }
     const spawnShotEffect = (origin: THREE.Vector3, end: THREE.Vector3, slot: number, impact: boolean) => {
       const color = slotPlasmaColors[slot] || slotPlasmaColors[1];
       const delta = end.clone().sub(origin);
       const distance = THREE.MathUtils.clamp(delta.length(), 1, 180);
       const direction = delta.normalize();
-      const group = new THREE.Group();
+      const effect = activeShotEffects.find(item => !item.active) || activeShotEffects.reduce((oldest, item) => item.bornAt < oldest.bornAt ? item : oldest);
+      const group = effect.group;
+      effect.active = true;
+      group.visible = true;
       group.position.copy(origin);
       group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
-      const beamMaterials = [
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false })
-      ];
       const beamRadius = slot === 4 ? 0.042 : slot === 7 ? 0.058 : slot === 3 || slot === 8 ? 0.15 : slot === 2 ? 0.105 : slot === 5 ? 0.12 : 0.08;
-      const outerBeam = new THREE.Mesh(new THREE.CylinderGeometry(beamRadius, beamRadius, 1, 10), beamMaterials[0]);
-      outerBeam.position.y = distance / 2;
-      outerBeam.scale.y = distance;
-      group.add(outerBeam);
       const coreRadius = slot === 4 ? 0.018 : slot === 7 ? 0.026 : slot === 3 || slot === 8 ? 0.052 : 0.03;
-      const coreBeam = new THREE.Mesh(new THREE.CylinderGeometry(coreRadius, coreRadius, 1, 8), beamMaterials[1]);
-      coreBeam.position.y = distance / 2;
-      coreBeam.scale.y = distance;
-      group.add(coreBeam);
-      const bolt = new THREE.Group();
-      bolt.add(new THREE.Mesh(new THREE.SphereGeometry(slot === 3 || slot === 8 ? 0.18 : 0.11, 12, 10), new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.AdditiveBlending })));
-      bolt.add(new THREE.Mesh(new THREE.SphereGeometry(slot === 3 || slot === 8 ? 0.34 : 0.23, 12, 10), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.68, blending: THREE.AdditiveBlending, depthWrite: false })));
-      bolt.add(new THREE.PointLight(color, slot === 3 || slot === 8 ? 8 : 4, 14, 2));
-      group.add(bolt);
-      const flash = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
-      group.add(flash);
-      const impactGroup = new THREE.Group();
-      impactGroup.position.y = distance;
-      const impactMaterials: THREE.Material[] = [
-        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
-      ];
-      impactGroup.add(new THREE.Mesh(new THREE.SphereGeometry(slot === 3 || slot === 8 ? 0.5 : 0.24, 14, 12), impactMaterials[0]));
-      impactGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), impactMaterials[1]));
-      const impactRing = new THREE.Mesh(new THREE.TorusGeometry(slot === 3 || slot === 8 ? 0.85 : 0.45, 0.04, 8, 24), impactMaterials[0]);
-      impactRing.rotation.x = Math.PI / 2;
-      impactGroup.add(impactRing, new THREE.PointLight(color, 0, slot === 3 || slot === 8 ? 20 : 10, 2));
-      impactGroup.visible = false;
-      group.add(impactGroup);
-      const sparks: Array<{ mesh: THREE.Mesh; velocity: THREE.Vector3 }> = [];
-      for (let index = 0; index < 12; index += 1) {
-        const material = new THREE.MeshBasicMaterial({ color: index % 3 === 0 ? 0xffffff : color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
-        const spark = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), material);
-        impactGroup.add(spark);
-        sparks.push({ mesh: spark, velocity: new THREE.Vector3((Math.random() - 0.5) * 18, (Math.random() - 0.5) * 18, (Math.random() - 0.5) * 18) });
-      }
-      scene.add(group);
-      const speed = slot === 4 ? 520 : slot === 3 || slot === 8 ? 78 : slot === 2 || slot === 5 ? 112 : 190;
-      activeShotEffects.push({ group, distance, bornAt: clock.getElapsedTime(), flightTime: Math.max(0.06, distance / speed), impact, bolt, flash, impactGroup, beamMaterials, impactMaterials, sparks });
+      effect.distance = distance;
+      effect.bornAt = clock.getElapsedTime();
+      effect.impact = impact;
+      effect.flightTime = Math.max(0.06, distance / (slot === 4 ? 520 : slot === 3 || slot === 8 ? 78 : slot === 2 || slot === 5 ? 112 : 190));
+      effect.beamMaterials[0].color.setHex(color);
+      effect.beamMaterials[1].opacity = 1;
+      effect.outerBeam.position.y = distance / 2;
+      effect.outerBeam.scale.set(beamRadius, distance, beamRadius);
+      effect.coreBeam.position.y = distance / 2;
+      effect.coreBeam.scale.set(coreRadius, distance, coreRadius);
+      effect.bolt.scale.setScalar(slot === 3 || slot === 8 ? 0.18 : 0.11);
+      effect.boltGlow.material.color.setHex(color);
+      effect.boltGlow.scale.setScalar(slot === 3 || slot === 8 ? 0.34 : 0.23);
+      effect.flash.material.color.setHex(color);
+      effect.flash.scale.setScalar(0.2);
+      effect.impactGroup.position.y = distance;
+      effect.impactGroup.visible = false;
+      effect.impactMaterials[0].color.setHex(color);
+      effect.impactLight.color.setHex(color);
+      effect.impactLight.distance = slot === 3 || slot === 8 ? 20 : 10;
     };
     const fireIntervals: Record<number, number> = { 1: 280, 2: 820, 3: 1100, 4: 1050, 5: 480, 6: 150, 7: 90, 8: 900 };
     let lastShotAt = 0;
     let weaponRecoil = 0;
 
-    const updateWeaponSlot = (newSlot: number) => {
+    const updateWeaponSlot = (newSlot: number, playSwapSound = true) => {
       activeSlotRef.current = newSlot;
-      playWeaponSwapSound();
+      try {
+        localStorage.setItem(loadoutStorageKey, JSON.stringify({
+          cameraMode: cameraModeRef.current,
+          weaponSlot: newSlot,
+          hudVisible: true
+        } satisfies LobbyLoadout));
+      } catch {}
+      if (playSwapSound) playWeaponSwapSound();
 
       const col = slotPlasmaColors[newSlot] || 0x00f3ff;
       try {
@@ -966,6 +1040,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         magCore.material && ((magCore.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.75);
       } catch (e) {}
     };
+    updateWeaponSlot(activeSlotRef.current, false);
 
     // ========================================================
     // STRICT CANVAS-ONLY INTERACTION & POINTER LOCK ISOLATION
@@ -1141,6 +1216,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         const elapsed = clock.getElapsedTime();
         for (let index = activeShotEffects.length - 1; index >= 0; index -= 1) {
           const effect = activeShotEffects[index];
+          if (!effect.active) continue;
           const age = elapsed - effect.bornAt;
           const travel = THREE.MathUtils.clamp(age / effect.flightTime, 0, 1);
           effect.bolt.position.y = effect.distance * travel;
@@ -1155,28 +1231,17 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             const ball = effect.impactGroup.children[0] as THREE.Mesh;
             const core = effect.impactGroup.children[1] as THREE.Mesh;
             const ring = effect.impactGroup.children[2] as THREE.Mesh;
-            const light = effect.impactGroup.children[3] as THREE.PointLight;
             ball.scale.setScalar(0.25 + burst * 2.1);
             core.scale.setScalar(1 + burst * 2.4);
             ring.scale.setScalar(0.45 + burst * 1.8);
             effect.impactMaterials[0].opacity = Math.max(0, 0.78 * (1 - burst));
             effect.impactMaterials[1].opacity = Math.max(0, 1 - burst);
-            light.intensity = Math.max(0, 10 * (1 - burst));
-            effect.sparks.forEach(({ mesh, velocity }) => {
-              mesh.position.copy(velocity).multiplyScalar(Math.min(0.3, impactAge));
-              (mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 1 - impactAge / 0.3);
-            });
+            effect.impactLight.intensity = Math.max(0, 10 * (1 - burst));
           }
           if (age > effect.flightTime + 0.32) {
-            scene.remove(effect.group);
-            effect.group.traverse(object => {
-              if (object instanceof THREE.Mesh) {
-                object.geometry.dispose();
-                if (Array.isArray(object.material)) object.material.forEach(material => material.dispose());
-                else object.material.dispose();
-              }
-            });
-            activeShotEffects.splice(index, 1);
+            effect.active = false;
+            effect.group.visible = false;
+            effect.impactGroup.visible = false;
           }
         }
         fpsSampleFrames += 1;
@@ -1184,10 +1249,11 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
           const sampleDuration = elapsed - fpsSampleStart;
           const measuredFps = fpsSampleFrames / sampleDuration;
           const maximumScale = Math.min(window.devicePixelRatio, pixelCapRef.current);
+          const minimumScale = Math.min(maximumScale, minPixelRatioRef.current);
           const currentScale = renderScaleRef.current;
           let nextScale = currentScale;
-          if (measuredFps < 56 && currentScale > 1) {
-            nextScale = Math.max(1, currentScale - 0.25);
+          if (measuredFps < 56 && currentScale > minimumScale) {
+            nextScale = Math.max(minimumScale, currentScale - 0.125);
           } else if (measuredFps >= 59 && elapsed - lastResolutionChange >= 8) {
             nextScale = Math.min(maximumScale, currentScale + 0.125);
           }
@@ -1618,6 +1684,7 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     return () => {
       sceneDisposed = true;
+      window.removeEventListener('civicverse:graphics-quality-change', onGraphicsQualityChange);
       window.removeEventListener('billboard_broadcast_changed', handleBillboardBroadcast);
       window.removeEventListener('civicverse_videos_changed', handleBillboardBroadcast);
       if (civicWatchMediaTimer !== undefined) window.clearInterval(civicWatchMediaTimer);
@@ -1643,6 +1710,12 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       disposeChatBubble(localChatBubble);
       remoteChatBubbles.forEach(disposeChatBubble);
       remoteChatBubbles.clear();
+      [beamGeometry, boltGeometry, impactSphereGeometry, impactRingGeometry].forEach(geometry => geometry.dispose());
+      activeShotEffects.forEach(effect => {
+        effect.beamMaterials.forEach(material => material.dispose());
+        effect.impactMaterials.forEach(material => material.dispose());
+        [effect.bolt.material, effect.boltGlow.material, effect.flash.material].forEach(material => (material as THREE.Material).dispose());
+      });
       try { renderer.dispose(); } catch (e) {}
     };
 
