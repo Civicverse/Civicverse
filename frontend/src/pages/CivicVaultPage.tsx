@@ -15,7 +15,6 @@ import {
   Play,
   Pause,
   Music,
-  Code,
   Copy,
   Lock,
   MessageSquare,
@@ -38,8 +37,6 @@ import {
   Download,
   CheckCircle2,
   Edit3,
-  Globe,
-  Sparkles,
   Video,
   Film,
   Tv,
@@ -105,6 +102,13 @@ export interface UserFriend {
   avatar: string
 }
 
+function extractAboutMeText(markup: string) {
+  if (typeof DOMParser === 'undefined' || !markup) return markup.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  const document = new DOMParser().parseFromString(markup, 'text/html')
+  document.querySelectorAll('style, script, iframe, noscript').forEach(node => node.remove())
+  return (document.body.textContent || '').replace(/\s+/g, ' ').trim()
+}
+
 export default function CivicVaultPage() {
   const nav = useNavigate()
   const { user: rawUser, logout, tempMnemonic, updateUser, multiChainAddresses } = useGameStore()
@@ -152,12 +156,12 @@ export default function CivicVaultPage() {
   const [customEmbedCode, setCustomEmbedCode] = useState<string>(() => {
     return localStorage.getItem('civicverse:myspace:embed_code') || ''
   })
-  const [showEmbedModal, setShowEmbedModal] = useState(false)
   const [embedCodeDraft, setEmbedCodeDraft] = useState(customEmbedCode)
-
-  // Vault About Me & Embedded Browser Tab: 'about' | 'browser'
-  const [vaultAboutTab, setVaultAboutTab] = useState<'about' | 'browser'>('about')
+  const [aboutMe, setAboutMe] = useState(() => localStorage.getItem('civicverse:myspace:about_me') || '')
+  const [aboutMeDraft, setAboutMeDraft] = useState(aboutMe)
+  const [isEditingAboutMe, setIsEditingAboutMe] = useState(false)
   const [aboutMeSaveStatus, setAboutMeSaveStatus] = useState<string>('')
+  const visibleAboutMe = aboutMe.trim() || extractAboutMeText(customEmbedCode)
 
   // Check if a custom MySpace layout or theme is active
   const hasCustomTheme = Boolean(
@@ -643,8 +647,7 @@ export default function CivicVaultPage() {
   const handleSaveEmbedCode = () => {
     setCustomEmbedCode(embedCodeDraft)
     localStorage.setItem('civicverse:myspace:embed_code', embedCodeDraft)
-    setShowEmbedModal(false)
-    setAboutMeSaveStatus('Theme & About Me saved!')
+    setAboutMeSaveStatus('Layout saved!')
     setTimeout(() => setAboutMeSaveStatus(''), 4000)
   }
 
@@ -797,6 +800,7 @@ export default function CivicVaultPage() {
         timestamp: Date.now(),
         did: user.civicId,
         username: user.username,
+        aboutMe,
         customEmbedCode,
         songs: mySongs,
         friends
@@ -974,7 +978,7 @@ export default function CivicVaultPage() {
       {/* 1. BRUSHED STAINLESS STEEL CIVICVERSE HEADER & METAVERSE IDENTITY          */}
       {/* ========================================================================= */}
       <header className="relative z-40 bg-stainless-steel border-b border-stainless-steel text-white shadow-[0_12px_32px_rgba(0,0,0,0.6)]">
-        <div className="container mx-auto max-w-6xl px-3 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="container mx-auto max-w-6xl px-3 py-1.5 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-xs">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2.5">
               <img
@@ -994,9 +998,9 @@ export default function CivicVaultPage() {
             </div>
           </div>
 
-          {/* Search bar & PoP Dropdown Menu */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="hidden md:flex items-center bg-[#141b27]/90 border border-stainless-steel rounded px-2.5 py-1">
+          {/* Centered citizen search */}
+          <div className="contents">
+            <div className="flex items-center justify-self-center bg-[#141b27]/90 border border-stainless-steel rounded px-2.5 py-1 md:col-start-2 md:row-start-1">
               <span className="text-gray-400 text-[11px] pr-2 font-mono">Search Citizens:</span>
               <input
                 type="text"
@@ -1009,7 +1013,7 @@ export default function CivicVaultPage() {
             </div>
 
             {/* Consolidated PoP Dropdown Menu */}
-            <div className="relative" ref={popDropdownRef}>
+            <div className="relative justify-self-end md:col-start-3 md:row-start-1" ref={popDropdownRef}>
               <button
                 onClick={() => setShowPopDropdown(!showPopDropdown)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider border transition-all ${
@@ -1027,7 +1031,7 @@ export default function CivicVaultPage() {
 
               {/* PoP Dropdown Panel */}
               {showPopDropdown && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#131923] border border-cyan-500/60 rounded-xl p-5 shadow-[0_15px_50px_rgba(0,0,0,0.85)] z-50 text-left animate-slide-up backdrop-blur-xl">
+                <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1.5rem)] sm:w-96 max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain touch-pan-y bg-[#131923] border border-cyan-500/60 rounded-xl p-5 shadow-[0_15px_50px_rgba(0,0,0,0.85)] z-50 text-left animate-slide-up backdrop-blur-xl">
                   <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
                     <div className="flex items-center gap-2">
                       <Shield className="text-neon-cyan w-4 h-4" />
@@ -1117,7 +1121,7 @@ export default function CivicVaultPage() {
 
         {/* Top Navbar with Main Portals */}
         <nav className="bg-stainless-steel-panel border-t border-stainless-steel text-gray-200">
-          <div className="container mx-auto max-w-6xl px-3 flex items-center justify-between overflow-x-auto text-[11px] font-bold py-1.5 scrollbar-none">
+          <div className="container mx-auto max-w-6xl px-3 flex flex-wrap items-center justify-between gap-1 overflow-visible text-[11px] font-bold py-1.5 scrollbar-none">
             <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
               <span className="text-cyan-400 font-black px-2.5 py-0.5 bg-[#141b27] border border-cyan-500/40 rounded">
                 MY VAULT
@@ -1161,7 +1165,7 @@ export default function CivicVaultPage() {
 
                 {/* Dropdown Feature */}
                 {showSettingsDropdown && (
-                  <div className="absolute right-0 sm:left-0 top-full mt-2 w-80 bg-stainless-steel-panel border-2 border-stainless-steel rounded-xl shadow-[0_15px_50px_rgba(0,0,0,0.85)] p-3.5 z-50 text-white animate-fade-in backdrop-blur-xl">
+                  <div className="absolute right-0 sm:left-0 top-full mt-2 w-80 max-w-[calc(100vw-1.5rem)] max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain touch-pan-y bg-stainless-steel-panel border-2 border-stainless-steel rounded-xl shadow-[0_15px_50px_rgba(0,0,0,0.85)] p-3.5 z-50 text-white animate-fade-in backdrop-blur-xl">
                     <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
                       <span className="text-xs font-black uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
                         <Settings className="w-3.5 h-3.5 text-cyan-400" /> Broadcast & Privacy
@@ -1280,12 +1284,12 @@ export default function CivicVaultPage() {
       {/* ========================================================================= */}
       {/* 2. CLASSIC 2-COLUMN BRUSHED STAINLESS STEEL PROFILE LAYOUT                */}
       {/* ========================================================================= */}
-      <main className="container mx-auto max-w-6xl px-3 pt-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <main className="container mx-auto max-w-6xl px-3 pt-3 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
           {/* ----------------------------------------------------------------------- */}
           {/* LEFT COLUMN: User Header, 3D AVATAR (ONLY Wardrobe link at bottom), Tools */}
           {/* ----------------------------------------------------------------------- */}
-          <div className="lg:col-span-5 space-y-5">
+          <div className="lg:col-span-5 space-y-4">
             {/* Player1 Header Box - Nice & Big with Sweet Typography */}
             <div className="myspace-box p-6 rounded-xl text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-orange-500/10 pointer-events-none" />
@@ -1485,7 +1489,7 @@ export default function CivicVaultPage() {
           {/* ----------------------------------------------------------------------- */}
           {/* RIGHT COLUMN: Real Music, PimpMyProfile, Friends, Comments              */}
           {/* ----------------------------------------------------------------------- */}
-          <div className="lg:col-span-7 space-y-5">
+          <div className="lg:col-span-7 space-y-4">
             {/* REAL USER MUSIC & FOYER FM BROADCAST HUB */}
             <div className="myspace-box rounded-lg p-4 bg-stainless-steel-panel border border-stainless-steel">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3 mb-3">
@@ -1879,196 +1883,63 @@ export default function CivicVaultPage() {
               )}
             </div>
 
-            {/* "ABOUT ME" & EMBEDDED BROWSER SECTION */}
+            {/* ABOUT ME */}
             <div className="myspace-box rounded-lg overflow-hidden border border-stainless-steel">
-              {/* Header with Title and Just the Two Tabs: About Me & Embedded Browser */}
               <div className="myspace-table-header flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span>{user.username}'s Blurbs & About Me</span>
-                  {hasCustomTheme && (
-                    <span className="bg-purple-950 border border-purple-400 text-purple-300 text-[9px] px-2 py-0.5 rounded font-mono font-black shadow-[0_0_8px_rgba(191,0,255,0.4)]">
-                      CUSTOM THEME ACTIVE
-                    </span>
-                  )}
+                  <span>{user.username}'s About Me</span>
+                  {hasCustomTheme && <span className="rounded border border-purple-400 bg-purple-950 px-2 py-0.5 text-[9px] font-black text-purple-300">CUSTOM THEME</span>}
                 </div>
-
-                {/* Just Two Tabs: About Me and Embedded Browser */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setVaultAboutTab('about')}
-                    className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-wider transition ${
-                      vaultAboutTab === 'about'
-                        ? 'bg-cyan-500 text-black shadow'
-                        : 'bg-[#18212e] hover:bg-[#222e40] text-gray-300 border border-[#37455a]'
-                    }`}
-                  >
-                    About Me
-                  </button>
-
-                  <button
-                    onClick={() => setVaultAboutTab('browser')}
-                    className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-wider transition flex items-center gap-1.5 ${
-                      vaultAboutTab === 'browser'
-                        ? 'bg-cyan-500 text-black shadow'
-                        : 'bg-[#18212e] hover:bg-[#222e40] text-gray-300 border border-[#37455a]'
-                    }`}
-                  >
-                    <Globe className="w-3 h-3 text-cyan-400" />
-                    <span>Embedded Browser</span>
-                  </button>
+                <div className="flex items-center gap-2">
+                  <a href="https://www.pimp-my-profile.com/myspace-layouts/" target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1 rounded border border-cyan-400/40 bg-[#18212e] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-cyan-200 hover:bg-[#222e40]">
+                    <ExternalLink className="h-3 w-3" /> Open Pimp My Profile ↗
+                  </a>
+                  {!isEditingAboutMe && <button type="button" onClick={() => {
+                    setAboutMeDraft(aboutMe || extractAboutMeText(customEmbedCode))
+                    setEmbedCodeDraft(customEmbedCode)
+                    setIsEditingAboutMe(true)
+                  }} className="rounded bg-cyan-500 px-3 py-1 text-[10px] font-black uppercase text-black hover:bg-cyan-400">Edit</button>}
                 </div>
               </div>
 
-              {/* TAB 1: ABOUT ME (EDITABLE, DEFAULTS TO NOTHING, WITH INSTRUCTIONS) */}
-              {vaultAboutTab === 'about' && (
-                <div className="p-4 bg-[#111620] space-y-4">
-                  {/* Instructions on adding layouts the old-school MySpace way */}
-                  <div className="bg-[#141b27] border border-cyan-500/40 rounded-xl p-3.5 text-xs text-gray-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-                    <div className="flex items-center gap-2 text-cyan-400 font-black uppercase tracking-wider text-xs mb-2">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>How to Add Old School MySpace Layouts from Pimp My Profile:</span>
-                    </div>
-                    <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-gray-300 leading-relaxed font-sans">
-                      <li>
-                        Click the <strong className="text-cyan-300 cursor-pointer underline" onClick={() => setVaultAboutTab('browser')}>Embedded Browser</strong> tab above or visit{' '}
-                        <a
-                          href="https://www.pimp-my-profile.com/myspace-layouts/"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-cyan-300 underline font-black"
-                        >
-                          https://www.pimp-my-profile.com/myspace-layouts/ ↗
-                        </a>
-                      </li>
-                      <li>Find the layout you want and copy the layout code from the layout code box.</li>
-                      <li>
-                        Paste the code directly into the <strong>About Me</strong> box below and hit <strong>"Save Changes & Apply Theme"</strong>.
-                      </li>
-                      <li>
-                        Your CivicVerse Vault immediately transforms into that custom theme, overriding the default background gif with your layout's custom wallpaper and styles!
-                      </li>
-                    </ol>
-                  </div>
-
-                  {/* Rendered live layout/bio if saved and active */}
-                  {customEmbedCode && customEmbedCode.trim().length > 0 && (
-                    <div>
-                      <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 border-b border-[#2e3b4e] pb-1">
-                        Active About Me Profile:
-                      </div>
-                      <div
-                        className="p-3 bg-[#0c1017] border border-[#2e3b4e] rounded-xl text-xs leading-relaxed overflow-x-auto"
-                        dangerouslySetInnerHTML={{ __html: customEmbedCode }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Textarea Editor */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
-                      <span>About Me & Layout Code (HTML / CSS):</span>
-                      <span className="text-gray-500 font-normal">Supports &lt;style&gt;, &lt;table&gt;, &lt;marquee&gt;, and custom bio</span>
-                    </label>
-                    <textarea
-                      rows={10}
-                      value={embedCodeDraft}
-                      onChange={e => setEmbedCodeDraft(e.target.value)}
-                      placeholder="Paste your MySpace layout code from pimp-my-profile.com or write your About Me bio here..."
-                      className="w-full bg-[#0c1017] border border-[#2e3b4e] focus:border-cyan-400 rounded-xl p-3 font-mono text-xs text-cyan-200 focus:outline-none transition leading-relaxed"
-                    />
-                  </div>
-
-                  {/* Actions Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#2e3b4e]">
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmbedCodeDraft('')
-                          setCustomEmbedCode('')
-                          localStorage.removeItem('civicverse:myspace:embed_code')
-                          setAboutMeSaveStatus('Theme cleared! Reverted to default background gif.')
-                          setTimeout(() => setAboutMeSaveStatus(''), 4000)
-                        }}
-                        className="text-xs text-red-400 hover:text-red-300 underline font-bold flex items-center gap-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Clear & Reset to Default Theme
-                      </button>
-
-                      {aboutMeSaveStatus && (
-                        <span className="text-[11px] text-green-400 font-bold flex items-center gap-1 animate-pulse">
-                          <Check className="w-3.5 h-3.5 text-green-400" /> {aboutMeSaveStatus}
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleSaveEmbedCode()
-                        setAboutMeSaveStatus('Theme & About Me saved!')
-                        setTimeout(() => setAboutMeSaveStatus(''), 4000)
-                      }}
-                      className="bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs px-6 py-2.5 rounded-xl uppercase tracking-wider transition shadow-[0_0_15px_rgba(0,217,255,0.4)] flex items-center gap-1.5"
-                    >
-                      <Check className="w-4 h-4" /> Save Changes & Apply Theme
-                    </button>
-                  </div>
+              {!isEditingAboutMe ? (
+                <div className="min-h-20 bg-[#111620] p-4">
+                  {visibleAboutMe ? <p className="whitespace-pre-wrap break-words text-sm leading-6 text-gray-200">{visibleAboutMe}</p> : <p className="text-sm text-gray-500">Add a little about yourself.</p>}
                 </div>
-              )}
-
-              {/* TAB 2: EMBEDDED BROWSER (PIMP MY PROFILE ARCHIVE) */}
-              {vaultAboutTab === 'browser' && (
-                <div className="p-4 bg-[#111620] space-y-4">
-                  {/* Top toolbar */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 bg-[#141b27] border border-[#2e3b4e] rounded-xl p-3.5">
-                    <div>
-                      <h4 className="text-xs font-black uppercase text-white tracking-wider flex items-center gap-1.5">
-                        <Globe className="w-4 h-4 text-cyan-400" />
-                        Pimp My Profile — 24,000+ Restored MySpace Layouts
-                      </h4>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
-                        Browse any theme below on pimp-my-profile.com, copy the layout code, then switch to the{' '}
-                        <button
-                          onClick={() => setVaultAboutTab('about')}
-                          className="text-cyan-400 underline font-bold"
-                        >
-                          About Me
-                        </button>{' '}
-                        tab to paste and save!
-                      </p>
+              ) : (
+                <div className="space-y-4 bg-[#111620] p-4">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400">
+                    About Me
+                    <textarea rows={4} maxLength={1200} value={aboutMeDraft} onChange={event => setAboutMeDraft(event.target.value)}
+                      placeholder="Write a few lines about yourself..." className="mt-2 w-full rounded-xl border border-[#2e3b4e] bg-[#0c1017] p-3 text-sm leading-relaxed text-white focus:border-cyan-400 focus:outline-none" />
+                  </label>
+                  <details className="rounded-lg border border-white/10 bg-black/20 p-3">
+                    <summary className="cursor-pointer text-xs font-bold text-cyan-200">MySpace layout code</summary>
+                    <p className="my-2 text-[10px] text-gray-500">Paste or edit the layout code here. It stays hidden when you view your Vault.</p>
+                    <textarea rows={8} value={embedCodeDraft} onChange={event => setEmbedCodeDraft(event.target.value)}
+                      placeholder="Paste your layout code from Pimp My Profile..." className="w-full rounded-xl border border-[#2e3b4e] bg-[#0c1017] p-3 font-mono text-xs text-cyan-200 focus:border-cyan-400 focus:outline-none" />
+                  </details>
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#2e3b4e] pt-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button type="button" onClick={() => {
+                        setEmbedCodeDraft('')
+                        setCustomEmbedCode('')
+                        localStorage.removeItem('civicverse:myspace:embed_code')
+                        setAboutMeSaveStatus('Layout cleared.')
+                      }} className="flex items-center gap-1 text-xs font-bold text-red-400 underline hover:text-red-300"><Trash2 className="h-3.5 w-3.5" /> Clear layout</button>
+                      {aboutMeSaveStatus && <span className="text-xs font-bold text-emerald-400">{aboutMeSaveStatus}</span>}
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <a
-                        href="https://www.pimp-my-profile.com/myspace-layouts/"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black px-4 py-2 rounded-xl uppercase tracking-wider transition flex items-center gap-1.5 shadow"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Open in New Tab ↗</span>
-                      </a>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setIsEditingAboutMe(false)} className="rounded px-4 py-2 text-xs font-bold text-gray-300 hover:bg-white/10">Cancel</button>
+                      <button type="button" onClick={() => {
+                        setAboutMe(aboutMeDraft.trim())
+                        localStorage.setItem('civicverse:myspace:about_me', aboutMeDraft.trim())
+                        handleSaveEmbedCode()
+                        setIsEditingAboutMe(false)
+                        setAboutMeSaveStatus('About Me saved.')
+                      }} className="flex items-center gap-1.5 rounded bg-cyan-500 px-5 py-2 text-xs font-black uppercase text-black shadow hover:bg-cyan-400"><Check className="h-4 w-4" /> Save</button>
                     </div>
-                  </div>
-
-                  {/* Embedded Iframe: Direct Pimp My Profile Archive */}
-                  <div className="rounded-xl overflow-hidden border border-[#2e3b4e] bg-[#0c1017] shadow-xl">
-                    <div className="bg-[#151c27] px-3.5 py-2 border-b border-[#2e3b4e] flex items-center justify-between text-[11px] text-gray-400 font-mono">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-red-500/70 inline-block" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/70 inline-block" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-green-500/70 inline-block" />
-                        <span className="ml-2 text-cyan-300">https://www.pimp-my-profile.com/myspace-layouts/</span>
-                      </div>
-                      <span className="text-[10px] text-gray-500 hidden sm:inline">Pimp My Profile Archive Browser</span>
-                    </div>
-                    <iframe
-                      src="https://www.pimp-my-profile.com/myspace-layouts/"
-                      title="Pimp My Profile MySpace Layouts"
-                      className="w-full h-[700px] bg-white border-0"
-                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                    />
                   </div>
                 </div>
               )}
@@ -2175,31 +2046,11 @@ export default function CivicVaultPage() {
                 </div>
               </div>
 
-              {/* Informational Sub-Banner replacing the old comment section */}
-              <div className="px-4 py-2.5 bg-[#0d131d]/80 border-b border-white/5 flex flex-wrap items-center justify-between gap-2 text-[10px]">
-                <p className="text-gray-300 leading-tight">
-                  <span className="text-cyan-400 font-bold">✨ Comment Section Replacement:</span> Upload videos to broadcast them live directly to the game's{' '}
-                  <strong className="text-white">CivicWatch screens (HUD ▶ VIDEOS tab)</strong> and{' '}
-                  <strong className="text-white">in-game 3D city building jumbotrons</strong>.
-                </p>
-                {!globalSharing && (
-                  <button
-                    onClick={() => handleToggleGlobalSharing(true)}
-                    className="text-[9px] bg-red-900/60 hover:bg-red-800 text-red-200 border border-red-500 px-2 py-0.5 rounded font-bold transition shrink-0"
-                  >
-                    Resume Global Sharing →
-                  </button>
-                )}
-              </div>
-
               <div className="p-4 bg-[#111620]/70 backdrop-blur-sm">
                 {myVideos.length === 0 ? (
                   <div className="text-center py-8 bg-black/40 rounded-lg border border-[#2e3b4e]">
                     <Video className="w-10 h-10 text-cyan-400/60 mx-auto mb-2" />
                     <p className="text-xs text-gray-200 font-bold mb-1">No videos uploaded yet.</p>
-                    <p className="text-[11px] text-gray-400 max-w-md mx-auto mb-4">
-                      Upload your field reports, music videos, or community clips to play them live on the game's CivicWatch screens and building billboards!
-                    </p>
                     <button
                       onClick={() => setShowAddVideoModal(true)}
                       className="bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-black px-5 py-2 rounded-xl uppercase tracking-wider transition shadow-md"
@@ -2329,79 +2180,7 @@ export default function CivicVaultPage() {
       </main>
 
       {/* ========================================================================= */}
-      {/* MODAL 1: REAL PIMPMYPROFILE.COM EMBED CODE MODAL */}
-      {/* ========================================================================= */}
-      {showEmbedModal && (
-        <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="max-w-2xl w-full bg-stainless-steel-panel border-2 border-stainless-steel rounded-2xl p-6 relative shadow-[0_15px_50px_rgba(0,0,0,0.8)]">
-            <button
-              onClick={() => setShowEmbedModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
-            >
-              ✕
-            </button>
-
-            <h3 className="text-lg font-black uppercase tracking-tight mb-1 text-white flex items-center gap-2">
-              <Code className="text-cyan-400 w-5 h-5" /> Embed PimpMyProfile Code
-            </h3>
-            <p className="text-xs text-gray-300 mb-4">
-              Go to{' '}
-              <a
-                href="https://pimpmyprofile.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-cyan-400 font-black underline"
-              >
-                pimpmyprofile.com ↗
-              </a>
-              , find any layout or graphics, copy the embed code, and paste it below:
-            </p>
-
-            <textarea
-              rows={10}
-              value={embedCodeDraft}
-              onChange={e => setEmbedCodeDraft(e.target.value)}
-              placeholder="Paste HTML, CSS <style>, <table>, <marquee>, glitter badges, or graphics code from pimpmyprofile.com here..."
-              className="w-full bg-[#0c1017] border border-[#2e3b4e] rounded-xl p-3 font-mono text-xs text-cyan-200 focus:outline-none focus:border-cyan-400 mb-4"
-            />
-
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmbedCodeDraft('')
-                  setCustomEmbedCode('')
-                  localStorage.removeItem('civicverse:myspace:embed_code')
-                  setShowEmbedModal(false)
-                }}
-                className="text-xs text-red-400 hover:text-red-300 underline"
-              >
-                Clear Embed Code
-              </button>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEmbedModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveEmbedCode}
-                  className="bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs px-6 py-2.5 rounded-xl uppercase tracking-wider transition shadow"
-                >
-                  Save & Apply Code
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL 2: UPLOAD REAL AUDIO FILE / BROADCAST TO FOYER FM */}
+      {/* MODAL 1: UPLOAD REAL AUDIO FILE / BROADCAST TO FOYER FM */}
       {/* ========================================================================= */}
       {showAddSongModal && (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
