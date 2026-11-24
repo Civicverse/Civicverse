@@ -32,7 +32,10 @@ import {
   Info,
   Layers,
   Wrench,
-  Users
+  Users,
+  Maximize2,
+  Minimize2,
+  ExternalLink as ExternalLinkIcon
 } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
 import { getLocalPlayerPosition, useMultiplayerStore } from '../services/multiplayer';
@@ -51,7 +54,15 @@ import { CIVICVERSE_LOGO } from '../assets/logo';
 import { CivicNewsFeed } from './CivicNewsFeed';
 import { CivicWatchClips } from './CivicWatchClips';
 
-type FoyerTabMode = 'music' | 'minimap' | 'citizens' | 'feeds' | 'civicwatch' | 'proximity' | 'emojis' | 'settings';
+type FoyerTabMode = 'music' | 'minimap' | 'citizens' | 'feeds' | 'civicwatch' | 'godseye' | 'proximity' | 'emojis' | 'settings';
+
+const getGodsEyeUrl = () => {
+  const url = new URL(import.meta.env.VITE_GODS_EYE_URL || 'http://127.0.0.1:4173');
+  // God’s Eye serves a reduced, explicitly embeddable document in this mode.
+  url.searchParams.set('embed', '1');
+  return url.toString();
+};
+const GODS_EYE_URL = getGodsEyeUrl();
 
 type RadioGenre = { id: string; label: string; tag: string };
 
@@ -135,6 +146,7 @@ export const CivicMediaPlayer: React.FC = () => {
   const [volume, setVolume] = useState<number>(0.85);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [godseyeExpanded, setGodseyeExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<FoyerTabMode>('music');
   const [isRepeat, setIsRepeat] = useState<boolean>(true);
   const [isRandom, setIsRandom] = useState<boolean>(false);
@@ -168,6 +180,22 @@ export const CivicMediaPlayer: React.FC = () => {
     window.addEventListener('civicverse:open-hud-chat', openChat);
     return () => window.removeEventListener('civicverse:open-hud-chat', openChat);
   }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () => setGodseyeExpanded(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  const toggleGodsEyeFullscreen = async (element: HTMLDivElement | null) => {
+    if (!element) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await element.requestFullscreen();
+    } catch (error) {
+      console.warn('[God’s Eye] Full-screen mode is unavailable.', error);
+    }
+  };
 
   // Auto-Scroll Speed State (px/second, defaults to 30 px/s)
   const [scrollSpeed, setScrollSpeed] = useState<number>(() => {
@@ -216,6 +244,7 @@ export const CivicMediaPlayer: React.FC = () => {
 
   const howlRef = useRef<Howl | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const godsEyeFrameRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!showStationDrawer) return;
@@ -728,6 +757,43 @@ export const CivicMediaPlayer: React.FC = () => {
 
                   {activeTab === 'civicwatch' && <div className="flex-1 min-h-0 min-w-0 w-full overflow-hidden"><CivicWatchClips /></div>}
 
+                  {activeTab === 'godseye' && (
+                    <div
+                      ref={godsEyeFrameRef}
+                      className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#05090e] text-cyan-100 ${godseyeExpanded ? 'fixed inset-0 z-[100] h-screen w-screen' : 'h-full w-full'}`}
+                    >
+                      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-cyan-300/20 bg-[#07121a] px-3 py-2 font-mono">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-cyan-300 shadow-[0_0_10px_#67e8f9]" />
+                          <span className="truncate text-[10px] font-black uppercase tracking-[0.2em]">God’s Eye · Live Sensor Grid</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <a href={GODS_EYE_URL} target="_blank" rel="noreferrer" title="Open God’s Eye in a new tab" className="rounded border border-cyan-300/20 p-1.5 text-cyan-200 hover:bg-cyan-300/10">
+                            <ExternalLinkIcon className="h-3.5 w-3.5" />
+                          </a>
+                          <button type="button" onClick={() => void toggleGodsEyeFullscreen(godsEyeFrameRef.current)} title={godseyeExpanded ? 'Exit full screen' : 'Expand God’s Eye'} className="rounded border border-cyan-300/20 p-1.5 text-cyan-200 hover:bg-cyan-300/10">
+                            {godseyeExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="relative min-h-0 flex-1">
+                        <iframe
+                          key={GODS_EYE_URL}
+                          src={GODS_EYE_URL}
+                          title="God’s Eye View live globe"
+                          allow="fullscreen; microphone; camera; geolocation; clipboard-read; clipboard-write"
+                          allowFullScreen
+                          className="absolute inset-0 h-full w-full border-0 bg-[#05090e]"
+                        />
+                        <div className="pointer-events-none absolute bottom-2 left-2 right-2 flex justify-center">
+                          <div className="rounded border border-cyan-300/15 bg-[#03070bd9] px-2 py-1 text-center font-mono text-[8px] text-cyan-100/70 backdrop-blur-sm">
+                            Local God’s Eye required at {new URL(GODS_EYE_URL).origin} · allow Civicverse origin {window.location.origin} in GEV_EMBED_FRAME_ANCESTORS · <a className="pointer-events-auto underline" href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noreferrer">Project &amp; setup</a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* 4. REAL MULTIPLAYER PROXIMITY CHAT & INPUT (WITH WORKING AUTO-SCROLL) */}
                   {activeTab === 'proximity' && (
                     <div className="flex min-h-0 flex-1 flex-col gap-2 p-4 text-white">
@@ -1058,6 +1124,18 @@ export const CivicMediaPlayer: React.FC = () => {
                 title="CivicWatch community video feed"
               >
                 <span>▶ WATCH</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('godseye')}
+                className={`px-2.5 py-1 rounded-r-lg border-y border-r transition-all text-left shadow-lg cursor-pointer flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6ee8e9] ${
+                  activeTab === 'godseye'
+                    ? 'bg-[#0b1a1f] border-[#6ee8e9]/70 text-[#6ee8e9] translate-x-1'
+                    : 'bg-gradient-to-b from-[#f2f4f5] to-[#b4babf] border-[#5a6066] text-[#14181c] hover:from-white hover:to-[#d9dde0]'
+                }`}
+                title="Open God’s Eye View in the in-game tactical console"
+              >
+                <span>◉ GOD’S EYE</span>
               </button>
 
               {/* Tab 4: 💬 PROX CHAT */}
