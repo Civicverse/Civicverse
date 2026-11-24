@@ -31,6 +31,8 @@ export interface RemotePlayer {
   health: number;
   isAlive: boolean;
   character?: CharacterConfig;
+  weaponSlot?: number;
+  weaponFiredAt?: number;
   lastSeen: number;
   lobbyId?: string;
 }
@@ -73,6 +75,8 @@ export interface MultiplayerState {
   connectionMode: 'offline' | 'p2p' | 'websocket' | 'mesh';
   localPlayerId: string;
   peerCount: number;
+  localHealth: number;
+  combatEvent: { id: string; kind: 'hit' | 'death' | 'respawn'; playerId: string; damage?: number } | null;
 
   // Lobby instances (Max 20 citizens per instance)
   currentLobbyId: string;
@@ -100,6 +104,8 @@ export interface MultiplayerState {
   dismissLobbyInvite: (inviteId: string) => void;
   updatePosition: (position: { x: number; y: number; z: number }, rotation: { x: number; y: number; z: number }, isMoving?: boolean) => void;
   setIdentity: (username: string, character?: CharacterConfig, civicId?: string) => void;
+  fireWeapon: (slot: number, targetPlayerId?: string) => void;
+  respawn: () => void;
   switchLobby: (lobbyId: string) => void;
   sendMicrotransaction: (amount: number, memo?: string) => void;
 }
@@ -172,6 +178,8 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
   connectionMode: 'offline',
   localPlayerId: LOCAL_ID,
   peerCount: 0,
+  localHealth: 100,
+  combatEvent: null,
   currentLobbyId: 'district-lobby-1',
   currentLobbyName: 'Gathering Grounds 1 (20 Max)',
   maxLobbySize: 20,
@@ -416,6 +424,27 @@ export const useMultiplayerStore = create<MultiplayerState>((set, get) => ({
     });
   },
 
+  fireWeapon: (slot, targetPlayerId) => {
+    const safeSlot = Math.min(8, Math.max(1, Math.round(slot)));
+    const firedAt = Date.now();
+    if (targetPlayerId) {
+      const players = new Map(useMultiplayerStore.getState().players);
+      const target = players.get(targetPlayerId);
+      if (target) {
+        const damageBySlot: Record<number, number> = { 1: 24, 2: 48, 3: 62, 4: 78, 5: 34, 6: 16, 7: 12, 8: 52 };
+        target.health = Math.max(0, target.health - damageBySlot[safeSlot]);
+        target.isAlive = target.health > 0;
+        useMultiplayerStore.setState({ players });
+      }
+    }
+    broadcastPacket({ type: 'player_shot', playerId: LOCAL_ID, lobbyId: activeLobbyId, slot: safeSlot, targetPlayerId, firedAt, id: `shot_${LOCAL_ID}_${firedAt}_${Math.random().toString(36).slice(2, 7)}` });
+  },
+
+  respawn: () => {
+    useMultiplayerStore.setState({ localHealth: 100, combatEvent: { id: `respawn_${Date.now()}`, kind: 'respawn', playerId: LOCAL_ID } });
+    broadcastPacket({ type: 'player_respawn', playerId: LOCAL_ID, lobbyId: activeLobbyId, id: `respawn_${LOCAL_ID}_${Date.now()}` });
+  },
+
   setIdentity: (username: string, character?: CharacterConfig, civicId?: string) => {
     localUsername = username || 'Citizen';
     localCharacter = character;
@@ -577,8 +606,8 @@ function handleIncomingNetworkMessage(data: any, source: string) {
         position: data.position || existing?.position || { x: 0, y: 0, z: 20 },
         rotation: data.rotation || existing?.rotation || { x: 0, y: Math.PI, z: 0 },
         isMoving: data.isMoving !== undefined ? data.isMoving : (existing?.isMoving || false),
-        health: data.health || 100,
-        isAlive: data.isAlive !== undefined ? data.isAlive : true,
+        health: data.health ?? existing?.health ?? 100,
+        isAlive: data.isAlive !== undefined ? data.isAlive : (existing?.isAlive ?? true),
         character: data.character || existing?.character,
         lastSeen: Date.now()
       };
@@ -629,6 +658,45 @@ function handleIncomingNetworkMessage(data: any, source: string) {
           lastSeen: Date.now()
         });
         useMultiplayerStore.setState({ players: currentPlayers, peerCount: currentPlayers.size });
+      }
+      break;
+    }
+
+    case 'player_shot': {
+      if (!data.playerId || !Number.isFinite(data.slot)) return;
+      const players = new Map(store.players);
+      const shooter = players.get(data.playerId);
+      if (shooter) {
+        shooter.weaponSlot = Math.min(8, Math.max(1, Math.round(data.slot)));
+        shooter.weaponFiredAt = Number(data.firedAt) || Date.now();
+        shooter.lastSeen = Date.now();
+      }
+      if (data.targetPlayerId === LOCAL_ID) {
+        if (store.localHealth <= 0) break;
+        const damageBySlot: Record<number, number> = { 1: 24, 2: 48, 3: 62, 4: 78, 5: 34, 6: 16, 7: 12, 8: 52 };
+        const damage = damageBySlot[Math.min(8, Math.max(1, Math.round(data.slot)))] || 20;
+        const health = Math.max(0, store.localHealth - damage);
+        useMultiplayerStore.setState({ localHealth: health, combatEvent: { id: String(data.id || Date.now()), kind: health === 0 ? 'death' : 'hit', playerId: LOCAL_ID, damage } });
+      } else if (typeof data.targetPlayerId === 'string') {
+        const target = players.get(data.targetPlayerId);
+        if (target) {
+          const damageBySlot: Record<number, number> = { 1: 24, 2: 48, 3: 62, 4: 78, 5: 34, 6: 16, 7: 12, 8: 52 };
+          target.health = Math.max(0, target.health - (damageBySlot[data.slot] || 20));
+          target.isAlive = target.health > 0;
+        }
+      }
+      useMultiplayerStore.setState({ players });
+      break;
+    }
+
+    case 'player_respawn': {
+      if (data.playerId === LOCAL_ID) {
+        useMultiplayerStore.setState({ localHealth: 100, combatEvent: { id: String(data.id || Date.now()), kind: 'respawn', playerId: LOCAL_ID } });
+      } else if (data.playerId) {
+        const players = new Map(store.players);
+        const player = players.get(data.playerId);
+        if (player) { player.health = 100; player.isAlive = true; }
+        useMultiplayerStore.setState({ players });
       }
       break;
     }
@@ -897,7 +965,7 @@ function setupConnection(conn: DataConnection, username: string, character?: Cha
       if (typeof data.lobbyId === 'string') lobbyIdByPeerId.set(conn.peer, data.lobbyId);
     }
     if (isRoomHost && data?.type === 'player_leave') lobbyIdByPeerId.delete(conn.peer);
-    if (isRoomHost && ['chat_message', 'player_join', 'player_identity', 'player_move', 'player_leave'].includes(data?.type)) {
+    if (isRoomHost && ['chat_message', 'player_join', 'player_identity', 'player_move', 'player_leave', 'player_shot', 'player_respawn'].includes(data?.type)) {
       activeDataConnections.forEach((otherConn, peerId) => {
         const sameLobby = lobbyIdByPeerId.get(peerId) === data.lobbyId;
         const allowed = data.audience === 'friends'

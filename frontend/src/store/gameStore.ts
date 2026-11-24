@@ -33,6 +33,8 @@ export interface CivicUser {
     educational?: number;
     logistics?: number;
     empathy?: number;
+    kills?: number;
+    deaths?: number;
   };
 }
 
@@ -670,7 +672,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   updateUser: (userUpdates) =>
     set((state) => {
-      const newUser = state.user ? { ...state.user, ...userUpdates } : null;
+      const newUser = state.user ? { ...state.user, ...userUpdates, stats: userUpdates.stats ? { ...state.user.stats, ...userUpdates.stats } : state.user.stats } : null;
       if (newUser) {
         localStorage.setItem('civicverse_user', JSON.stringify({ 
           user: newUser, 

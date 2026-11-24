@@ -103,9 +103,14 @@ export interface UserFriend {
 }
 
 function extractAboutMeText(markup: string) {
-  if (typeof DOMParser === 'undefined' || !markup) return markup.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  if (!markup) return ''
+  const looksLikeLayout = /<\s*(style|script|iframe|html|body|table|div|section)\b|@import|(?:^|\n)\s*[.#\w-]+\s*\{[^}]*\}/i.test(markup)
+  if (typeof DOMParser === 'undefined') return looksLikeLayout ? '' : markup.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
   const document = new DOMParser().parseFromString(markup, 'text/html')
   document.querySelectorAll('style, script, iframe, noscript').forEach(node => node.remove())
+  const aboutBlock = document.querySelector('#about-me, #about, .about-me, .about, [data-about-me]')
+  if (aboutBlock) return (aboutBlock.textContent || '').replace(/\s+/g, ' ').trim()
+  if (looksLikeLayout) return ''
   return (document.body.textContent || '').replace(/\s+/g, ' ').trim()
 }
 
@@ -161,7 +166,7 @@ export default function CivicVaultPage() {
   const [aboutMeDraft, setAboutMeDraft] = useState(aboutMe)
   const [isEditingAboutMe, setIsEditingAboutMe] = useState(false)
   const [aboutMeSaveStatus, setAboutMeSaveStatus] = useState<string>('')
-  const visibleAboutMe = aboutMe.trim() || extractAboutMeText(customEmbedCode)
+  const visibleAboutMe = extractAboutMeText(aboutMe) || extractAboutMeText(customEmbedCode)
 
   // Check if a custom MySpace layout or theme is active
   const hasCustomTheme = Boolean(
@@ -1433,6 +1438,10 @@ export default function CivicVaultPage() {
                   </span>
                 </div>
                 <div className="flex pt-2">
+                  <span className="w-28 text-gray-400 font-bold shrink-0">Game K/D:</span>
+                  <span className="text-cyan-200 font-bold">{user.stats?.kills || 0} / {user.stats?.deaths || 0} <span className="text-gray-400 font-normal">(ratio {((user.stats?.kills || 0) / Math.max(1, user.stats?.deaths || 0)).toFixed(2)})</span></span>
+                </div>
+                <div className="flex pt-2">
                   <span className="w-28 text-gray-400 font-bold shrink-0">Music Catalog:</span>
                   <span className="text-gray-200 font-bold">
                     {mySongs.length} Uploaded · {boughtSongs.length} Bought · {rentedSongs.length} Rented
@@ -1896,7 +1905,7 @@ export default function CivicVaultPage() {
                     <ExternalLink className="h-3 w-3" /> Open Pimp My Profile ↗
                   </a>
                   {!isEditingAboutMe && <button type="button" onClick={() => {
-                    setAboutMeDraft(aboutMe || extractAboutMeText(customEmbedCode))
+                    setAboutMeDraft(extractAboutMeText(aboutMe) || extractAboutMeText(customEmbedCode))
                     setEmbedCodeDraft(customEmbedCode)
                     setIsEditingAboutMe(true)
                   }} className="rounded bg-cyan-500 px-3 py-1 text-[10px] font-black uppercase text-black hover:bg-cyan-400">Edit</button>}
@@ -1933,8 +1942,9 @@ export default function CivicVaultPage() {
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setIsEditingAboutMe(false)} className="rounded px-4 py-2 text-xs font-bold text-gray-300 hover:bg-white/10">Cancel</button>
                       <button type="button" onClick={() => {
-                        setAboutMe(aboutMeDraft.trim())
-                        localStorage.setItem('civicverse:myspace:about_me', aboutMeDraft.trim())
+                        const cleanAboutMe = extractAboutMeText(aboutMeDraft)
+                        setAboutMe(cleanAboutMe)
+                        localStorage.setItem('civicverse:myspace:about_me', cleanAboutMe)
                         handleSaveEmbedCode()
                         setIsEditingAboutMe(false)
                         setAboutMeSaveStatus('About Me saved.')

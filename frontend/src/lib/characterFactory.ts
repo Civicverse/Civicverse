@@ -310,6 +310,9 @@ export const createCharacterMesh = (config: CharacterConfig & { weapon?: string 
   const rFoot = createMesh(new THREE.BoxGeometry(0.12, 0.08, 0.22), shoesMat, 0.1, 0.04, 0.05);
   group.add(rFoot);
 
+  // Expose the articulated limbs so the foyer can animate a visible run cycle.
+  group.userData.gaitLimbs = { leftLeg: lThigh, rightLeg: rThigh, leftArm: lUpperArm, rightArm: rUpperArm };
+
   // --- WEAPON (Conditional) ---
   if (config.weapon && config.weapon !== 'None') {
     const weaponGroup = new THREE.Group();
