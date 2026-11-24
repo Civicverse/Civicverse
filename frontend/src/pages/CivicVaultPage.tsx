@@ -114,6 +114,63 @@ function extractAboutMeText(markup: string) {
   return (document.body.textContent || '').replace(/\s+/g, ' ').trim()
 }
 
+function normalizePimpMarkup(markup: string) {
+  return markup
+    .replace(/\\([<>:.])/g, '$1')
+    .replace(/\\\r?\n/g, '\n')
+    .replace(/&#x20;|&#32;|&nbsp;/gi, ' ')
+    .replace(/&#x9;|&#9;/gi, '\t')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+}
+
+function buildScopedPimpStyles(markup: string) {
+  const normalizedMarkup = normalizePimpMarkup(markup)
+  const source = (normalizedMarkup.match(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi) || [])
+    .map(block => block.replace(/^<style\b[^>]*>/i, '').replace(/<\/style\s*>$/i, ''))
+    .join('\n') || (/^[\s\S]*\{[\s\S]*\}$/.test(normalizedMarkup) && !normalizedMarkup.includes('<') ? normalizedMarkup : '')
+  const css = source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/@import[^;]+;?/gi, '')
+    .replace(/expression\s*\([^)]*\)/gi, '')
+    .replace(/url\(\s*(['"]?)\s*(?:javascript:|data:text\/html)[^)]*\)/gi, 'none')
+    .replace(/(?:behavior|\-moz-binding)\s*:[^;]+;?/gi, '')
+    .replace(/((?:^|[;{]\s*)(?:color|background-color|border-color)\s*:\s*)([0-9a-f]{3,8})(?=\s*[;}]|$)/gim, (_whole, prefix: string, hex: string) => {
+      const normalized = hex.length === 5 ? `0${hex}` : hex
+      return `${prefix}#${normalized}`
+    })
+  const scope = '.cv-vault-profile-root'
+  const safeRules: string[] = []
+  const rulePattern = /([^{}]+)\{([^{}]*)\}/g
+  let match: RegExpExecArray | null
+  while ((match = rulePattern.exec(css))) {
+    const rawSelector = match[1].trim()
+    const declarations = match[2].trim()
+    if (!rawSelector || rawSelector.startsWith('@') || !declarations) continue
+    const scopedSelectors = rawSelector.split(',').map(selector => {
+      const trimmed = selector.trim()
+      if (!trimmed) return ''
+      if (/^(html|body|:root)(?=$|[\s.#:[>+~])/i.test(trimmed)) {
+        const rest = trimmed.replace(/^(html|body|:root)/i, '')
+        return `${scope}${rest}`
+      }
+      return `${scope} ${trimmed}`
+    }).filter(Boolean)
+    if (scopedSelectors.length) safeRules.push(`${scopedSelectors.join(', ')} { ${declarations} }`)
+  }
+  return safeRules.join('\n')
+}
+
+function getPimpBodyDeclarations(markup: string) {
+  const normalizedMarkup = normalizePimpMarkup(markup)
+  const styles = (normalizedMarkup.match(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi) || [])
+    .map(block => block.replace(/^<style\b[^>]*>/i, '').replace(/<\/style\s*>$/i, ''))
+    .join('\n') || markup
+  return styles.match(/(?:^|})\s*(?:html|body|\.bodyContent)\s*\{([^}]*)\}/i)?.[1] || ''
+}
+
 export default function CivicVaultPage() {
   const nav = useNavigate()
   const { user: rawUser, logout, tempMnemonic, updateUser, multiChainAddresses } = useGameStore()
@@ -168,6 +225,18 @@ export default function CivicVaultPage() {
   const [aboutMeSaveStatus, setAboutMeSaveStatus] = useState<string>('')
   const visibleAboutMe = extractAboutMeText(aboutMe) || extractAboutMeText(customEmbedCode)
 
+  useEffect(() => {
+    const styleId = 'civicverse-pimp-my-profile-theme'
+    document.getElementById(styleId)?.remove()
+    const css = buildScopedPimpStyles(customEmbedCode)
+    if (!css) return
+    const style = document.createElement('style')
+    style.id = styleId
+    style.textContent = css
+    document.head.appendChild(style)
+    return () => style.remove()
+  }, [customEmbedCode])
+
   // Check if a custom MySpace layout or theme is active
   const hasCustomTheme = Boolean(
     customEmbedCode &&
@@ -186,15 +255,18 @@ export default function CivicVaultPage() {
   // Extract background image URL if present in the custom layout code
   const customBgUrl = React.useMemo(() => {
     if (!customEmbedCode) return null
-    const match = customEmbedCode.match(/url\(['"]?([^'")\s]+)['"]?\)/i)
+    const match = getPimpBodyDeclarations(customEmbedCode).match(/url\(['"]?([^'")\s]+)['"]?\)/i)
     return match ? match[1] : null
   }, [customEmbedCode])
 
   // Extract background color if present in the custom layout code
   const customBgColor = React.useMemo(() => {
     if (!customEmbedCode) return null
-    const colorMatch = customEmbedCode.match(/background-color\s*:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)|[a-zA-Z]+)/i)
-    return colorMatch ? colorMatch[1] : null
+    const colorMatch = getPimpBodyDeclarations(customEmbedCode).match(/background-color\s*:\s*(#[0-9a-fA-F]{3,8}|[0-9a-fA-F]{3,8}|rgba?\([^)]+\)|[a-zA-Z]+)/i)
+    if (!colorMatch) return null
+    const color = colorMatch[1]
+    if (/^[0-9a-f]{3,8}$/i.test(color)) return `#${color.length === 5 ? `0${color}` : color}`
+    return color
   }, [customEmbedCode])
 
   // ---------------------------------------------------------------------------
@@ -652,7 +724,7 @@ export default function CivicVaultPage() {
   const handleSaveEmbedCode = () => {
     setCustomEmbedCode(embedCodeDraft)
     localStorage.setItem('civicverse:myspace:embed_code', embedCodeDraft)
-    setAboutMeSaveStatus('Layout saved!')
+    setAboutMeSaveStatus('Layout applied and saved.')
     setTimeout(() => setAboutMeSaveStatus(''), 4000)
   }
 
@@ -832,7 +904,7 @@ export default function CivicVaultPage() {
   }
 
   return (
-    <div className={`relative min-h-screen ${hasCustomTheme ? 'bg-transparent' : 'bg-[#070b14]/30'} text-white font-sans pb-24 transition-colors duration-500`}>
+    <div className={`cv-vault-profile-root relative min-h-screen ${hasCustomTheme ? 'bg-transparent' : 'bg-[#070b14]/30'} text-white font-sans pb-24 transition-colors duration-500`}>
       {/* Hidden audio element for universal track playback (uploaded, bought, rented) */}
       <audio
         ref={audioRef}
@@ -1915,6 +1987,7 @@ export default function CivicVaultPage() {
               {!isEditingAboutMe ? (
                 <div className="min-h-20 bg-[#111620] p-4">
                   {visibleAboutMe ? <p className="whitespace-pre-wrap break-words text-sm leading-6 text-gray-200">{visibleAboutMe}</p> : <p className="text-sm text-gray-500">Add a little about yourself.</p>}
+                  {aboutMeSaveStatus && <p role="status" aria-live="polite" className="mt-3 text-xs font-bold text-emerald-300">{aboutMeSaveStatus}</p>}
                 </div>
               ) : (
                 <div className="space-y-4 bg-[#111620] p-4">
@@ -1947,7 +2020,7 @@ export default function CivicVaultPage() {
                         localStorage.setItem('civicverse:myspace:about_me', cleanAboutMe)
                         handleSaveEmbedCode()
                         setIsEditingAboutMe(false)
-                        setAboutMeSaveStatus('About Me saved.')
+                        setAboutMeSaveStatus('About Me and layout saved.')
                       }} className="flex items-center gap-1.5 rounded bg-cyan-500 px-5 py-2 text-xs font-black uppercase text-black shadow hover:bg-cyan-400"><Check className="h-4 w-4" /> Save</button>
                     </div>
                   </div>
