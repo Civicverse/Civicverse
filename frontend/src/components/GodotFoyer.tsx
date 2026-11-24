@@ -17,7 +17,6 @@ import {
   Crosshair,
   Volume2,
   Coins,
-  Users
 } from 'lucide-react';
 import { useMultiplayerStore } from '../services/multiplayer';
 import { createCharacterMesh, createPlayerNametag } from '../lib/characterFactory';
@@ -38,12 +37,8 @@ interface ChatBubble {
   messageId: string;
 }
 
-const FOYER_WEAPON_NAMES: Record<number, string> = { 1: 'Pulse Rifle', 2: 'Scattergun', 3: 'Rocket Launcher', 4: 'Rail Sniper', 5: 'Plasma Cannon', 6: 'Arc Emitter', 7: 'Vector SMG', 8: 'Grenade Launcher' };
-
 const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
-  const { user } = useGameStore();
-  const localHealth = useMultiplayerStore(state => state.localHealth);
-  const combatEvent = useMultiplayerStore(state => state.combatEvent);
+  const user = useGameStore(state => state.user);
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -53,7 +48,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   
   // React HUD states
   const [cameraMode, setCameraMode] = useState<'3RD' | '1ST'>('3RD');
-  const [activeWeaponSlot, setActiveWeaponSlot] = useState(4);
   const [sceneErrorMessage, setSceneErrorMessage] = useState('');
   const [isPointerLocked, setIsPointerLocked] = useState(false);
   const [aaMode, setAaMode] = useState<'off' | 'smaa'>('smaa');
@@ -62,17 +56,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const renderScaleRef = useRef(1);
 
   // Multiplayer state (20 per Lobby Instance)
-  const chatHistory = useMultiplayerStore(state => state.chatHistory);
-  const players = useMultiplayerStore(state => state.players);
-  const peerCount = useMultiplayerStore(state => state.peerCount);
-  const connectionMode = useMultiplayerStore(state => state.connectionMode);
-  const currentLobbyId = useMultiplayerStore(state => state.currentLobbyId);
-  const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
-  const availableLobbies = useMultiplayerStore(state => state.availableLobbies);
-  const switchLobby = useMultiplayerStore(state => state.switchLobby);
-  const ubiStatus = useMultiplayerStore(state => state.ubiStatus);
-  const [playerSearch, setPlayerSearch] = useState('');
-  const [showLobbyModal, setShowLobbyModal] = useState(false);
   const [showTipModal, setShowTipModal] = useState(false);
   const [tipAmount, setTipAmount] = useState('5.0');
   const [tipSuccess, setTipSuccess] = useState('');
@@ -80,17 +63,24 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
   const activeSlotRef = useRef<number>(4);
 
   useEffect(() => {
-    if (!combatEvent || combatEvent.kind !== 'death') return;
-    const current = useGameStore.getState().user;
-    if (!current) return;
-    useGameStore.getState().updateUser({ stats: { deaths: (current.stats?.deaths || 0) + 1 } });
-  }, [combatEvent?.id]);
-
-  useEffect(() => {
-    if (combatEvent?.kind !== 'death') return;
-    const timer = window.setTimeout(() => useMultiplayerStore.getState().respawn(), 2800);
-    return () => window.clearTimeout(timer);
-  }, [combatEvent?.id]);
+    let lastDeathEventId = '';
+    let respawnTimer: number | undefined;
+    const unsubscribe = useMultiplayerStore.subscribe(state => {
+      const event = state.combatEvent;
+      if (!event || event.kind !== 'death' || event.id === lastDeathEventId) return;
+      lastDeathEventId = event.id;
+      const current = useGameStore.getState().user;
+      if (current) {
+        useGameStore.getState().updateUser({ stats: { deaths: (current.stats?.deaths || 0) + 1 } });
+      }
+      if (respawnTimer !== undefined) window.clearTimeout(respawnTimer);
+      respawnTimer = window.setTimeout(() => useMultiplayerStore.getState().respawn(), 2800);
+    });
+    return () => {
+      unsubscribe();
+      if (respawnTimer !== undefined) window.clearTimeout(respawnTimer);
+    };
+  }, []);
 
   // Store camera mode ref so event listeners don't re-mount the Three.js scene
   const cameraModeRef = useRef<'3RD' | '1ST'>('3RD');
@@ -110,6 +100,12 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
     useMultiplayerStore.getState().setIdentity(user?.username || 'Citizen', user?.character, user?.civicId);
   }, [user?.username, user?.character, user?.civicId]);
 
+  useEffect(() => {
+    const openTip = () => setShowTipModal(true);
+    window.addEventListener('civicverse:open-ubi-tip', openTip);
+    return () => window.removeEventListener('civicverse:open-ubi-tip', openTip);
+  }, []);
+
   const openBillboardSource = () => {
     if (!selectedBillboardStory) return;
     try {
@@ -125,10 +121,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       console.error('[GodotFoyer] Billboard source URL is invalid.', error);
     }
   };
-
-  const visiblePlayers = Array.from(players.values()).filter(player =>
-    `${player.username} ${player.civicId || ''}`.toLowerCase().includes(playerSearch.trim().toLowerCase())
-  );
 
   const applyAAMode = (mode: 'off' | 'smaa') => {
     setAaMode(mode);
@@ -944,7 +936,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
 
     const updateWeaponSlot = (newSlot: number) => {
       activeSlotRef.current = newSlot;
-      setActiveWeaponSlot(newSlot);
       playWeaponSwapSound();
 
       const col = slotPlasmaColors[newSlot] || 0x00f3ff;
@@ -1693,13 +1684,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
         </div>
       )}
 
-      <div className="absolute left-4 top-4 z-30 w-56 rounded-xl border border-cyan-400/35 bg-[#07101c]/85 p-3 font-mono text-[10px] text-slate-100 shadow-[0_0_22px_rgba(0,0,0,.45)] pointer-events-none">
-        <div className="flex items-center justify-between gap-2"><span className="font-black uppercase tracking-widest text-cyan-200">{FOYER_WEAPON_NAMES[activeWeaponSlot] || 'Pulse Rifle'}</span><span className="text-emerald-200">{Math.max(0, localHealth)} HP</span></div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"><div className={`h-full transition-all ${localHealth < 35 ? 'bg-rose-500' : 'bg-emerald-400'}`} style={{ width: `${Math.max(0, Math.min(100, localHealth))}%` }} /></div>
-        <div className="mt-2 flex items-center justify-between text-slate-300"><span>1–8 / mouse wheel</span><span>K {user?.stats?.kills || 0} · D {user?.stats?.deaths || 0}</span></div>
-        <div className="mt-1 text-[9px] text-slate-400">Aim + click to fire · approach another citizen to duel</div>
-      </div>
-
       {selectedBillboardStory && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center bg-black/65 p-4 pointer-events-auto"
@@ -1810,91 +1794,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
       {/* ======================================================== */}
       {/* IN-GAME HUD OVERLAYS (MATCHING FOYER_FORMAT.JPG EXACTLY)  */}
       {/* ======================================================== */}
-
-      {/* 0. TOP-LEFT OVERLAY: MULTIPLAYER LIVE STATUS & 20-CITIZEN LOBBY */}
-      <div className="hidden absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2 pointer-events-auto">
-        <div className="flex items-center gap-2 bg-[#090d16]/90 border border-emerald-500/50 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]" />
-          <span className="text-xs font-black text-white tracking-wider uppercase">
-            {currentLobbyName} • {1 + peerCount}/20 CITIZENS
-          </span>
-          <span className="text-[9px] text-emerald-400 font-mono font-bold uppercase bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30">
-            {connectionMode === 'mesh' ? 'P2P MESH' : connectionMode === 'websocket' ? 'WS SERVER' : 'P2P'}
-          </span>
-        </div>
-
-        <button 
-          onClick={() => setShowLobbyModal(true)}
-          className="flex items-center gap-1.5 bg-[#0e1626]/90 border border-cyan-500/50 hover:border-cyan-400 text-cyan-400 text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(0,217,255,0.25)] transition-all"
-        >
-          <Users className="w-3.5 h-3.5" />
-          <span>Switch Lobby</span>
-        </button>
-
-        <button 
-          onClick={() => setShowTipModal(true)}
-          className="flex items-center gap-1.5 bg-neon-pink/20 border border-neon-pink/50 hover:bg-neon-pink/30 text-neon-pink text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(255,0,128,0.25)] transition-all"
-        >
-          <Coins className="w-3.5 h-3.5" />
-          <span>1% UBI Tip</span>
-        </button>
-      </div>
-
-      {/* LOBBY INSTANCE SELECTOR MODAL (20 PLAYERS / ROOM) */}
-      {showLobbyModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md pointer-events-auto">
-          <div className="bg-[#0b121f] border border-cyan-500/60 rounded-2xl p-6 max-w-md w-full shadow-[0_0_40px_rgba(0,217,255,0.3)]">
-            <div className="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-base font-black text-white uppercase tracking-wider">Lobby Instances (20 Max)</h3>
-              </div>
-              <button onClick={() => setShowLobbyModal(false)} className="text-gray-400 hover:text-white text-lg">✕</button>
-            </div>
-            <p className="text-xs text-gray-400 mb-4">
-              To guarantee optimal 60+ FPS physics and networking, each Gathering Grounds district instance is capped at 20 citizens.
-            </p>
-            <div className="space-y-2.5 mb-6">
-              {availableLobbies.map((lobby) => (
-                <div 
-                  key={lobby.id}
-                  className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
-                    lobby.id === currentLobbyId 
-                      ? 'bg-cyan-500/20 border-cyan-400 text-white' 
-                      : 'bg-[#121927] border-gray-800 hover:border-gray-700 text-gray-300'
-                  }`}
-                >
-                  <div>
-                    <h4 className="font-bold text-xs">{lobby.name}</h4>
-                    <span className="text-[10px] text-gray-400 font-mono">
-                      {lobby.id === currentLobbyId ? 1 + peerCount : lobby.playerCount}/20 Citizens
-                    </span>
-                  </div>
-                  {lobby.id === currentLobbyId ? (
-                    <span className="text-[10px] font-black uppercase text-cyan-400 bg-cyan-400/20 px-2 py-1 rounded-full">Current</span>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        switchLobby(lobby.id);
-                        setShowLobbyModal(false);
-                      }}
-                      className="text-[10px] font-black uppercase text-black bg-cyan-400 hover:bg-cyan-300 px-3 py-1 rounded-full transition-all"
-                    >
-                      Join
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <button 
-              onClick={() => setShowLobbyModal(false)} 
-              className="w-full py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold uppercase tracking-wider text-white"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 1% UBI PASSIVE CONTRIBUTION MODAL */}
       {showTipModal && (
@@ -2008,25 +1907,6 @@ const GodotFoyerImpl: React.FC<GodotFoyerProps> = ({ onExit }) => {
             <span className="flex items-center gap-1 text-cyan-400 font-bold"><Zap className="w-3 h-3 fill-current" /> 250 CVC</span>
             <span className="flex items-center gap-1 text-purple-400 font-bold"><Shield className="w-3 h-3" /> 100 XP</span>
           </div>
-        </div>
-      </div>
-
-      {/* Lobby players are linked to public profiles by Civic ID. */}
-      <div className="absolute top-4 left-4 z-20 w-64 max-w-[48vw] rounded-xl border border-fuchsia-500/30 bg-[#090d16]/90 p-3 shadow-2xl backdrop-blur-md pointer-events-auto">
-        <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-fuchsia-200">
-          <span>Lobby citizens</span><span>{visiblePlayers.length}</span>
-        </div>
-        <input value={playerSearch} onChange={event => setPlayerSearch(event.target.value)} placeholder="Search username or Civic ID"
-          className="mb-2 w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-white placeholder:text-gray-500" />
-        <div className="max-h-36 space-y-1 overflow-y-auto">
-          {visiblePlayers.map(player => (
-            <button key={player.id} disabled={!player.civicId} onClick={() => player.civicId && navigate(`/profile/${encodeURIComponent(player.civicId)}`)}
-              className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/5 px-2 py-1.5 text-left text-[10px] hover:bg-fuchsia-500/15 disabled:cursor-default disabled:opacity-70">
-              <span className="truncate font-bold text-white">{player.username}</span>
-              <span className="shrink-0 text-cyan-300">{player.civicId ? 'PROFILE' : 'GUEST'}</span>
-            </button>
-          ))}
-          {!visiblePlayers.length && <p className="py-2 text-center text-[10px] text-gray-500">No other citizens in this lobby</p>}
         </div>
       </div>
 

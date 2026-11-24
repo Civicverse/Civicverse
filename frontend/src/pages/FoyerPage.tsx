@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/gameStore';
 import { GodotFoyer, CivicMediaPlayer } from '../components';
 import { CIVICVERSE_LOGO } from '../assets/logo';
-import { ChevronDown, HelpCircle, X } from 'lucide-react';
+import { ChevronDown, HelpCircle, Maximize2, Minimize2, X } from 'lucide-react';
 import { useMultiplayerStore } from '../services/multiplayer';
 
 export default function FoyerPage() {
@@ -17,7 +17,29 @@ export default function FoyerPage() {
     nav('/vault');
   };
   const [isControlsOpen, setIsControlsOpen] = useState(false);
+  const [isGameFullscreen, setIsGameFullscreen] = useState(false);
+  const gameViewportRef = useRef<HTMLDivElement>(null);
   const peerCount = useMultiplayerStore(state => state.peerCount);
+
+  useEffect(() => {
+    const syncFullscreenState = () => setIsGameFullscreen(document.fullscreenElement === gameViewportRef.current);
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState);
+  }, []);
+
+  const toggleGameFullscreen = async () => {
+    const viewport = gameViewportRef.current;
+    if (!viewport) return;
+    try {
+      if (document.fullscreenElement === viewport) await document.exitFullscreen();
+      else {
+        if (document.pointerLockElement) document.exitPointerLock();
+        await viewport.requestFullscreen();
+      }
+    } catch (error) {
+      console.warn('[Foyer] Full screen is unavailable.', error);
+    }
+  };
 
   return (
     <div className="w-screen h-screen bg-stainless-steel-dark text-white flex flex-col overflow-hidden select-none font-sans">
@@ -172,12 +194,22 @@ export default function FoyerPage() {
       {/* ======================================================== */}
       {/* 2. FULL-SCREEN 3D GAME VIEWPORT + CONSOLIDATED MEDIA HUB */}
       {/* ======================================================== */}
-      <div className="flex-1 relative bg-stainless-steel-dark overflow-hidden w-full h-full">
+      <div ref={gameViewportRef} className="flex-1 relative bg-stainless-steel-dark overflow-hidden w-full h-full">
         {/* Full-Screen 3D Godot Three.js Metaverse Viewport */}
         <GodotFoyer onExit={() => nav('/vault')} />
 
         {/* 1:1 Godot Mixmaster Media Player (Foyer FM) Asset at Bottom */}
         <CivicMediaPlayer />
+
+        <button
+          type="button"
+          onClick={() => void toggleGameFullscreen()}
+          aria-label={isGameFullscreen ? 'Exit game full screen' : 'Enter game full screen'}
+          title={isGameFullscreen ? 'Exit full screen (Esc)' : 'Game full screen'}
+          className="absolute bottom-2 right-12 z-[41] flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-300/40 bg-[#07101c]/90 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,.25)] transition hover:border-cyan-200 hover:bg-cyan-400/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        >
+          {isGameFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </button>
       </div>
 
     </div>

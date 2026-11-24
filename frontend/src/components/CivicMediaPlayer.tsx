@@ -56,6 +56,96 @@ import { CivicWatchClips } from './CivicWatchClips';
 
 type FoyerTabMode = 'music' | 'minimap' | 'citizens' | 'feeds' | 'civicwatch' | 'godseye' | 'proximity' | 'emojis' | 'settings';
 
+const TacticalMinimap: React.FC = () => {
+  const players = useMultiplayerStore(state => state.players);
+  const [localPosition, setLocalPosition] = useState(getLocalPlayerPosition);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setLocalPosition(getLocalPlayerPosition()), 300);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#060a0e]">
+      <div className="absolute inset-2 border border-white/[0.12] rounded-full" />
+      <div className="absolute inset-5 border border-white/[0.09] rounded-full" />
+      <div className="absolute inset-8 border border-white/[0.06] rounded-full" />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-full h-[1px] bg-white/[0.08]" /></div>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="h-full w-[1px] bg-white/[0.08]" /></div>
+      <div className="absolute inset-0 bg-gradient-to-tr from-[#6ee8e9]/15 via-transparent to-transparent rounded-full animate-spin duration-3000 pointer-events-none" />
+      <div className="relative z-10 flex flex-col items-center"><div className="w-2.5 h-2.5 rounded-full bg-[#6ee8e9] border-2 border-white" /></div>
+      {Array.from(players.values()).map(player => (
+        <div
+          key={player.id}
+          className="absolute h-3 w-3 rounded-full border border-white bg-[#7ae2a7]"
+          style={{
+            top: `${Math.max(4, Math.min(96, 50 + ((player.position?.z ?? localPosition.z) - localPosition.z) * 0.4))}%`,
+            left: `${Math.max(4, Math.min(96, 50 + ((player.position?.x ?? localPosition.x) - localPosition.x) * 0.4))}%`
+          }}
+          title={player.username || 'Citizen'}
+        />
+      ))}
+    </div>
+  );
+};
+
+const CitizensPanel: React.FC = () => {
+  const navigate = useNavigate();
+  const players = useMultiplayerStore(state => state.players);
+  const peerCount = useMultiplayerStore(state => state.peerCount);
+  const currentLobbyId = useMultiplayerStore(state => state.currentLobbyId);
+  const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
+  const availableLobbies = useMultiplayerStore(state => state.availableLobbies);
+  const [playerSearch, setPlayerSearch] = useState('');
+  const visibleCitizens = Array.from(players.values()).filter(player =>
+    `${player.username} ${player.civicId || ''}`.toLowerCase().includes(playerSearch.trim().toLowerCase())
+  );
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-5 text-white scrollbar-thin">
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#c9d0d6]"><Users className="h-4 w-4" /> Citizens</h2>
+          <span className="text-[10px] font-mono text-[#c9d0d6]">{1 + peerCount}/20</span>
+        </div>
+        <input value={playerSearch} onChange={event => setPlayerSearch(event.target.value)} placeholder="Search username or Civic ID" className="w-full rounded-lg border border-white/[0.16] bg-black/35 px-3 py-2 text-xs text-white placeholder:text-[#8d959c] focus:border-[#6ee8e9] focus:outline-none" />
+        <div className="mt-2 max-h-32 space-y-1 overflow-y-auto">
+          {visibleCitizens.map(player => (
+            <button key={player.id} type="button" disabled={!player.civicId} onClick={() => player.civicId && navigate(`/profile/${encodeURIComponent(player.civicId)}`)} className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-left text-xs hover:bg-white/[0.1] disabled:cursor-default disabled:opacity-70">
+              <span className="truncate font-bold">{player.username}</span><span className="shrink-0 text-[9px] text-[#8d959c]">{player.civicId ? 'PROFILE' : 'GUEST'}</span>
+            </button>
+          ))}
+          {!visibleCitizens.length && <p className="py-2 text-center text-[10px] text-slate-400">{playerSearch ? 'No matching citizens.' : 'No other citizens in this lobby.'}</p>}
+        </div>
+      </section>
+      <section className="border-t border-white/[0.12] pt-3">
+        <div className="mb-2 flex items-center justify-between"><h3 className="text-[10px] font-black uppercase tracking-widest text-[#c9d0d6]">Lobby</h3><span className="truncate text-[9px] text-slate-400">{currentLobbyName}</span></div>
+        <div className="space-y-1">
+          {availableLobbies.map(lobby => (
+            <div key={lobby.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
+              <span className="truncate text-[10px] text-slate-200">{lobby.name}</span>
+              {lobby.id === currentLobbyId ? <span className="shrink-0 text-[9px] font-bold text-[#7ae2a7]">CURRENT</span> : (
+                <button type="button" disabled={lobby.isFull} onClick={() => useMultiplayerStore.getState().switchLobby(lobby.id)} className="shrink-0 rounded border border-white/[0.16] px-2 py-1 text-[9px] font-bold text-white hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-40">{lobby.isFull ? 'FULL' : 'JOIN'}</button>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+};
+
+const ChatHistoryFeed: React.FC = () => {
+  const chatHistory = useMultiplayerStore(state => state.chatHistory);
+  const messages = chatHistory.filter(message => !message.isSystem).slice(-20);
+  return (
+    <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg bg-black/25 p-3 text-[10px] scrollbar-thin">
+      {messages.map(message => <p key={message.id} className="break-words leading-snug"><span className={`mr-1 font-bold ${message.color || 'text-[#c9d0d6]'}`}>{message.username}:</span><span className="text-slate-200">{message.text}</span></p>)}
+      {!messages.length && <p className="text-center text-slate-500">No messages yet.</p>}
+    </div>
+  );
+};
+
 const getGodsEyeUrl = () => {
   const url = new URL(import.meta.env.VITE_GODS_EYE_URL || 'http://127.0.0.1:4173');
   // God’s Eye serves a reduced, explicitly embeddable document in this mode.
@@ -119,21 +209,12 @@ export const CivicMediaPlayer: React.FC = () => {
   const navigate = useNavigate();
 
   // Multiplayer store integration (Proximity Chat, Peers, Radar)
-  const peerCount = useMultiplayerStore(state => state.peerCount);
-  const players = useMultiplayerStore(state => state.players);
-  const chatHistory = useMultiplayerStore(state => state.chatHistory);
   const sendMessage = useMultiplayerStore(state => state.sendMessage);
   const chatAudience = useMultiplayerStore(state => state.chatAudience);
   const setChatAudience = useMultiplayerStore(state => state.setChatAudience);
-  const currentLobbyId = useMultiplayerStore(state => state.currentLobbyId);
-  const currentLobbyName = useMultiplayerStore(state => state.currentLobbyName);
-  const availableLobbies = useMultiplayerStore(state => state.availableLobbies);
-  const switchLobby = useMultiplayerStore(state => state.switchLobby);
   const friendCivicIds = useMultiplayerStore(state => state.friendCivicIds);
   const onlineFriends = useMultiplayerStore(state => state.onlineFriends);
   const incomingLobbyInvites = useMultiplayerStore(state => state.incomingLobbyInvites);
-  const [localPosition, setLocalPosition] = useState(getLocalPlayerPosition);
-  const [playerSearch, setPlayerSearch] = useState('');
   const chatComposerRef = useRef<HTMLInputElement>(null);
 
   // Playback state
@@ -182,7 +263,7 @@ export const CivicMediaPlayer: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const onFullscreenChange = () => setGodseyeExpanded(Boolean(document.fullscreenElement));
+    const onFullscreenChange = () => setGodseyeExpanded(document.fullscreenElement === godsEyeFrameRef.current);
     document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
@@ -230,9 +311,6 @@ export const CivicMediaPlayer: React.FC = () => {
   // Proximity Chat Input & Floating Emoji Particles
   const [chatMessage, setChatMessage] = useState<string>('');
   const [floatingEmojis, setFloatingEmojis] = useState<Array<{ id: number; emoji: string; x: number; y: number }>>([]);
-  const visibleCitizens = Array.from(players.values()).filter(player =>
-    `${player.username} ${player.civicId || ''}`.toLowerCase().includes(playerSearch.trim().toLowerCase())
-  );
 
   // Live Track Metadata
   const [metadata, setMetadata] = useState<TrackMetadata>({
@@ -281,11 +359,6 @@ export const CivicMediaPlayer: React.FC = () => {
       window.clearTimeout(timer);
     };
   }, [showStationDrawer, searchQuery, selectedGenre]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setLocalPosition(getLocalPlayerPosition()), 300);
-    return () => window.clearInterval(timer);
-  }, []);
 
   // Real clock update hook
   useEffect(() => {
@@ -650,107 +723,9 @@ export const CivicMediaPlayer: React.FC = () => {
                   )}
                   
                   {/* 1. TACTICAL RADAR MINIMAP */}
-                  {activeTab === 'minimap' && (
-                    <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#060a0e]">
-                      {/* Concentric distance rings */}
-                      <div className="absolute inset-2 border border-white/[0.12] rounded-full" />
-                      <div className="absolute inset-5 border border-white/[0.09] rounded-full" />
-                      <div className="absolute inset-8 border border-white/[0.06] rounded-full" />
-                      
-                      {/* Compass Axis Lines */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-full h-[1px] bg-white/[0.08]" />
-                      </div>
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="h-full w-[1px] bg-white/[0.08]" />
-                      </div>
+                  {activeTab === 'minimap' && <TacticalMinimap />}
 
-                      {/* Rotating Radar Sweep Cone */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-[#6ee8e9]/15 via-transparent to-transparent rounded-full animate-spin duration-3000 pointer-events-none" />
-
-                      {/* Player Center Blip */}
-                      <div className="relative z-10 flex flex-col items-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#6ee8e9] border-2 border-white" />
-                      </div>
-
-                      {/* Live citizen positions relative to this player */}
-                      {Array.from(players.values()).map((p) => (
-                        <div
-                          key={p.id}
-                          className="absolute h-3 w-3 rounded-full border border-white bg-[#7ae2a7]"
-                          style={{
-                            top: `${Math.max(4, Math.min(96, 50 + ((p.position?.z ?? localPosition.z) - localPosition.z) * 0.4))}%`,
-                            left: `${Math.max(4, Math.min(96, 50 + ((p.position?.x ?? localPosition.x) - localPosition.x) * 0.4))}%`
-                          }}
-                          title={p.username || 'Citizen'}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {activeTab === 'citizens' && (
-                    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-5 text-white scrollbar-thin">
-                      <section>
-                        <div className="mb-2 flex items-center justify-between">
-                          <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#c9d0d6]">
-                            <Users className="h-4 w-4" /> Citizens
-                          </h2>
-                          <span className="text-[10px] font-mono text-[#c9d0d6]">{1 + peerCount}/20</span>
-                        </div>
-                        <input
-                          value={playerSearch}
-                          onChange={event => setPlayerSearch(event.target.value)}
-                          placeholder="Search username or Civic ID"
-                          className="w-full rounded-lg border border-white/[0.16] bg-black/35 px-3 py-2 text-xs text-white placeholder:text-[#8d959c] focus:border-[#6ee8e9] focus:outline-none"
-                        />
-                        <div className="mt-2 max-h-32 space-y-1 overflow-y-auto">
-                          {visibleCitizens.map(player => (
-                            <button
-                              key={player.id}
-                              type="button"
-                              disabled={!player.civicId}
-                              onClick={() => player.civicId && navigate(`/profile/${encodeURIComponent(player.civicId)}`)}
-                              className="flex w-full items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2 text-left text-xs hover:bg-white/[0.1] disabled:cursor-default disabled:opacity-70"
-                            >
-                              <span className="truncate font-bold">{player.username}</span>
-                              <span className="shrink-0 text-[9px] text-[#8d959c]">{player.civicId ? 'PROFILE' : 'GUEST'}</span>
-                            </button>
-                          ))}
-                          {!visibleCitizens.length && (
-                            <p className="py-2 text-center text-[10px] text-slate-400">
-                              {playerSearch ? 'No matching citizens.' : 'No other citizens in this lobby.'}
-                            </p>
-                          )}
-                        </div>
-                      </section>
-
-                      <section className="border-t border-white/[0.12] pt-3">
-                        <div className="mb-2 flex items-center justify-between">
-                          <h3 className="text-[10px] font-black uppercase tracking-widest text-[#c9d0d6]">Lobby</h3>
-                          <span className="truncate text-[9px] text-slate-400">{currentLobbyName}</span>
-                        </div>
-                        <div className="space-y-1">
-                          {availableLobbies.map(lobby => (
-                            <div key={lobby.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
-                              <span className="truncate text-[10px] text-slate-200">{lobby.name}</span>
-                              {lobby.id === currentLobbyId ? (
-                                <span className="shrink-0 text-[9px] font-bold text-[#7ae2a7]">CURRENT</span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  disabled={lobby.isFull}
-                                  onClick={() => switchLobby(lobby.id)}
-                                  className="shrink-0 rounded border border-white/[0.16] px-2 py-1 text-[9px] font-bold text-white hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                  {lobby.isFull ? 'FULL' : 'JOIN'}
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    </div>
-                  )}
+                  {activeTab === 'citizens' && <CitizensPanel />}
 
                   {/* Live Civicverse social, trending and government feeds */}
                   {activeTab === 'feeds' && <div className="flex-1 min-h-0 min-w-0 w-full overflow-hidden"><CivicNewsFeed embedded scrollSpeed={scrollSpeed} /></div>}
@@ -826,17 +801,7 @@ export const CivicMediaPlayer: React.FC = () => {
                           </button>
                         ))}
                       </div>
-                      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-lg bg-black/25 p-3 text-[10px] scrollbar-thin">
-                        {chatHistory.filter(message => !message.isSystem).slice(-20).map(message => (
-                          <p key={message.id} className="break-words leading-snug">
-                            <span className={`mr-1 font-bold ${message.color || 'text-[#c9d0d6]'}`}>{message.username}:</span>
-                            <span className="text-slate-200">{message.text}</span>
-                          </p>
-                        ))}
-                        {!chatHistory.some(message => !message.isSystem) && (
-                          <p className="text-center text-slate-500">No messages yet.</p>
-                        )}
-                      </div>
+                      <ChatHistoryFeed />
                       <form onSubmit={handleSendProximityChat} className="flex w-full gap-1 border-t border-white/[0.12] pt-2">
                         <input
                           ref={chatComposerRef}
@@ -875,6 +840,13 @@ export const CivicMediaPlayer: React.FC = () => {
                   {activeTab === 'settings' && (
                     <div className="flex-1 flex flex-col justify-between px-10 py-14 text-xs font-mono overflow-y-auto scrollbar-thin">
                       <div className="space-y-1.5">
+                        <button
+                          type="button"
+                          onClick={() => window.dispatchEvent(new Event('civicverse:open-ubi-tip'))}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-fuchsia-300/30 bg-fuchsia-400/10 px-3 py-2 text-[9px] font-black tracking-widest text-fuchsia-200 hover:bg-fuchsia-400/20"
+                        >
+                          <Zap className="h-3 w-3" /> COMMUNITY TIP
+                        </button>
                         
                         {/* Setting 1: HUD SCALE % */}
                         <div>
